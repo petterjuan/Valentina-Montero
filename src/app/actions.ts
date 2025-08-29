@@ -4,30 +4,41 @@ import { generatePersonalizedWorkout } from "@/ai/flows/generate-personalized-wo
 import { z } from "zod";
 
 const aiGeneratorSchema = z.object({
-  prompt: z.string().min(5, "La descripción debe tener al menos 5 caracteres."),
+  fitnessGoal: z.string(),
+  experienceLevel: z.string(),
+  equipment: z.string(),
+  duration: z.string().transform(v => Number(v)),
+  frequency: z.string().transform(v => Number(v)),
 });
 
 type AiState = {
   data?: string;
   error?: string;
+  inputs?: z.infer<typeof aiGeneratorSchema>;
 };
 
 export async function handleAiGeneration(prevState: AiState, formData: FormData): Promise<AiState> {
   const validatedFields = aiGeneratorSchema.safeParse({
-    prompt: formData.get("prompt"),
+    fitnessGoal: formData.get("fitnessGoal"),
+    experienceLevel: formData.get("experienceLevel"),
+    equipment: formData.get("equipment"),
+    duration: formData.get("duration"),
+    frequency: formData.get("frequency"),
   });
-
+  
   if (!validatedFields.success) {
     return {
-      error: validatedFields.error.flatten().fieldErrors.prompt?.[0],
+      error: "Por favor, completa todos los campos para generar tu plan.",
     };
   }
 
-  const prompt = validatedFields.data.prompt;
+  const input = validatedFields.data;
+  
+  const prompt = `Objetivo: ${input.fitnessGoal}, Nivel: ${input.experienceLevel}, Equipo: ${input.equipment}, Duración: ${input.duration} min, Frecuencia: ${input.frequency} veces/semana`;
 
   try {
     const result = await generatePersonalizedWorkout({ fitnessGoal: prompt });
-    return { data: result.workoutPlan };
+    return { data: result.workoutPlan, inputs: input };
   } catch (e) {
     console.error(e);
     return { error: "No se pudo generar el contenido. Por favor, inténtalo de nuevo más tarde." };
