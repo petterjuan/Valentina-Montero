@@ -19,10 +19,14 @@ export type AiGeneratorFormState = {
 
 export async function handleAiGeneration(input: GeneratePersonalizedWorkoutInput): Promise<AiGeneratorFormState> {
   try {
-    const result = await generatePersonalizedWorkout(input);
-    return { data: result.workoutPlan, inputs: input };
+    const validatedInput = aiGeneratorSchema.parse(input);
+    const result = await generatePersonalizedWorkout(validatedInput);
+    return { data: result.workoutPlan, inputs: validatedInput };
   } catch (e) {
     console.error(e);
+    if (e instanceof z.ZodError) {
+      return { error: "Los datos de entrada no son válidos. Por favor, revisa el formulario." };
+    }
     return { error: "No se pudo generar el contenido. Por favor, inténtalo de nuevo más tarde." };
   }
 }
