@@ -35,13 +35,3 @@ export default function HeroSection() {
     </section>
   );
 }
-
-// Helper for animation delay
-const animationDelay = (delay: number) => ({
-    animationDelay: `${delay}ms`,
-});
-
-const styles = {
-    '.animation-delay-300': animationDelay(300),
-    '.animation-delay-600': animationDelay(600),
-};
