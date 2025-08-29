@@ -2,15 +2,29 @@
 
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
+import { Controller, useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { handleAiGeneration } from "@/app/actions";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Wand2, AlertTriangle, Dumbbell, Zap, Calendar, Clock } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
+
+const aiGeneratorSchema = z.object({
+  fitnessGoal: z.string().default("perder-peso"),
+  experienceLevel: z.string().default("principiante"),
+  equipment: z.string().default("solo-cuerpo"),
+  duration: z.number().default(45),
+  frequency: z.number().default(3),
+});
+
+type AiGeneratorFormData = z.infer<typeof aiGeneratorSchema>;
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -27,6 +41,20 @@ export default function AiGeneratorSection() {
   const [state, formAction] = useActionState(handleAiGeneration, initialState);
   const { toast } = useToast();
 
+  const form = useForm<AiGeneratorFormData>({
+    resolver: zodResolver(aiGeneratorSchema),
+    defaultValues: {
+      fitnessGoal: "perder-peso",
+      experienceLevel: "principiante",
+      equipment: "solo-cuerpo",
+      duration: 45,
+      frequency: 3,
+    },
+  });
+
+  const durationValue = form.watch("duration");
+  const frequencyValue = form.watch("frequency");
+
   useEffect(() => {
     if (state.error) {
       toast({
@@ -40,8 +68,9 @@ export default function AiGeneratorSection() {
         title: "¡Éxito!",
         description: "Tu plan de entrenamiento se ha generado a continuación.",
       });
+      form.reset();
     }
-  }, [state, toast]);
+  }, [state, toast, form]);
 
   return (
     <section className="py-16 sm:py-24 bg-background">
@@ -66,70 +95,131 @@ export default function AiGeneratorSection() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form action={formAction} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="fitnessGoal">Meta Fitness</Label>
-                    <Select name="fitnessGoal" defaultValue="perder-peso">
-                      <SelectTrigger id="fitnessGoal">
-                        <SelectValue placeholder="Selecciona una meta" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="perder-peso">Perder Peso</SelectItem>
-                        <SelectItem value="ganar-musculo">Ganar Músculo</SelectItem>
-                        <SelectItem value="mejorar-resistencia">Mejorar Resistencia</SelectItem>
-                        <SelectItem value="mantenerse-activo">Mantenerse Activo/a</SelectItem>
-                      </SelectContent>
-                    </Select>
+              <Form {...form}>
+                <form action={formAction} className="space-y-6">
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField
+                      control={form.control}
+                      name="fitnessGoal"
+                      render={({ field }) => (
+                        <FormItem>
+                          <Label htmlFor="fitnessGoal">Meta Fitness</Label>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger id="fitnessGoal">
+                                <SelectValue placeholder="Selecciona una meta" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="perder-peso">Perder Peso</SelectItem>
+                              <SelectItem value="ganar-musculo">Ganar Músculo</SelectItem>
+                              <SelectItem value="mejorar-resistencia">Mejorar Resistencia</SelectItem>
+                              <SelectItem value="mantenerse-activo">Mantenerse Activo/a</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                     <FormField
+                      control={form.control}
+                      name="experienceLevel"
+                      render={({ field }) => (
+                        <FormItem>
+                           <Label htmlFor="experienceLevel">Nivel de Experiencia</Label>
+                           <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger id="experienceLevel">
+                                  <SelectValue placeholder="Selecciona tu nivel" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="principiante">Principiante</SelectItem>
+                                <SelectItem value="intermedio">Intermedio</SelectItem>
+                                <SelectItem value="avanzado">Avanzado</SelectItem>
+                              </SelectContent>
+                           </Select>
+                           <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="experienceLevel">Nivel de Experiencia</Label>
-                    <Select name="experienceLevel" defaultValue="principiante">
-                      <SelectTrigger id="experienceLevel">
-                        <SelectValue placeholder="Selecciona tu nivel" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="principiante">Principiante</SelectItem>
-                        <SelectItem value="intermedio">Intermedio</SelectItem>
-                        <SelectItem value="avanzado">Avanzado</SelectItem>
-                      </SelectContent>
-                    </Select>
+
+                   <FormField
+                      control={form.control}
+                      name="equipment"
+                      render={({ field }) => (
+                        <FormItem>
+                          <Label htmlFor="equipment">Equipo Disponible</Label>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                             <FormControl>
+                               <SelectTrigger id="equipment">
+                                 <SelectValue placeholder="Selecciona tu equipo" />
+                               </SelectTrigger>
+                             </FormControl>
+                             <SelectContent>
+                               <SelectItem value="solo-cuerpo">Solo Peso Corporal (Bodyweight only)</SelectItem>
+                               <SelectItem value="basico">Básico (Mancuernas, bandas)</SelectItem>
+                               <SelectItem value="gimnasio">Gimnasio Completo</SelectItem>
+                             </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <FormField
+                        control={form.control}
+                        name="duration"
+                        render={({ field }) => (
+                            <FormItem>
+                                <Label htmlFor="duration" className="flex justify-between">
+                                    <span>Duración (minutos)</span>
+                                    <span className="text-primary font-bold">{durationValue} min</span>
+                                </Label>
+                                <FormControl>
+                                    <Slider 
+                                        name={field.name}
+                                        defaultValue={[field.value]} 
+                                        min={15} 
+                                        max={90} 
+                                        step={5} 
+                                        onValueChange={(vals) => field.onChange(vals[0])}
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                        />
+                      <FormField
+                        control={form.control}
+                        name="frequency"
+                        render={({ field }) => (
+                            <FormItem>
+                                <Label htmlFor="frequency" className="flex justify-between">
+                                    <span>Frecuencia (por semana)</span>
+                                    <span className="text-primary font-bold">{frequencyValue} veces</span>
+                                </Label>
+                                <FormControl>
+                                    <Slider 
+                                        name={field.name}
+                                        defaultValue={[field.value]} 
+                                        min={1} 
+                                        max={7} 
+                                        step={1}
+                                        onValueChange={(vals) => field.onChange(vals[0])}
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                        />
                   </div>
-                </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="equipment">Equipo Disponible</Label>
-                  <Select name="equipment" defaultValue="solo-cuerpo">
-                    <SelectTrigger id="equipment">
-                      <SelectValue placeholder="Selecciona tu equipo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="solo-cuerpo">Solo Peso Corporal (Bodyweight only)</SelectItem>
-                      <SelectItem value="basico">Básico (Mancuernas, bandas)</SelectItem>
-                      <SelectItem value="gimnasio">Gimnasio Completo</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                        <Label htmlFor="duration" className="flex justify-between">
-                            <span>Duración (minutos)</span>
-                            <span className="text-primary font-bold">45 min</span>
-                        </Label>
-                        <Slider name="duration" defaultValue={[45]} min={15} max={90} step={5} />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="frequency" className="flex justify-between">
-                            <span>Frecuencia (por semana)</span>
-                             <span className="text-primary font-bold">3 veces</span>
-                        </Label>
-                        <Slider name="frequency" defaultValue={[3]} min={1} max={7} step={1} />
-                    </div>
-                </div>
-
-                <SubmitButton />
-              </form>
+                  <SubmitButton />
+                </form>
+              </Form>
             </CardContent>
           </Card>
 
