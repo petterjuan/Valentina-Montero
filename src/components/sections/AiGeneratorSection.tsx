@@ -17,11 +17,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 
 const aiGeneratorSchema = z.object({
-  fitnessGoal: z.string({ required_error: "Por favor, selecciona una meta." }).default("perder-peso"),
-  experienceLevel: z.string({ required_error: "Por favor, selecciona tu nivel." }).default("principiante"),
-  equipment: z.string({ required_error: "Por favor, selecciona tu equipo." }).default("solo-cuerpo"),
-  duration: z.number().default(45),
-  frequency: z.number().default(3),
+  fitnessGoal: z.string({ required_error: "Por favor, selecciona una meta." }),
+  experienceLevel: z.string({ required_error: "Por favor, selecciona tu nivel." }),
+  equipment: z.string({ required_error: "Por favor, selecciona tu equipo." }),
+  duration: z.number(),
+  frequency: z.number(),
 });
 
 type AiGeneratorFormData = z.infer<typeof aiGeneratorSchema>;
@@ -72,10 +72,10 @@ export default function AiGeneratorSection() {
     }
   }, [state, toast, form]);
   
-  const onSubmit = (data: FormData) => {
+  const onSubmit = (data: AiGeneratorFormData) => {
     const formData = new FormData();
-    Object.entries(data).forEach(([key, value]) => {
-      formData.append(key, String(value));
+    (Object.keys(data) as (keyof AiGeneratorFormData)[]).forEach((key) => {
+        formData.append(key, String(data[key]));
     });
     formAction(formData);
   };
@@ -105,7 +105,7 @@ export default function AiGeneratorSection() {
             </CardHeader>
             <CardContent>
               <Form {...form}>
-                <form action={formAction} onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <FormField
                       control={form.control}
