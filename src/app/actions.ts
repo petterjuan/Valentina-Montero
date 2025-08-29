@@ -1,6 +1,6 @@
 "use server";
 
-import { generatePersonalizedWorkout } from "@/ai/flows/generate-personalized-workout";
+import { generatePersonalizedWorkout, GeneratePersonalizedWorkoutInput } from "@/ai/flows/generate-personalized-workout";
 import { z } from "zod";
 
 const aiGeneratorSchema = z.object({
@@ -17,23 +17,7 @@ export type AiGeneratorFormState = {
   inputs?: z.infer<typeof aiGeneratorSchema>;
 };
 
-export async function handleAiGeneration(prevState: AiGeneratorFormState, formData: FormData): Promise<AiGeneratorFormState> {
-  const validatedFields = aiGeneratorSchema.safeParse({
-    fitnessGoal: formData.get("fitnessGoal"),
-    experienceLevel: formData.get("experienceLevel"),
-    equipment: formData.get("equipment"),
-    duration: formData.get("duration"),
-    frequency: formData.get("frequency"),
-  });
-  
-  if (!validatedFields.success) {
-    return {
-      error: "Por favor, completa todos los campos para generar tu plan.",
-    };
-  }
-
-  const input = validatedFields.data;
-  
+export async function handleAiGeneration(prevState: AiGeneratorFormState, input: GeneratePersonalizedWorkoutInput): Promise<AiGeneratorFormState> {
   try {
     const result = await generatePersonalizedWorkout(input);
     return { data: result.workoutPlan, inputs: input };
