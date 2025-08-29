@@ -17,7 +17,7 @@ export type AiGeneratorFormState = {
   inputs?: z.infer<typeof aiGeneratorSchema>;
 };
 
-export async function handleAiGeneration(prevState: AiGeneratorFormState, input: GeneratePersonalizedWorkoutInput): Promise<AiGeneratorFormState> {
+export async function handleAiGeneration(input: GeneratePersonalizedWorkoutInput): Promise<AiGeneratorFormState> {
   try {
     const result = await generatePersonalizedWorkout(input);
     return { data: result.workoutPlan, inputs: input };

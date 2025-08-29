@@ -59,7 +59,7 @@ export default function AiGeneratorSection() {
   }, [state, toast]);
   
   const onSubmit = async (data: AiGeneratorFormData) => {
-    const result = await handleAiGeneration(state, data);
+    const result = await handleAiGeneration(data);
     setState(result);
   };
 
