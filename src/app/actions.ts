@@ -7,8 +7,8 @@ const aiGeneratorSchema = z.object({
   fitnessGoal: z.string(),
   experienceLevel: z.string(),
   equipment: z.string(),
-  duration: z.coerce.number(),
-  frequency: z.coerce.number(),
+  duration: z.number(),
+  frequency: z.number(),
 });
 
 export type AiGeneratorFormState = {
