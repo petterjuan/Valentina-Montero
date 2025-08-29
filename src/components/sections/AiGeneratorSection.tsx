@@ -1,6 +1,5 @@
 "use client";
 
-import { useFormStatus } from "react-dom";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { handleAiGeneration, type AiGeneratorFormState } from "@/app/actions";
@@ -24,16 +23,6 @@ const aiGeneratorSchema = z.object({
 });
 
 type AiGeneratorFormData = z.infer<typeof aiGeneratorSchema>;
-
-function SubmitButton() {
-  const { pending } = useFormStatus();
-  return (
-    <Button type="submit" disabled={pending} className="w-full font-bold">
-      <Wand2 className="mr-2 h-4 w-4" />
-      {pending ? "Generando..." : "Generar Mi Plan"}
-    </Button>
-  );
-}
 
 export default function AiGeneratorSection() {
   const [state, setState] = useState<AiGeneratorFormState>({});
