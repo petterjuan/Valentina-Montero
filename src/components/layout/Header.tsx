@@ -8,9 +8,9 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
-  { href: "#programs", label: "Programs" },
-  { href: "#about", label: "About" },
-  { href: "#testimonials", label: "Testimonials" },
+  { href: "#programs", label: "Programas" },
+  { href: "#about", label: "Sobre Mí" },
+  { href: "#testimonials", label: "Testimonios" },
   { href: "#blog", label: "Blog" },
 ];
 
@@ -48,7 +48,7 @@ export default function Header() {
             </Link>
           ))}
           <Button asChild variant="outline" size="sm">
-            <Link href="#">Shopify Store</Link>
+            <Link href="#">Mi Tienda</Link>
           </Button>
         </nav>
         <Sheet>
@@ -75,7 +75,7 @@ export default function Header() {
                   </Link>
                 ))}
                 <Button asChild variant="default" className="w-full">
-                  <Link href="#">Shopify Store</Link>
+                  <Link href="#">Mi Tienda</Link>
                 </Button>
               </nav>
             </div>

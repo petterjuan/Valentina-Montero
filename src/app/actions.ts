@@ -1,11 +1,10 @@
 "use server";
 
-import { generateInstagramCaption } from "@/ai/flows/generate-instagram-caption";
 import { generatePersonalizedWorkout } from "@/ai/flows/generate-personalized-workout";
 import { z } from "zod";
 
 const aiGeneratorSchema = z.object({
-  prompt: z.string().min(5, "Prompt must be at least 5 characters long."),
+  prompt: z.string().min(5, "La descripción debe tener al menos 5 caracteres."),
 });
 
 type AiState = {
@@ -24,18 +23,13 @@ export async function handleAiGeneration(prevState: AiState, formData: FormData)
     };
   }
 
-  const prompt = validatedFields.data.prompt.toLowerCase();
+  const prompt = validatedFields.data.prompt;
 
   try {
-    if (prompt.includes("caption") || prompt.includes("ig") || prompt.includes("instagram")) {
-      const result = await generateInstagramCaption({ topic: prompt });
-      return { data: result.caption };
-    } else {
-      const result = await generatePersonalizedWorkout({ fitnessGoal: prompt });
-      return { data: result.workoutPlan };
-    }
+    const result = await generatePersonalizedWorkout({ fitnessGoal: prompt });
+    return { data: result.workoutPlan };
   } catch (e) {
     console.error(e);
-    return { error: "Failed to generate content. Please try again later." };
+    return { error: "No se pudo generar el contenido. Por favor, inténtalo de nuevo más tarde." };
   }
 }

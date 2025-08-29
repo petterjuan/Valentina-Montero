@@ -1,11 +1,11 @@
 'use server';
 
 /**
- * @fileOverview An AI agent that generates personalized workout plans based on user goals.
+ * @fileOverview Un agente que genera planes de entrenamiento personalizados basados en los objetivos del usuario.
  *
- * - generatePersonalizedWorkout - A function that generates a personalized workout plan.
- * - GeneratePersonalizedWorkoutInput - The input type for the generatePersonalizedWorkout function.
- * - GeneratePersonalizedWorkoutOutput - The return type for the generatePersonalizedWorkout function.
+ * - generatePersonalizedWorkout - Una función que genera un plan de entrenamiento personalizado.
+ * - GeneratePersonalizedWorkoutInput - El tipo de entrada para la función generatePersonalizedWorkout.
+ * - GeneratePersonalizedWorkoutOutput - El tipo de retorno para la función generatePersonalizedWorkout.
  */
 
 import {ai} from '@/ai/genkit';
@@ -14,14 +14,14 @@ import {z} from 'genkit';
 const GeneratePersonalizedWorkoutInputSchema = z.object({
   fitnessGoal: z
     .string()
-    .describe('The user specified fitness goal (e.g., lose weight, gain muscle).'),
+    .describe('El objetivo de fitness especificado por el usuario (p. ej., perder peso, ganar músculo).'),
 });
 export type GeneratePersonalizedWorkoutInput = z.infer<typeof GeneratePersonalizedWorkoutInputSchema>;
 
 const GeneratePersonalizedWorkoutOutputSchema = z.object({
   workoutPlan: z
     .string()
-    .describe('A personalized workout plan based on the user fitness goal.'),
+    .describe('Un plan de entrenamiento personalizado basado en el objetivo de fitness del usuario.'),
 });
 export type GeneratePersonalizedWorkoutOutput = z.infer<typeof GeneratePersonalizedWorkoutOutputSchema>;
 
@@ -35,10 +35,10 @@ const generatePersonalizedWorkoutPrompt = ai.definePrompt({
   name: 'generatePersonalizedWorkoutPrompt',
   input: {schema: GeneratePersonalizedWorkoutInputSchema},
   output: {schema: GeneratePersonalizedWorkoutOutputSchema},
-  prompt: `You are a personal trainer who specializes in creating workout plans.
+  prompt: `Eres un entrenador personal que se especializa en crear planes de entrenamiento.
 
-  Based on the user's fitness goal, create a workout plan that will help them achieve their goal.
-  Fitness Goal: {{{fitnessGoal}}}`,
+  Basado en el objetivo de fitness del usuario, crea un plan de entrenamiento que lo ayudará a alcanzar su meta. El resultado debe estar en español.
+  Objetivo de Fitness: {{{fitnessGoal}}}`,
 });
 
 const generatePersonalizedWorkoutFlow = ai.defineFlow(

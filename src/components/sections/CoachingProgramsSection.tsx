@@ -7,31 +7,43 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Check } from "lucide-react";
+import { Check, FileText } from "lucide-react";
 
 const programs = [
   {
-    title: "6-Week Coaching Plan",
+    title: "Plan de Coaching de 6 Semanas",
     price: 167,
     features: [
-      "Personalized workout plan",
-      "Bi-weekly progress check-ins",
-      "Nutrition & macro guidance",
-      "24/7 Q&A support",
-      "Mindset & motivation focus",
+      "Plan de entrenamiento personalizado",
+      "Seguimiento de progreso quincenal",
+      "Guía de nutrición y macros",
+      "Soporte 24/7 para preguntas",
+      "Enfoque en mentalidad y motivación",
     ],
     shopifyLink: "#",
   },
   {
-    title: "12-Week Coaching Plan",
+    title: "Plan de Coaching de 12 Semanas",
     price: 267,
     isPopular: true,
     features: [
-      "All 6-week plan features",
-      "+ Mini Guide on Supplements & Vitamins",
-      "Advanced progress tracking",
-      "Customized meal suggestions",
-      "End-of-plan strategy session",
+      "Todo lo del plan de 6 semanas",
+      "+ Mini Guía de Suplementos y Vitaminas",
+      "Seguimiento avanzado del progreso",
+      "Sugerencias de comidas personalizadas",
+      "Sesión de estrategia al final del plan",
+    ],
+    shopifyLink: "#",
+  },
+  {
+    title: 'PDF "Muscle Bites"',
+    price: 25,
+    isPopular: false,
+    isDigital: true,
+    features: [
+        "4 Tips para Combinar Snacks en el día",
+        "10 Recetas (Pre-Entrenamiento)",
+        "5 Recetas (Post-Entrenamiento)",
     ],
     shopifyLink: "#",
   },
@@ -43,14 +55,14 @@ export default function CoachingProgramsSection() {
       <div className="container mx-auto px-4 md:px-6">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl font-headline">
-            Ready to Commit?
+            ¿Lista para Comprometerte?
           </h2>
           <p className="mt-4 text-lg text-muted-foreground">
-            Choose the plan that best fits your goals. Let's start this
-            journey together.
+            Elige el plan que mejor se adapte a tus metas. Empecemos este
+            viaje juntas.
           </p>
         </div>
-        <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:max-w-4xl lg:mx-auto">
+        <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3 lg:max-w-7xl lg:mx-auto">
           {programs.map((program) => (
             <Card
               key={program.title}
@@ -61,20 +73,24 @@ export default function CoachingProgramsSection() {
               <CardHeader className="items-center pb-4">
                 {program.isPopular && (
                   <div className="mb-2 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">
-                    MOST POPULAR
+                    MÁS POPULAR
                   </div>
                 )}
-                <CardTitle className="text-2xl font-headline">{program.title}</CardTitle>
+                <CardTitle className="text-2xl font-headline text-center">{program.title}</CardTitle>
                 <div className="flex items-baseline gap-1">
                   <span className="text-4xl font-bold tracking-tight">${program.price}</span>
-                  <span className="text-sm font-semibold text-muted-foreground">/ plan</span>
+                  {!program.isDigital && <span className="text-sm font-semibold text-muted-foreground">/ plan</span>}
                 </div>
               </CardHeader>
               <CardContent className="flex-1">
                 <ul className="space-y-3 text-sm">
                   {program.features.map((feature, index) => (
                     <li key={index} className="flex items-start">
-                      <Check className="mr-2 mt-1 h-4 w-4 shrink-0 text-primary" />
+                      {program.isDigital ? (
+                        <FileText className="mr-2 mt-1 h-4 w-4 shrink-0 text-primary" />
+                      ) : (
+                        <Check className="mr-2 mt-1 h-4 w-4 shrink-0 text-primary" />
+                      )}
                       <span>{feature}</span>
                     </li>
                   ))}
@@ -82,7 +98,7 @@ export default function CoachingProgramsSection() {
               </CardContent>
               <CardFooter>
                 <Button asChild className="w-full font-bold">
-                  <a href={program.shopifyLink}>Choose Plan</a>
+                  <a href={program.shopifyLink}>{program.isDigital ? "Comprar PDF" : "Elegir Plan"}</a>
                 </Button>
               </CardFooter>
             </Card>

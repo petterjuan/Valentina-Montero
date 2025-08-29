@@ -12,22 +12,22 @@ import { Button } from "@/components/ui/button";
 
 const blogPosts = [
   {
-    title: "5 Common Fitness Myths Debunked",
-    excerpt: "Stop letting these common misconceptions hold you back from achieving your fitness goals. We're setting the record straight.",
+    title: "5 Mitos Comunes del Fitness Desmentidos",
+    excerpt: "Deja que estas ideas falsas te impidan alcanzar tus metas. Aclaramos las cosas de una vez por todas.",
     imageUrl: "https://picsum.photos/600/400?random=5",
     aiHint: "gym equipment",
     slug: "#",
   },
   {
-    title: "The Ultimate Guide to Meal Prepping",
-    excerpt: "Save time, eat healthier, and stay on track with your nutrition. Our step-by-step guide makes meal prep easy and enjoyable.",
+    title: "La Guía Definitiva para Preparar Comidas",
+    excerpt: "Ahorra tiempo, come más sano y mantén tu nutrición bajo control. Nuestra guía paso a paso hace que la preparación de comidas sea fácil y agradable.",
     imageUrl: "https://picsum.photos/600/400?random=6",
     aiHint: "healthy food",
     slug: "#",
   },
   {
-    title: "How to Stay Motivated on Your Fitness Journey",
-    excerpt: "Motivation comes and goes. Learn the secrets to building discipline and staying consistent even when you don't feel like it.",
+    title: "Cómo Mantener la Motivación en tu Viaje Fitness",
+    excerpt: "La motivación va y viene. Aprende los secretos para desarrollar la disciplina y ser constante incluso cuando no tienes ganas.",
     imageUrl: "https://picsum.photos/600/400?random=7",
     aiHint: "person running",
     slug: "#",
@@ -40,10 +40,10 @@ export default function BlogSection() {
       <div className="container mx-auto px-4 md:px-6">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl font-headline">
-            From the Blog
+            Desde el Blog
           </h2>
           <p className="mt-4 text-lg text-muted-foreground">
-            Get the latest tips, tricks, and insights on fitness, nutrition, and mindset.
+            Obtén los últimos consejos, trucos e ideas sobre fitness, nutrición y mentalidad.
           </p>
         </div>
         <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
@@ -66,7 +66,7 @@ export default function BlogSection() {
               </CardContent>
               <CardFooter>
                 <Button asChild variant="secondary" className="w-full">
-                  <Link href={post.slug}>Read More</Link>
+                  <Link href={post.slug}>Leer Más</Link>
                 </Button>
               </CardFooter>
             </Card>

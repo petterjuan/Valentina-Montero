@@ -23,11 +23,11 @@ export default function Footer() {
       <div className="container mx-auto px-4 py-8 md:px-6">
         <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} VM Fitness Hub. All rights reserved.
+            © {new Date().getFullYear()} VM Fitness Hub. Todos los derechos reservados.
           </p>
           <div className="flex items-center gap-4">
             <Link href="#" className="text-sm font-medium hover:text-primary">
-              Shopify Store
+              Mi Tienda
             </Link>
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="icon" asChild>

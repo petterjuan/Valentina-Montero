@@ -9,16 +9,16 @@ export default function MeetTheCoachSection() {
         <div className="grid grid-cols-1 items-center gap-12 md:grid-cols-2">
           <div className="order-2 md:order-1">
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl font-headline">
-              Meet Your Coach, Valentina Montero
+              Conoce a tu Coach, Valentina Montero
             </h2>
             <p className="mt-6 text-muted-foreground">
-              With over a decade of experience in personal training and nutrition science, I've dedicated my career to helping people unlock their true potential. My philosophy goes beyond physical transformation; it's about building sustainable habits, fostering a resilient mindset, and creating a life you love in a body you feel proud of.
+              Con más de una década de experiencia en entrenamiento personal y ciencia de la nutrición, he dedicado mi carrera a ayudar a las personas a desbloquear su verdadero potencial. Mi filosofía va más allá de la transformación física; se trata de construir hábitos sostenibles, fomentar una mentalidad resiliente y crear una vida que ames en un cuerpo del que te sientas orgullosa.
             </p>
             <p className="mt-4 text-muted-foreground">
-              Whether you're just starting out or looking to break through a plateau, I provide the expertise, support, and accountability you need to succeed.
+              Ya sea que estés empezando o buscando superar un estancamiento, te proporciono la experiencia, el apoyo y la responsabilidad que necesitas para tener éxito.
             </p>
             <Button asChild size="lg" className="mt-8 font-bold">
-              <Link href="#programs">I’m Ready!</Link>
+              <Link href="#programs">¡Estoy Lista!</Link>
             </Button>
           </div>
           <div className="order-1 md:order-2">

@@ -8,7 +8,7 @@ import Footer from "@/components/layout/Footer";
 
 export const metadata: Metadata = {
   title: "VM Fitness Hub",
-  description: "Fitness & Wellness Coaching by Valentina Montero",
+  description: "Coaching de Fitness y Bienestar por Valentina Montero",
 };
 
 export default function RootLayout({
@@ -17,7 +17,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="es" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />

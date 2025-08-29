@@ -17,7 +17,7 @@ import { useState } from "react";
 import { CheckCircle } from "lucide-react";
 
 const FormSchema = z.object({
-  email: z.string().email({ message: "Please enter a valid email." }),
+  email: z.string().email({ message: "Por favor, introduce un email válido." }),
 });
 
 type FormData = z.infer<typeof FormSchema>;
@@ -34,25 +34,21 @@ export default function LeadMagnetSection() {
   });
 
   const onSubmit: SubmitHandler<FormData> = async (data) => {
-    // Mock Firebase Auth/Firestore integration
-    console.log("Submitting to Firebase:", data.email);
+    console.log("Enviando email:", data.email);
     try {
-      // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
-      // In a real app, you would handle Firebase logic here.
-      // e.g., createUserWithEmailAndPassword, then add user to Firestore 'leads' collection.
       
       setIsSubmitted(true);
       toast({
-        title: "Success!",
-        description: "Your guide is on its way to your inbox.",
+        title: "¡Éxito!",
+        description: "Tu guía está en camino a tu bandeja de entrada.",
       });
       form.reset();
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Uh oh! Something went wrong.",
-        description: "There was a problem with your request. Please try again.",
+        title: "¡Uy! Algo salió mal.",
+        description: "Hubo un problema con tu solicitud. Por favor, inténtalo de nuevo.",
       });
     }
   };
@@ -69,7 +65,7 @@ export default function LeadMagnetSection() {
                     Tu guía está en camino. Revisa tu bandeja de entrada y prepárate para transformar tu rutina.
                 </p>
                 <Button onClick={() => setIsSubmitted(false)} variant="outline" className="mt-4">
-                    Download another guide
+                    Descargar otra guía
                 </Button>
             </div>
           ) : (
