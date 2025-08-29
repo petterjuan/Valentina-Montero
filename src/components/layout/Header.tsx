@@ -35,7 +35,7 @@ export default function Header() {
       <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
         <Link href="/" className="flex items-center gap-2 font-black text-lg">
           <Dumbbell className="h-6 w-6 text-primary" />
-          <span className="font-headline">VM FITNESS HUB</span>
+          <span className="font-headline">VALENTINA MONTERO</span>
         </Link>
         <nav className="hidden items-center gap-6 md:flex">
           {navLinks.map((link) => (
@@ -62,7 +62,7 @@ export default function Header() {
             <div className="grid gap-6 p-6">
               <Link href="/" className="flex items-center gap-2 font-bold">
                 <Dumbbell className="h-6 w-6 text-primary" />
-                <span className="font-headline">VM FITNESS HUB</span>
+                <span className="font-headline">VALENTINA MONTERO</span>
               </Link>
               <nav className="grid gap-4">
                 {navLinks.map((link) => (
