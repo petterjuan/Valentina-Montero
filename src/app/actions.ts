@@ -11,13 +11,13 @@ const aiGeneratorSchema = z.object({
   frequency: z.number(),
 });
 
-type AiState = {
+export type AiGeneratorFormState = {
   data?: string;
   error?: string;
   inputs?: z.infer<typeof aiGeneratorSchema>;
 };
 
-export async function handleAiGeneration(prevState: AiState, formData: FormData): Promise<AiState> {
+export async function handleAiGeneration(prevState: AiGeneratorFormState, formData: FormData): Promise<AiGeneratorFormState> {
   const validatedFields = aiGeneratorSchema.safeParse({
     fitnessGoal: formData.get("fitnessGoal"),
     experienceLevel: formData.get("experienceLevel"),
@@ -34,10 +34,8 @@ export async function handleAiGeneration(prevState: AiState, formData: FormData)
 
   const input = validatedFields.data;
   
-  const prompt = `Objetivo: ${input.fitnessGoal}, Nivel: ${input.experienceLevel}, Equipo: ${input.equipment}, Duración: ${input.duration} min, Frecuencia: ${input.frequency} veces/semana`;
-
   try {
-    const result = await generatePersonalizedWorkout({ fitnessGoal: prompt });
+    const result = await generatePersonalizedWorkout(input);
     return { data: result.workoutPlan, inputs: input };
   } catch (e) {
     console.error(e);

@@ -4,8 +4,8 @@ import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 import { Controller, useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
-import { handleAiGeneration } from "@/app/actions";
-import { useEffect, useState } from "react";
+import { handleAiGeneration, type AiGeneratorFormState } from "@/app/actions";
+import { useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Wand2, AlertTriangle, Dumbbell, Zap, Calendar, Clock } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,9 +17,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 
 const aiGeneratorSchema = z.object({
-  fitnessGoal: z.string().default("perder-peso"),
-  experienceLevel: z.string().default("principiante"),
-  equipment: z.string().default("solo-cuerpo"),
+  fitnessGoal: z.string({ required_error: "Por favor, selecciona una meta." }).default("perder-peso"),
+  experienceLevel: z.string({ required_error: "Por favor, selecciona tu nivel." }).default("principiante"),
+  equipment: z.string({ required_error: "Por favor, selecciona tu equipo." }).default("solo-cuerpo"),
   duration: z.number().default(45),
   frequency: z.number().default(3),
 });
@@ -37,7 +37,7 @@ function SubmitButton() {
 }
 
 export default function AiGeneratorSection() {
-  const initialState = { error: "", data: "" };
+  const initialState: AiGeneratorFormState = { error: "", data: undefined, inputs: undefined };
   const [state, formAction] = useActionState(handleAiGeneration, initialState);
   const { toast } = useToast();
 
@@ -68,7 +68,7 @@ export default function AiGeneratorSection() {
         title: "¡Éxito!",
         description: "Tu plan de entrenamiento se ha generado a continuación.",
       });
-      form.reset();
+      // Do not reset the form so the user can see their inputs reflected in the result card.
     }
   }, [state, toast, form]);
 
@@ -103,10 +103,10 @@ export default function AiGeneratorSection() {
                       name="fitnessGoal"
                       render={({ field }) => (
                         <FormItem>
-                          <Label htmlFor="fitnessGoal">Meta Fitness</Label>
+                          <Label>Meta Fitness</Label>
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
-                              <SelectTrigger id="fitnessGoal">
+                              <SelectTrigger>
                                 <SelectValue placeholder="Selecciona una meta" />
                               </SelectTrigger>
                             </FormControl>
@@ -126,10 +126,10 @@ export default function AiGeneratorSection() {
                       name="experienceLevel"
                       render={({ field }) => (
                         <FormItem>
-                           <Label htmlFor="experienceLevel">Nivel de Experiencia</Label>
+                           <Label>Nivel de Experiencia</Label>
                            <Select onValueChange={field.onChange} defaultValue={field.value}>
                               <FormControl>
-                                <SelectTrigger id="experienceLevel">
+                                <SelectTrigger>
                                   <SelectValue placeholder="Selecciona tu nivel" />
                                 </SelectTrigger>
                               </FormControl>
@@ -150,15 +150,15 @@ export default function AiGeneratorSection() {
                       name="equipment"
                       render={({ field }) => (
                         <FormItem>
-                          <Label htmlFor="equipment">Equipo Disponible</Label>
+                          <Label>Equipo Disponible</Label>
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
                              <FormControl>
-                               <SelectTrigger id="equipment">
+                               <SelectTrigger>
                                  <SelectValue placeholder="Selecciona tu equipo" />
                                </SelectTrigger>
                              </FormControl>
                              <SelectContent>
-                               <SelectItem value="solo-cuerpo">Solo Peso Corporal (Bodyweight only)</SelectItem>
+                               <SelectItem value="solo-cuerpo">Solo Peso Corporal</SelectItem>
                                <SelectItem value="basico">Básico (Mancuernas, bandas)</SelectItem>
                                <SelectItem value="gimnasio">Gimnasio Completo</SelectItem>
                              </SelectContent>
@@ -174,7 +174,7 @@ export default function AiGeneratorSection() {
                         name="duration"
                         render={({ field }) => (
                             <FormItem>
-                                <Label htmlFor="duration" className="flex justify-between">
+                                <Label className="flex justify-between">
                                     <span>Duración (minutos)</span>
                                     <span className="text-primary font-bold">{durationValue} min</span>
                                 </Label>
@@ -197,7 +197,7 @@ export default function AiGeneratorSection() {
                         name="frequency"
                         render={({ field }) => (
                             <FormItem>
-                                <Label htmlFor="frequency" className="flex justify-between">
+                                <Label className="flex justify-between">
                                     <span>Frecuencia (por semana)</span>
                                     <span className="text-primary font-bold">{frequencyValue} veces</span>
                                 </Label>
@@ -223,7 +223,7 @@ export default function AiGeneratorSection() {
             </CardContent>
           </Card>
 
-          {state.error && (
+          {state.error && !state.data && (
             <Card className="mt-6 border-destructive bg-destructive/10">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
@@ -235,13 +235,15 @@ export default function AiGeneratorSection() {
           )}
           {state.data && (
             <Card className="mt-6">
-              <CardContent className="p-6">
-                <div className="flex items-center gap-3 mb-4">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-3">
                   <Wand2 className="h-6 w-6 text-primary" />
-                  <h3 className="text-lg font-semibold">Tu Plan de Entrenamiento Personalizado</h3>
-                </div>
+                  Tu Plan de Entrenamiento Personalizado
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6 text-sm">
-                    <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
+                    <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 capitalize">
                         <Zap className="h-5 w-5 text-primary" />
                         <div>
                             <p className="font-semibold">Experiencia</p>
@@ -262,16 +264,18 @@ export default function AiGeneratorSection() {
                             <p className="text-muted-foreground">{state.inputs?.frequency}/semana</p>
                         </div>
                     </div>
-                     <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
+                     <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 capitalize">
                         <Dumbbell className="h-5 w-5 text-primary" />
                         <div>
                             <p className="font-semibold">Equipo</p>
-                            <p className="text-muted-foreground">{state.inputs?.equipment}</p>
+                            <p className="text-muted-foreground">{state.inputs?.equipment?.replace(/-/g, ' ')}</p>
                         </div>
                     </div>
                 </div>
 
-                <p className="whitespace-pre-wrap text-sm text-muted-foreground">{state.data}</p>
+                <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap text-muted-foreground">
+                  {state.data}
+                </div>
               </CardContent>
             </Card>
           )}

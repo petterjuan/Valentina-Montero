@@ -12,9 +12,11 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const GeneratePersonalizedWorkoutInputSchema = z.object({
-  fitnessGoal: z
-    .string()
-    .describe('El objetivo de fitness especificado por el usuario (p. ej., perder peso, ganar músculo).'),
+  fitnessGoal: z.string().describe('El objetivo de fitness especificado por el usuario (p. ej., perder peso, ganar músculo).'),
+  experienceLevel: z.string().describe('El nivel de experiencia del usuario (principiante, intermedio, avanzado).'),
+  equipment: z.string().describe('El equipo de ejercicio disponible para el usuario.'),
+  duration: z.number().describe('La duración de la sesión de entrenamiento en minutos.'),
+  frequency: z.number().describe('La frecuencia con la que el usuario planea hacer ejercicio por semana.'),
 });
 export type GeneratePersonalizedWorkoutInput = z.infer<typeof GeneratePersonalizedWorkoutInputSchema>;
 
@@ -37,8 +39,14 @@ const generatePersonalizedWorkoutPrompt = ai.definePrompt({
   output: {schema: GeneratePersonalizedWorkoutOutputSchema},
   prompt: `Eres un entrenador personal que se especializa en crear planes de entrenamiento.
 
-  Basado en el objetivo de fitness del usuario, crea un plan de entrenamiento que lo ayudará a alcanzar su meta. El resultado debe estar en español.
-  Objetivo de Fitness: {{{fitnessGoal}}}`,
+  Basado en los siguientes detalles del usuario, crea un plan de entrenamiento que lo ayudará a alcanzar su meta. El resultado debe estar en español.
+
+  - Objetivo de Fitness: {{{fitnessGoal}}}
+  - Nivel de Experiencia: {{{experienceLevel}}}
+  - Equipo Disponible: {{{equipment}}}
+  - Duración por Sesión: {{{duration}}} minutos
+  - Frecuencia Semanal: {{{frequency}}} veces por semana
+  `,
 });
 
 const generatePersonalizedWorkoutFlow = ai.defineFlow(
