@@ -7,8 +7,8 @@ const aiGeneratorSchema = z.object({
   fitnessGoal: z.string(),
   experienceLevel: z.string(),
   equipment: z.string(),
-  duration: z.number(),
-  frequency: z.number(),
+  duration: z.coerce.number(),
+  frequency: z.coerce.number(),
 });
 
 export type AiGeneratorFormState = {
@@ -22,8 +22,8 @@ export async function handleAiGeneration(prevState: AiGeneratorFormState, formDa
     fitnessGoal: formData.get("fitnessGoal"),
     experienceLevel: formData.get("experienceLevel"),
     equipment: formData.get("equipment"),
-    duration: Number(formData.get("duration")),
-    frequency: Number(formData.get("frequency")),
+    duration: formData.get("duration"),
+    frequency: formData.get("frequency"),
   });
   
   if (!validatedFields.success) {
