@@ -71,6 +71,15 @@ export default function AiGeneratorSection() {
       // Do not reset the form so the user can see their inputs reflected in the result card.
     }
   }, [state, toast, form]);
+  
+  const onSubmit = (data: FormData) => {
+    const formData = new FormData();
+    Object.entries(data).forEach(([key, value]) => {
+      formData.append(key, String(value));
+    });
+    formAction(formData);
+  };
+
 
   return (
     <section className="py-16 sm:py-24 bg-background">
@@ -96,7 +105,7 @@ export default function AiGeneratorSection() {
             </CardHeader>
             <CardContent>
               <Form {...form}>
-                <form action={formAction} className="space-y-6">
+                <form action={formAction} onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <FormField
                       control={form.control}
