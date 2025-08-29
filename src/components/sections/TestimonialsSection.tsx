@@ -15,26 +15,26 @@ const testimonials = [
   {
     name: "Maria G.",
     story: "¡Valentina cambió mi vida! Perdí 9 kilos y gané muchísima confianza. Su plan de 12 semanas fue duro pero increíblemente gratificante.",
-    image: "https://picsum.photos/100/100?random=1",
+    image: "https://picsum.photos/100/100?random=13",
     aiHint: "happy woman",
-  },
-  {
-    name: "Carlos S.",
-    story: "Nunca pensé que disfrutaría hacer ejercicio. El plan personalizado me mantuvo enganchado y nunca me he sentido más fuerte. ¡Recomiendo el plan de 6 semanas!",
-    image: "https://picsum.photos/100/100?random=2",
-    aiHint: "smiling man",
   },
   {
     name: "Ana P.",
     story: "La guía de nutrición fue un antes y un después. Finalmente entiendo cómo alimentar mi cuerpo correctamente. Valentina es un gran apoyo y sabe mucho.",
-    image: "https://picsum.photos/100/100?random=3",
+    image: "https://picsum.photos/100/100?random=14",
     aiHint: "woman portrait",
   },
   {
-    name: "David L.",
+    name: "Laura M.",
     story: "Después de solo 12 semanas, mis niveles de energía están por las nubes y he alcanzado todas mis metas de fuerza iniciales. Fue la mejor inversión en mi salud.",
-    image: "https://picsum.photos/100/100?random=4",
-    aiHint: "man hiking",
+    image: "https://picsum.photos/100/100?random=15",
+    aiHint: "woman hiking",
+  },
+  {
+    name: "Sofia R.",
+    story: "Nunca pensé que disfrutaría hacer ejercicio. El plan personalizado me mantuvo enganchada y nunca me he sentido más fuerte. ¡Recomiendo el plan de 6 semanas!",
+    image: "https://picsum.photos/100/100?random=16",
+    aiHint: "smiling woman",
   },
 ];
 
@@ -47,7 +47,7 @@ export default function TestimonialsSection() {
             Historias de Éxito
           </h2>
           <p className="mt-4 text-lg text-muted-foreground">
-            Mira lo que mis clientes tienen que decir sobre su viaje de transformación.
+            Mira lo que mis clientas tienen que decir sobre su viaje de transformación.
           </p>
         </div>
         <Carousel

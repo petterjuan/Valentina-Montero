@@ -6,12 +6,12 @@ export default function HeroSection() {
   return (
     <section className="relative h-[85vh] min-h-[600px] w-full flex items-center justify-center text-center text-white">
       <Image
-        src="https://picsum.photos/1920/1080"
+        src="https://picsum.photos/1920/1080?random=11"
         alt="Valentina Montero entrenando a una clienta"
         fill
         className="object-cover object-center"
         priority
-        data-ai-hint="fitness coach"
+        data-ai-hint="female fitness"
       />
       <div className="absolute inset-0 bg-black/50" />
       <div className="relative z-10 container mx-auto px-4 md:px-6">

@@ -23,12 +23,12 @@ export default function MeetTheCoachSection() {
           </div>
           <div className="order-1 md:order-2">
             <Image
-              src="https://picsum.photos/600/700"
+              src="https://picsum.photos/600/700?random=12"
               alt="Coach Valentina Montero"
               width={600}
               height={700}
               className="rounded-lg shadow-lg aspect-[6/7] object-cover w-full"
-              data-ai-hint="fitness woman"
+              data-ai-hint="female coach"
             />
           </div>
         </div>

@@ -14,22 +14,22 @@ const blogPosts = [
   {
     title: "5 Mitos Comunes del Fitness Desmentidos",
     excerpt: "Deja que estas ideas falsas te impidan alcanzar tus metas. Aclaramos las cosas de una vez por todas.",
-    imageUrl: "https://picsum.photos/600/400?random=5",
-    aiHint: "gym equipment",
+    imageUrl: "https://picsum.photos/600/400?random=8",
+    aiHint: "woman working-out",
     slug: "#",
   },
   {
     title: "La Guía Definitiva para Preparar Comidas",
     excerpt: "Ahorra tiempo, come más sano y mantén tu nutrición bajo control. Nuestra guía paso a paso hace que la preparación de comidas sea fácil y agradable.",
-    imageUrl: "https://picsum.photos/600/400?random=6",
-    aiHint: "healthy food",
+    imageUrl: "https://picsum.photos/600/400?random=9",
+    aiHint: "woman eating-healthy",
     slug: "#",
   },
   {
     title: "Cómo Mantener la Motivación en tu Viaje Fitness",
     excerpt: "La motivación va y viene. Aprende los secretos para desarrollar la disciplina y ser constante incluso cuando no tienes ganas.",
-    imageUrl: "https://picsum.photos/600/400?random=7",
-    aiHint: "person running",
+    imageUrl: "https://picsum.photos/600/400?random=10",
+    aiHint: "woman running",
     slug: "#",
   },
 ];
