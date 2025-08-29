@@ -1,11 +1,10 @@
 "use client";
 
-import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { handleAiGeneration, type AiGeneratorFormState } from "@/app/actions";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Wand2, AlertTriangle, Dumbbell, Zap, Calendar, Clock } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,8 +36,7 @@ function SubmitButton() {
 }
 
 export default function AiGeneratorSection() {
-  const initialState: AiGeneratorFormState = { error: "", data: undefined, inputs: undefined };
-  const [state, formAction] = useActionState(handleAiGeneration, initialState);
+  const [state, setState] = useState<AiGeneratorFormState>({});
   const { toast } = useToast();
 
   const form = useForm<AiGeneratorFormData>({
@@ -68,16 +66,12 @@ export default function AiGeneratorSection() {
         title: "¡Éxito!",
         description: "Tu plan de entrenamiento se ha generado a continuación.",
       });
-      // Do not reset the form so the user can see their inputs reflected in the result card.
     }
-  }, [state, toast, form]);
+  }, [state, toast]);
   
-  const onSubmit = (data: AiGeneratorFormData) => {
-    const formData = new FormData();
-    (Object.keys(data) as (keyof AiGeneratorFormData)[]).forEach((key) => {
-        formData.append(key, String(data[key]));
-    });
-    formAction(formData);
+  const onSubmit = async (data: AiGeneratorFormData) => {
+    const result = await handleAiGeneration(state, data);
+    setState(result);
   };
 
 
@@ -226,7 +220,10 @@ export default function AiGeneratorSection() {
                         />
                   </div>
 
-                  <SubmitButton />
+                  <Button type="submit" disabled={form.formState.isSubmitting} className="w-full font-bold">
+                    <Wand2 className="mr-2 h-4 w-4" />
+                    {form.formState.isSubmitting ? "Generando..." : "Generar Mi Plan"}
+                  </Button>
                 </form>
               </Form>
             </CardContent>
