@@ -1,4 +1,4 @@
-'use server';
+"use server";
 
 /**
  * @fileOverview Flujo para manejar la inscripción de nuevos clientes a planes de coaching.
@@ -8,8 +8,8 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
-import { firestore } from '@/lib/firebase';
+import { z } from 'zod';
+import { getFirestore } from '@/lib/firebase';
 
 const PlanSignupInputSchema = z.object({
   fullName: z.string().describe('Nombre completo del cliente.'),
@@ -84,6 +84,11 @@ const planSignupFlow = ai.defineFlow(
   async (input) => {
     // 1. Generar (simular) enlace de Google Meet
     const meetLink = "https://meet.google.com/placeholder-for-" + input.email.split('@')[0];
+    
+    const firestore = getFirestore();
+    if (!firestore) {
+        throw new Error("Firestore no está inicializado. Verifica las credenciales de Firebase.");
+    }
 
     // 2. Guardar en Firestore
     const registrationDate = new Date();

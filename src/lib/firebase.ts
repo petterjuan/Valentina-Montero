@@ -1,20 +1,30 @@
-"use server"
 import * as admin from 'firebase-admin';
 
-const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY
-  ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY)
-  : null;
+let firestore: admin.firestore.Firestore | null = null;
 
-if (!admin.apps.length) {
+try {
+  const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY
+    ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY)
+    : null;
+
   if (serviceAccount) {
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-    });
+    if (!admin.apps.length) {
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+      });
+    }
+    firestore = admin.firestore();
   } else {
-    // Initialize for local development or environments without service account key
-    // This requires GOOGLE_APPLICATION_CREDENTIALS to be set in the environment
-    admin.initializeApp();
+    console.warn("Firebase service account key not found. Firestore will not be initialized. Make sure FIREBASE_SERVICE_ACCOUNT_KEY is set in your environment variables.");
   }
+} catch (error) {
+  console.error("Error initializing Firebase Admin SDK:", error);
 }
 
-export const firestore = admin.firestore();
+// Export a function to get Firestore, which will return null if not initialized
+export const getFirestore = () => {
+    if (!firestore) {
+        console.warn("Firestore is not initialized. Returning null.");
+    }
+    return firestore;
+}
