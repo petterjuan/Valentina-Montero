@@ -37,16 +37,15 @@ const generatePersonalizedWorkoutPrompt = ai.definePrompt({
   name: 'generatePersonalizedWorkoutPrompt',
   input: {schema: GeneratePersonalizedWorkoutInputSchema},
   output: {schema: GeneratePersonalizedWorkoutOutputSchema},
-  prompt: `Eres un entrenador personal que se especializa en crear planes de entrenamiento.
+  prompt: `Eres un entrenador personal experto. Crea un plan de entrenamiento detallado en español basado en las siguientes especificaciones.
 
-  Basado en los siguientes detalles del usuario, crea un plan de entrenamiento que lo ayudará a alcanzar su meta. El resultado debe estar en español.
+- **Objetivo de Fitness:** {{{fitnessGoal}}}
+- **Nivel de Experiencia:** {{{experienceLevel}}}
+- **Equipo Disponible:** {{{equipment}}}
+- **Duración por Sesión:** {{{duration}}} minutos
+- **Frecuencia Semanal:** {{{frequency}}} veces por semana
 
-  - Objetivo de Fitness: {{{fitnessGoal}}}
-  - Nivel de Experiencia: {{{experienceLevel}}}
-  - Equipo Disponible: {{{equipment}}}
-  - Duración por Sesión: {{{duration}}} minutos
-  - Frecuencia Semanal: {{{frequency}}} veces por semana
-  `,
+**Instrucción importante:** Tu respuesta debe contener únicamente el plan de entrenamiento. No incluyas frases introductorias, saludos o resúmenes. Comienza directamente con la estructura del plan (por ejemplo, "Día 1: Calentamiento...").`,
 });
 
 const generatePersonalizedWorkoutFlow = ai.defineFlow(
@@ -57,6 +56,9 @@ const generatePersonalizedWorkoutFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await generatePersonalizedWorkoutPrompt(input);
-    return output!;
+    if (!output) {
+      throw new Error('La respuesta de la IA no tuvo contenido.');
+    }
+    return output;
   }
 );
