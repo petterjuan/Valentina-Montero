@@ -1,8 +1,8 @@
 "use server";
 
 /**
- * @fileOverview Flujo para manejar la inscripción de nuevos clientes a planes de coaching.
- * - processPlanSignup: Procesa la solicitud, guarda en Firestore, y (simula) enviar correos.
+ * @fileOverview Flujo para manejar la inscripción de nuevos clientes a planes de coaching y la compra de productos digitales.
+ * - processPlanSignup: Procesa la solicitud, guarda en Firestore, y (simula) el flujo de pago y envío.
  * - PlanSignupInput: El tipo de entrada para el flujo.
  * - PlanSignupOutput: El tipo de retorno para el flujo.
  */
@@ -15,14 +15,15 @@ const PlanSignupInputSchema = z.object({
   fullName: z.string().describe('Nombre completo del cliente.'),
   email: z.string().email().describe('Correo electrónico del cliente.'),
   phone: z.string().optional().describe('Número de teléfono del cliente (opcional).'),
-  planName: z.string().describe('El nombre del plan de coaching seleccionado.'),
-  planPrice: z.number().describe('El precio del plan seleccionado.'),
+  planName: z.string().describe('El nombre del plan o producto seleccionado.'),
+  planPrice: z.number().describe('El precio del plan o producto.'),
+  isDigital: z.boolean().optional().describe('Indica si es un producto digital.'),
 });
 export type PlanSignupInput = z.infer<typeof PlanSignupInputSchema>;
 
 const PlanSignupOutputSchema = z.object({
   confirmationMessage: z.string(),
-  meetLink: z.string(),
+  meetLink: z.string().optional(),
   clientEmail: z.string(),
   planName: z.string(),
 });
@@ -32,96 +33,65 @@ export async function processPlanSignup(input: PlanSignupInput): Promise<PlanSig
   return planSignupFlow(input);
 }
 
-// TODO: Configurar autenticación de Google y activar la API de Google Calendar.
-// const createGoogleMeetLink = ai.defineTool(
-//   {
-//     name: 'createGoogleMeetLink',
-//     description: 'Crea un nuevo evento en Google Calendar con un enlace de Google Meet y devuelve el enlace.',
-//     inputSchema: z.object({
-//       summary: z.string().describe('El título del evento.'),
-//       description: z.string().describe('La descripción del evento.'),
-//       attendeeEmail: z.string().email().describe('El correo del invitado.'),
-//       startTime: z.string().datetime().describe('La hora de inicio en formato ISO 8601.'),
-//       endTime: z.string().datetime().describe('La hora de fin en formato ISO 8601.'),
-//     }),
-//     outputSchema: z.string().url().describe('El enlace a la reunión de Google Meet.'),
-//   },
-//   async (input) => {
-//     // Lógica para llamar a la API de Google Calendar
-//     // Por ahora, devolvemos un enlace de placeholder.
-//     return 'https://meet.google.com/placeholder-link';
-//   }
-// );
-
-// TODO: Configurar un servicio de envío de correos (ej. SendGrid, Mailgun)
-// const sendConfirmationEmail = ai.defineTool(
-//   {
-//     name: 'sendConfirmationEmail',
-//     description: 'Envía un correo de confirmación al cliente y una notificación al administrador.',
-//     inputSchema: z.object({
-//       to: z.string().email(),
-//       subject: z.string(),
-//       body: z.string(),
-//     }),
-//     outputSchema: z.object({ success: z.boolean() }),
-//   },
-//   async ({ to, subject, body }) => {
-//     // Lógica para enviar el correo
-//     console.log(`Simulando envío de correo a ${to}`);
-//     console.log(`Asunto: ${subject}`);
-//     console.log(`Cuerpo: ${body}`);
-//     return { success: true };
-//   }
-// );
-
 const planSignupFlow = ai.defineFlow(
   {
     name: 'planSignupFlow',
     inputSchema: PlanSignupInputSchema,
     outputSchema: PlanSignupOutputSchema,
-    // tools: [createGoogleMeetLink, sendConfirmationEmail],
   },
   async (input) => {
-    // 1. Generar (simular) enlace de Google Meet
-    const meetLink = "https://meet.google.com/placeholder-for-" + input.email.split('@')[0];
-    
     const firestore = getFirestore();
     if (!firestore) {
         throw new Error("Firestore no está inicializado. Verifica las credenciales de Firebase.");
     }
-
-    // 2. Guardar en Firestore
-    const registrationDate = new Date();
-    await firestore.collection('signups').add({
-      ...input,
-      meetLink,
-      registrationDate,
-    });
-
-    // 3. Generar (simular) correos de confirmación
-    const confirmationMessageForClient = `¡Hola ${input.fullName}! Gracias por unirte al ${input.planName}. Estoy muy emocionada de empezar este viaje contigo. Nuestra primera sesión será a través de este enlace: ${meetLink}. Pronto me pondré en contacto para coordinar el horario. ¡Prepárate para transformar tu vida!`;
-    const notificationForAdmin = `Nueva inscripción: ${input.fullName} (${input.email}) se ha inscrito en el ${input.planName}. Enlace de Meet generado: ${meetLink}`;
-
-    // await sendConfirmationEmail({
-    //   to: input.email,
-    //   subject: '¡Bienvenida a VM Fitness Hub!',
-    //   body: confirmationMessageForClient,
-    // });
-
-    // await sendConfirmationEmail({
-    //   to: 'valentina.montero@example.com', // Email del administrador
-    //   subject: `Nueva Inscripción: ${input.planName}`,
-    //   body: notificationForAdmin,
-    // });
     
-    console.log("Notificación para Valentina:", notificationForAdmin);
+    const registrationDate = new Date();
 
+    if (input.isDigital) {
+      // Flujo para producto digital (ej. PDF "Muscle Bites")
+      // 1. Guardar pre-lead en Firestore
+      await firestore.collection('leads').add({
+        email: input.email,
+        fullName: input.fullName,
+        productName: input.planName,
+        status: 'initiated',
+        createdAt: registrationDate,
+      });
 
-    return {
-      confirmationMessage: '¡Inscripción completada! Revisa tu correo para ver los detalles y el enlace a nuestra primera reunión.',
-      meetLink,
-      clientEmail: input.email,
-      planName: input.planName,
-    };
+      // TODO: Implementar la creación de la sesión de Stripe Checkout.
+      // const stripeSession = await createStripeCheckoutSession(input.email, input.planPrice, input.planName);
+      // Por ahora, simulamos que el pago se iniciará.
+
+      console.log(`Simulando inicio de pago para ${input.email} por el producto ${input.planName}.`);
+      
+      return {
+        confirmationMessage: '¡Gracias! Serás redirigido para completar el pago. Revisa tu correo después de la compra.',
+        clientEmail: input.email,
+        planName: input.planName,
+      };
+
+    } else {
+      // Flujo para planes de coaching
+      // 1. Generar (simular) enlace de Google Meet
+      const meetLink = "https://meet.google.com/placeholder-for-" + input.email.split('@')[0];
+      
+      // 2. Guardar en Firestore
+      await firestore.collection('signups').add({
+        ...input,
+        meetLink,
+        registrationDate,
+      });
+
+      // 3. Generar (simular) correos de confirmación
+      const notificationForAdmin = `Nueva inscripción: ${input.fullName} (${input.email}) se ha inscrito en el ${input.planName}. Enlace de Meet generado: ${meetLink}`;
+      console.log("Notificación para Valentina:", notificationForAdmin);
+
+      return {
+        confirmationMessage: '¡Inscripción completada! Revisa tu correo para ver los detalles y el enlace a nuestra primera reunión.',
+        meetLink,
+        clientEmail: input.email,
+        planName: input.planName,
+      };
+    }
   }
 );

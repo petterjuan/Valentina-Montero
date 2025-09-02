@@ -39,7 +39,7 @@ const programs = [
     ],
   },
   {
-    title: 'PDF "Muscle Bites"',
+    title: 'Muscle Bites',
     price: 25,
     isPopular: false,
     isDigital: true,
@@ -48,7 +48,6 @@ const programs = [
         "10 Recetas (Pre-Entrenamiento)",
         "5 Recetas (Post-Entrenamiento)",
     ],
-    shopifyLink: "#",
   },
 ];
 
@@ -58,9 +57,7 @@ export default function CoachingProgramsSection() {
   const [selectedPlan, setSelectedPlan] = useState<Program | null>(null);
 
   const openDialog = (program: Program) => {
-    if (!program.isDigital) {
-      setSelectedPlan(program);
-    }
+    setSelectedPlan(program);
   };
 
   const closeDialog = () => {
@@ -115,15 +112,9 @@ export default function CoachingProgramsSection() {
                   </ul>
                 </CardContent>
                 <CardFooter>
-                  {program.isDigital ? (
-                     <Button asChild className="w-full font-bold">
-                        <a href={program.shopifyLink}>Comprar PDF</a>
-                     </Button>
-                  ) : (
-                    <Button onClick={() => openDialog(program)} className="w-full font-bold">
-                        Elegir Plan
+                   <Button onClick={() => openDialog(program)} className="w-full font-bold">
+                        {program.isDigital ? 'Comprar PDF' : 'Elegir Plan'}
                     </Button>
-                  )}
                 </CardFooter>
               </Card>
             ))}
