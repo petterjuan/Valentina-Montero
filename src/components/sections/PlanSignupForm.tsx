@@ -13,6 +13,8 @@ import { DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/di
 import { CheckCircle, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+
 
 const signupSchema = z.object({
   fullName: z.string().min(3, { message: "El nombre debe tener al menos 3 caracteres." }),
@@ -95,7 +97,7 @@ export default function PlanSignupForm({ plan, onSubmitted }: PlanSignupFormProp
             <h3 className="text-xl font-bold font-headline">¡Todo Listo!</h3>
             <p className="text-muted-foreground">
                 {plan.isDigital 
-                  ? `¡Gracias por tu interés! Hemos recibido tu solicitud. En breve, recibirás un correo con las instrucciones para completar el pago y descargar tu PDF.`
+                  ? `¡Gracias por tu interés! En breve, recibirás un correo con las instrucciones para completar el pago y descargar tu PDF.`
                   : `Hemos recibido tus datos y te hemos enviado un correo de confirmación con el enlace para nuestra primera sesión. ¡Estoy muy emocionada de empezar a trabajar contigo!`
                 }
             </p>
@@ -110,36 +112,75 @@ export default function PlanSignupForm({ plan, onSubmitted }: PlanSignupFormProp
         <DialogTitle className="font-headline text-2xl">{dialogTitle}</DialogTitle>
         <DialogDescription>{dialogDescription}</DialogDescription>
       </DialogHeader>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4 py-4">
-        <div className="grid gap-2">
-          <Label htmlFor="fullName">Nombre Completo</Label>
-          <Input id="fullName" {...form.register("fullName")} placeholder="Tu nombre y apellido" />
-          {form.formState.errors.fullName && <p className="text-red-500 text-xs">{form.formState.errors.fullName.message}</p>}
-        </div>
-        <div className="grid gap-2">
-          <Label htmlFor="email">Email</Label>
-          <Input id="email" type="email" {...form.register("email")} placeholder="tu.correo@ejemplo.com" />
-          {form.formState.errors.email && <p className="text-red-500 text-xs">{form.formState.errors.email.message}</p>}
-        </div>
-        {!plan.isDigital && (
-          <div className="grid gap-2">
-            <Label htmlFor="phone">Teléfono (Opcional)</Label>
-            <Input id="phone" {...form.register("phone")} />
-          </div>
-        )}
-        <div className="items-start mt-2">
-           <div className="flex items-center space-x-2">
-             <Checkbox id="consent" {...form.register("consent")} />
-             <Label htmlFor="consent" className="text-sm text-muted-foreground leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                {consentText}
-              </Label>
-           </div>
-           {form.formState.errors.consent && <p className="text-red-500 text-xs mt-2 ml-1">{form.formState.errors.consent.message}</p>}
-        </div>
-        <Button type="submit" disabled={isSubmitting} className="w-full mt-2 font-bold">
-          {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Procesando...</> : buttonText}
-        </Button>
-      </form>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4 py-4">
+            <FormField
+            control={form.control}
+            name="fullName"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Nombre Completo</FormLabel>
+                <FormControl>
+                    <Input placeholder="Tu nombre y apellido" {...field} />
+                </FormControl>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+            <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Email</FormLabel>
+                <FormControl>
+                    <Input type="email" placeholder="tu.correo@ejemplo.com" {...field} />
+                </FormControl>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+            {!plan.isDigital && (
+                <FormField
+                    control={form.control}
+                    name="phone"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Teléfono (Opcional)</FormLabel>
+                            <FormControl>
+                                <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            )}
+            <FormField
+                control={form.control}
+                name="consent"
+                render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow mt-2">
+                    <FormControl>
+                    <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                    />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                    <FormLabel>
+                        {consentText}
+                    </FormLabel>
+                    <FormMessage />
+                    </div>
+                </FormItem>
+                )}
+            />
+
+            <Button type="submit" disabled={isSubmitting} className="w-full mt-2 font-bold">
+            {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Procesando...</> : buttonText}
+            </Button>
+        </form>
+      </Form>
     </>
   );
 }
