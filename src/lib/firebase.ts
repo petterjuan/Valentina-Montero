@@ -1,13 +1,12 @@
 import * as admin from 'firebase-admin';
 
 let firestore: admin.firestore.Firestore | null = null;
+let initializationError: Error | null = null;
 
 try {
-  const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY
-    ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY)
-    : null;
+  if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
 
-  if (serviceAccount) {
     if (!admin.apps.length) {
       admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
@@ -15,16 +14,23 @@ try {
     }
     firestore = admin.firestore();
   } else {
-    console.warn("Firebase service account key not found. Firestore will not be initialized. Make sure FIREBASE_SERVICE_ACCOUNT_KEY is set in your environment variables.");
+    // This is a critical configuration error.
+    initializationError = new Error("Firebase service account key not found. Make sure FIREBASE_SERVICE_ACCOUNT_KEY is set in your environment variables.");
+    console.error(initializationError.message);
   }
 } catch (error) {
-  console.error("Error initializing Firebase Admin SDK:", error);
+  initializationError = new Error(`Error initializing Firebase Admin SDK: ${error instanceof Error ? error.message : String(error)}`);
+  console.error(initializationError.message);
 }
 
-// Export a function to get Firestore, which will return null if not initialized
+// Export a function to get Firestore. It will now throw if initialization failed.
 export const getFirestore = () => {
+    if (initializationError) {
+        throw initializationError;
+    }
     if (!firestore) {
-        console.warn("Firestore is not initialized. Returning null.");
+        // This case should theoretically not be reached if initializationError is handled, but it's a good safeguard.
+        throw new Error("Firestore is not initialized. The Admin SDK might have failed to initialize without throwing an error.");
     }
     return firestore;
 }
