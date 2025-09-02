@@ -59,6 +59,7 @@ const generatePersonalizedWorkoutFlow = ai.defineFlow(
     if (!output) {
       throw new Error('La respuesta de la IA no tuvo contenido.');
     }
-    return output;
+    const parsedOutput = GeneratePersonalizedWorkoutOutputSchema.parse(output);
+    return { workoutPlan: parsedOutput.workoutPlan };
   }
 );
