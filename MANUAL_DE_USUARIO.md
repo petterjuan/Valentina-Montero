@@ -117,3 +117,35 @@ Tu web está construida con una base sólida y escalable. Aquí tienes una guía
     - Utiliza Google Analytics para ver qué secciones de tu página son las más visitadas y cómo se comportan las usuarias.
 
 ¡Listo! Con este manual, tienes el control total de tu nueva plataforma de coaching. ¡Mucho éxito!
+
+---
+
+## 6. Arquitectura de la Aplicación
+
+Esta sección describe brevemente las tecnologías y la estructura sobre la que está construida tu página web.
+
+### a) Frontend (La parte visible de la web)
+
+- **Next.js y React**: Es el corazón de la aplicación. Permite que la web sea rápida, interactiva y amigable para los motores de búsqueda como Google. Utilizamos la última versión con el "App Router" para un rendimiento óptimo.
+- **TypeScript**: Es una capa sobre JavaScript que nos ayuda a escribir un código más robusto y con menos errores, facilitando el mantenimiento a largo plazo.
+- **Tailwind CSS y ShadCN UI**: Son los responsables del diseño visual. Nos permiten construir una interfaz moderna, limpia y totalmente adaptable a dispositivos móviles y de escritorio, de manera muy eficiente.
+
+### b) Backend (La lógica detrás de escena)
+
+- **Server Actions de Next.js**: Cuando llenas un formulario (como el de inscripción o el generador de planes), esta tecnología se encarga de enviar los datos de forma segura desde tu navegador al servidor para ser procesados.
+- **Genkit (Google AI)**: Es el cerebro detrás del generador de planes de entrenamiento. Utilizamos Genkit para comunicarnos con los modelos de Inteligencia Artificial de Google (Gemini) y transformar las preferencias de la usuaria en una rutina personalizada. También gestiona la lógica de inscripción a los planes.
+- **Firebase Firestore**: Es nuestra base de datos. Cada vez que una nueva clienta se inscribe o muestra interés en un producto, sus datos se guardan de forma segura y en tiempo real en Firestore, listos para que los gestiones.
+
+### c) Flujo de Datos (Ejemplo: Generador de Planes)
+
+Para que te hagas una idea de cómo funciona todo junto:
+
+1.  **Usuario**: Selecciona sus preferencias en el formulario de la página.
+2.  **Frontend (React)**: Captura esos datos.
+3.  **Server Action**: Envía los datos de forma segura al backend.
+4.  **Genkit**: Recibe los datos, crea un prompt (una instrucción) para la IA y se lo envía al modelo Gemini.
+5.  **Gemini**: Procesa la solicitud y devuelve un plan de entrenamiento en formato JSON.
+6.  **Genkit y Server Action**: Reciben la respuesta, la procesan y la envían de vuelta al frontend.
+7.  **Frontend (React)**: Recibe el plan estructurado y lo muestra en un formato visual atractivo (el acordeón que ves).
+
+Esta arquitectura es moderna, segura y altamente escalable, preparada para crecer junto con tu negocio.
