@@ -147,7 +147,7 @@ export default function AiGeneratorSection() {
                       render={({ field }) => (
                         <FormItem>
                           <Label>Equipo Disponible</Label>
-                          <Select onValuechange={field.onChange} defaultValue={field.value}>
+                           <Select onValueChange={field.onChange} defaultValue={field.value}>
                              <FormControl>
                                <SelectTrigger>
                                  <SelectValue placeholder="Selecciona tu equipo" />
