@@ -127,17 +127,14 @@ export default function PlanSignupForm({ plan, onSubmitted }: PlanSignupFormProp
             <Input id="phone" {...form.register("phone")} />
           </div>
         )}
-        <div className="flex items-start space-x-2 mt-2">
-           <Checkbox id="consent" {...form.register("consent")} className="mt-1" />
-            <div className="grid gap-1.5 leading-none">
-              <label
-                htmlFor="consent"
-                className="text-sm text-muted-foreground"
-              >
+        <div className="items-start space-x-2 mt-2">
+           <div className="flex items-center space-x-2">
+             <Checkbox id="consent" {...form.register("consent")} />
+             <Label htmlFor="consent" className="text-sm text-muted-foreground leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                 {consentText}
-              </label>
-              {form.formState.errors.consent && <p className="text-red-500 text-xs">{form.formState.errors.consent.message}</p>}
-            </div>
+              </Label>
+           </div>
+           {form.formState.errors.consent && <p className="text-red-500 text-xs mt-2 ml-1">{form.formState.errors.consent.message}</p>}
         </div>
         <Button type="submit" disabled={isSubmitting} className="w-full mt-2 font-bold">
           {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Procesando...</> : buttonText}
