@@ -127,7 +127,7 @@ export default function PlanSignupForm({ plan, onSubmitted }: PlanSignupFormProp
             <Input id="phone" {...form.register("phone")} />
           </div>
         )}
-        <div className="items-start space-x-2 mt-2">
+        <div className="items-start mt-2">
            <div className="flex items-center space-x-2">
              <Checkbox id="consent" {...form.register("consent")} />
              <Label htmlFor="consent" className="text-sm text-muted-foreground leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
