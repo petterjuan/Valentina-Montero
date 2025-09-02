@@ -1,6 +1,6 @@
 "use server";
 
-import { generatePersonalizedWorkout, GeneratePersonalizedWorkoutInput } from "@/ai/flows/generate-personalized-workout";
+import { generatePersonalizedWorkout, GeneratePersonalizedWorkoutInput, GeneratePersonalizedWorkoutOutput } from "@/ai/flows/generate-personalized-workout";
 import { processPlanSignup, PlanSignupInput } from "@/ai/flows/plan-signup-flow";
 import { z } from "zod";
 
@@ -13,7 +13,7 @@ const aiGeneratorSchema = z.object({
 });
 
 export type AiGeneratorFormState = {
-  data?: string;
+  data?: GeneratePersonalizedWorkoutOutput;
   error?: string;
   inputs?: z.infer<typeof aiGeneratorSchema>;
 };
@@ -22,7 +22,7 @@ export async function handleAiGeneration(input: GeneratePersonalizedWorkoutInput
   try {
     const validatedInput = aiGeneratorSchema.parse(input);
     const result = await generatePersonalizedWorkout(validatedInput);
-    return { data: result.workoutPlan, inputs: validatedInput };
+    return { data: result, inputs: validatedInput };
   } catch (e) {
     console.error(e);
     if (e instanceof z.ZodError) {

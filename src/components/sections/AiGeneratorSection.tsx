@@ -6,14 +6,16 @@ import { Button } from "@/components/ui/button";
 import { handleAiGeneration, type AiGeneratorFormState } from "@/app/actions";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { Wand2, AlertTriangle, Dumbbell, Zap, Calendar, Clock } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Wand2, AlertTriangle, Dumbbell, Zap, Calendar, Clock, CheckCircle, Flame, Shield, Activity, Target } from "lucide-react";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Separator } from "@/components/ui/separator";
 
 const aiGeneratorSchema = z.object({
   fitnessGoal: z.string({ required_error: "Por favor, selecciona una meta." }),
@@ -51,17 +53,18 @@ export default function AiGeneratorSection() {
         description: state.error,
       });
     }
-    if (state.data) {
-      toast({
-        title: "¡Éxito!",
-        description: "Tu plan de entrenamiento se ha generado a continuación.",
-      });
-    }
-  }, [state, toast]);
+  }, [state.error, toast]);
   
   const onSubmit = async (data: AiGeneratorFormData) => {
+    setState({});
     const result = await handleAiGeneration(data);
     setState(result);
+    if(result.data) {
+        toast({
+        title: "¡Plan Generado!",
+        description: "Tu rutina personalizada te espera más abajo.",
+      });
+    }
   };
 
 
@@ -76,7 +79,7 @@ export default function AiGeneratorSection() {
             Responde unas sencillas preguntas y te mostraré una rutina de entrenamiento personalizada y adaptada a tus objetivos, experiencia y equipo disponible. ¿Lista para un plan más detallado y seguimiento personalizado? Mis sesiones 1 a 1 están diseñadas para llevarte al siguiente nivel.
           </p>
         </div>
-        <div className="mt-12 max-w-3xl mx-auto">
+        <div className="mt-12 max-w-4xl mx-auto">
           <Card>
             <CardHeader>
               <CardTitle className="font-headline text-2xl flex items-center gap-2">
@@ -144,7 +147,7 @@ export default function AiGeneratorSection() {
                       render={({ field }) => (
                         <FormItem>
                           <Label>Equipo Disponible</Label>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <Select onValuechange={field.onChange} defaultValue={field.value}>
                              <FormControl>
                                <SelectTrigger>
                                  <SelectValue placeholder="Selecciona tu equipo" />
@@ -220,7 +223,7 @@ export default function AiGeneratorSection() {
           </Card>
 
           {state.error && !state.data && (
-            <Card className="mt-6 border-destructive bg-destructive/10">
+            <Card className="mt-8 border-destructive bg-destructive/10">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
                   <AlertTriangle className="h-5 w-5 text-destructive" />
@@ -229,49 +232,64 @@ export default function AiGeneratorSection() {
               </CardContent>
             </Card>
           )}
+
           {state.data && (
-            <Card className="mt-6">
+            <Card className="mt-8">
               <CardHeader>
-                <CardTitle className="flex items-center gap-3">
-                  <Wand2 className="h-6 w-6 text-primary" />
+                <CardTitle className="flex items-center gap-3 font-headline">
+                  <Target className="h-6 w-6 text-primary" />
                   Tu Plan de Entrenamiento Personalizado
                 </CardTitle>
+                <CardDescription>{state.data.overview}</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6 text-sm">
-                    <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 capitalize">
-                        <Zap className="h-5 w-5 text-primary" />
-                        <div>
-                            <p className="font-semibold">Experiencia</p>
-                            <p className="text-muted-foreground">{state.inputs?.experienceLevel}</p>
+                <Accordion type="single" collapsible defaultValue="Día 1" className="w-full">
+                  {state.data.weeklySchedule?.map((day, index) => (
+                    <AccordionItem value={day.day} key={index}>
+                      <AccordionTrigger className="font-bold text-lg hover:no-underline">
+                        <div className="flex items-center gap-3">
+                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold">{index + 1}</span>
+                            {day.day}: <span className="text-muted-foreground font-medium">{day.focus}</span>
                         </div>
-                    </div>
-                     <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
-                        <Clock className="h-5 w-5 text-primary" />
-                        <div>
-                            <p className="font-semibold">Duración</p>
-                            <p className="text-muted-foreground">{state.inputs?.duration} min</p>
+                      </AccordionTrigger>
+                      <AccordionContent className="pl-4 border-l-2 border-primary ml-4">
+                        <div className="space-y-4">
+                            <div>
+                                <h4 className="font-semibold flex items-center gap-2"><Flame className="h-5 w-5 text-amber-500" />Calentamiento</h4>
+                                <p className="text-muted-foreground text-sm pl-7">{day.warmup}</p>
+                            </div>
+                            <div>
+                                <h4 className="font-semibold flex items-center gap-2"><Activity className="h-5 w-5 text-blue-500" />Entrenamiento</h4>
+                                <ul className="space-y-2 mt-2 pl-7">
+                                    {day.exercises.map((ex, i) => (
+                                        <li key={i} className="flex justify-between items-center text-sm">
+                                            <span>{ex.name}</span>
+                                            <span className="font-medium text-primary bg-primary/10 px-2 py-1 rounded-md">{ex.sets} x {ex.reps}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                            <div>
+                                <h4 className="font-semibold flex items-center gap-2"><Shield className="h-5 w-5 text-green-500" />Enfriamiento</h4>
+                                <p className="text-muted-foreground text-sm pl-7">{day.cooldown}</p>
+                            </div>
                         </div>
-                    </div>
-                     <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
-                        <Calendar className="h-5 w-5 text-primary" />
-                        <div>
-                            <p className="font-semibold">Frecuencia</p>
-                            <p className="text-muted-foreground">{state.inputs?.frequency}/semana</p>
-                        </div>
-                    </div>
-                     <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 capitalize">
-                        <Dumbbell className="h-5 w-5 text-primary" />
-                        <div>
-                            <p className="font-semibold">Equipo</p>
-                            <p className="text-muted-foreground">{state.inputs?.equipment?.replace(/-/g, ' ')}</p>
-                        </div>
-                    </div>
-                </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+                
+                <Separator className="my-6" />
 
-                <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap text-muted-foreground">
-                  {state.data}
-                </div>
+                <h3 className="font-headline text-xl mb-3">Recomendaciones Adicionales</h3>
+                <ul className="space-y-2">
+                    {state.data.recommendations?.map((rec, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm">
+                            <CheckCircle className="h-4 w-4 mt-0.5 shrink-0 text-primary" />
+                            <span className="text-muted-foreground">{rec}</span>
+                        </li>
+                    ))}
+                </ul>
               </CardContent>
             </Card>
           )}

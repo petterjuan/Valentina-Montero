@@ -20,10 +20,24 @@ const GeneratePersonalizedWorkoutInputSchema = z.object({
 });
 export type GeneratePersonalizedWorkoutInput = z.infer<typeof GeneratePersonalizedWorkoutInputSchema>;
 
+const ExerciseSchema = z.object({
+  name: z.string().describe('El nombre del ejercicio.'),
+  sets: z.string().describe('El número de series a realizar.'),
+  reps: z.string().describe('El número de repeticiones por serie.'),
+});
+
+const DailyWorkoutSchema = z.object({
+  day: z.string().describe('El día del entrenamiento (p. ej., "Día 1").'),
+  focus: z.string().describe('El enfoque principal del día (p. ej., "Tren Inferior y Cardio").'),
+  warmup: z.string().describe('Las instrucciones para el calentamiento.'),
+  exercises: z.array(ExerciseSchema).describe('Una lista de los ejercicios a realizar.'),
+  cooldown: z.string().describe('Las instrucciones para el enfriamiento.'),
+});
+
 const GeneratePersonalizedWorkoutOutputSchema = z.object({
-  workoutPlan: z
-    .string()
-    .describe('Un plan de entrenamiento personalizado basado en el objetivo de fitness del usuario.'),
+  overview: z.string().describe('Un resumen corto y motivador del plan.'),
+  weeklySchedule: z.array(DailyWorkoutSchema).describe('El plan de entrenamiento semanal, dividido por días.'),
+  recommendations: z.array(z.string()).describe('Recomendaciones adicionales sobre nutrición, descanso, etc.'),
 });
 export type GeneratePersonalizedWorkoutOutput = z.infer<typeof GeneratePersonalizedWorkoutOutputSchema>;
 
@@ -37,7 +51,7 @@ const generatePersonalizedWorkoutPrompt = ai.definePrompt({
   name: 'generatePersonalizedWorkoutPrompt',
   input: {schema: GeneratePersonalizedWorkoutInputSchema},
   output: {schema: GeneratePersonalizedWorkoutOutputSchema},
-  prompt: `Eres un entrenador personal experto. Crea un plan de entrenamiento detallado en español basado en las siguientes especificaciones.
+  prompt: `Eres una entrenadora personal experta llamada Valentina Montero. Tu tono es motivador, cercano y profesional. Crea un plan de entrenamiento detallado y estructurado en español basado en las siguientes especificaciones.
 
 - **Objetivo de Fitness:** {{{fitnessGoal}}}
 - **Nivel de Experiencia:** {{{experienceLevel}}}
@@ -45,7 +59,14 @@ const generatePersonalizedWorkoutPrompt = ai.definePrompt({
 - **Duración por Sesión:** {{{duration}}} minutos
 - **Frecuencia Semanal:** {{{frequency}}} veces por semana
 
-**Instrucción importante:** Tu respuesta debe contener únicamente el plan de entrenamiento. No incluyas frases introductorias, saludos o resúmenes. Comienza directamente con la estructura del plan (por ejemplo, "Día 1: Calentamiento...").`,
+**Instrucciones de formato de salida (MUY IMPORTANTE):**
+- Debes devolver la respuesta únicamente en el formato JSON especificado.
+- En el campo 'overview', escribe una frase corta y motivadora.
+- Para cada 'day' en 'weeklySchedule', crea un plan de entrenamiento completo.
+- En el campo 'focus' de cada día, especifica el grupo muscular principal (ej. "Tren Inferior", "Full Body", "Cardio y Core").
+- Los ejercicios deben ser una lista de objetos, cada uno con 'name', 'sets' y 'reps'. Sé específica con las series y repeticiones (ej. "3 series", "10-12 reps").
+- En 'recommendations', proporciona 3 o 4 consejos clave y concisos.
+- No incluyas saludos, despedidas ni ningún texto fuera de la estructura JSON.`,
 });
 
 const generatePersonalizedWorkoutFlow = ai.defineFlow(
@@ -60,6 +81,6 @@ const generatePersonalizedWorkoutFlow = ai.defineFlow(
       throw new Error('La respuesta de la IA no tuvo contenido.');
     }
     const parsedOutput = GeneratePersonalizedWorkoutOutputSchema.parse(output);
-    return { workoutPlan: parsedOutput.workoutPlan };
+    return parsedOutput;
   }
 );
