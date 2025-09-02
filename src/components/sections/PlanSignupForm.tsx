@@ -67,7 +67,7 @@ export default function PlanSignupForm({ plan, onSubmitted }: PlanSignupFormProp
       setIsSubmitted(true);
       toast({
         title: "¡Solicitud Recibida!",
-        description: plan.isDigital ? "Serás redirigido para completar tu pago." : "Revisa tu correo para los siguientes pasos.",
+        description: plan.isDigital ? "Revisa tu correo para completar el pago." : "Revisa tu correo para los siguientes pasos.",
       });
     }
   };
@@ -95,7 +95,7 @@ export default function PlanSignupForm({ plan, onSubmitted }: PlanSignupFormProp
             <h3 className="text-xl font-bold font-headline">¡Todo Listo!</h3>
             <p className="text-muted-foreground">
                 {plan.isDigital 
-                  ? `¡Gracias! Ahora serás redirigido a la pasarela de pago. Revisa tu correo electrónico una vez completada la compra para descargar tu PDF.`
+                  ? `¡Gracias por tu interés! Hemos recibido tu solicitud. En breve, recibirás un correo con las instrucciones para completar el pago y descargar tu PDF.`
                   : `Hemos recibido tus datos y te hemos enviado un correo de confirmación con el enlace para nuestra primera sesión. ¡Estoy muy emocionada de empezar a trabajar contigo!`
                 }
             </p>
