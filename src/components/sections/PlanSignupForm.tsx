@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useForm, SubmitHandler } from "react-hook-form";
@@ -83,6 +84,10 @@ export default function PlanSignupForm({ plan, onSubmitted }: PlanSignupFormProp
     ? "Proceder al Pago"
     : "Confirmar y Agendar";
 
+  const consentText = plan.isDigital
+    ? "Acepto recibir el producto digital y comunicaciones relacionadas a mi compra por correo electrónico."
+    : "Entiendo que este es el primer paso y acepto ser contactada por correo electrónico o teléfono para agendar la reunión.";
+
   if (isSubmitted) {
     return (
         <div className="flex flex-col items-center justify-center text-center p-8 gap-4">
@@ -129,7 +134,7 @@ export default function PlanSignupForm({ plan, onSubmitted }: PlanSignupFormProp
                 htmlFor="consent"
                 className="text-sm text-muted-foreground"
               >
-                Acepto recibir el producto digital y comunicaciones relacionadas a mi compra por correo electrónico.
+                {consentText}
               </label>
               {form.formState.errors.consent && <p className="text-red-500 text-xs">{form.formState.errors.consent.message}</p>}
             </div>
