@@ -1,0 +1,112 @@
+"use client";
+
+import { useForm, SubmitHandler } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { handlePlanSignup } from "@/app/actions";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { CheckCircle, Loader2 } from "lucide-react";
+import { useState } from "react";
+
+const signupSchema = z.object({
+  fullName: z.string().min(3, { message: "El nombre debe tener al menos 3 caracteres." }),
+  email: z.string().email({ message: "Por favor, introduce un email válido." }),
+  phone: z.string().optional(),
+});
+
+type SignupFormData = z.infer<typeof signupSchema>;
+
+interface PlanSignupFormProps {
+  plan: {
+    title: string;
+    price: number;
+  };
+  onSubmitted: () => void;
+}
+
+export default function PlanSignupForm({ plan, onSubmitted }: PlanSignupFormProps) {
+  const { toast } = useToast();
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const form = useForm<SignupFormData>({
+    resolver: zodResolver(signupSchema),
+    defaultValues: {
+      fullName: "",
+      email: "",
+      phone: "",
+    },
+  });
+
+  const onSubmit: SubmitHandler<SignupFormData> = async (data) => {
+    setIsSubmitting(true);
+    const result = await handlePlanSignup({
+      ...data,
+      planName: plan.title,
+      planPrice: plan.price,
+    });
+    setIsSubmitting(false);
+
+    if (result.error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: result.error,
+      });
+    } else {
+      setIsSubmitted(true);
+      toast({
+        title: "¡Inscripción Exitosa!",
+        description: "Revisa tu correo para los siguientes pasos.",
+      });
+    }
+  };
+  
+  if (isSubmitted) {
+    return (
+        <div className="flex flex-col items-center justify-center text-center p-8 gap-4">
+            <CheckCircle className="w-16 h-16 text-green-500" />
+            <h3 className="text-xl font-bold font-headline">¡Todo Listo!</h3>
+            <p className="text-muted-foreground">
+                Hemos recibido tus datos y te hemos enviado un correo de confirmación con el enlace para nuestra primera sesión. ¡Estoy muy emocionada de empezar a trabajar contigo!
+            </p>
+            <Button onClick={onSubmitted} className="mt-4">Cerrar</Button>
+        </div>
+    )
+  }
+
+
+  return (
+    <>
+      <DialogHeader>
+        <DialogTitle className="font-headline text-2xl">Completa tu Inscripción</DialogTitle>
+        <DialogDescription>
+          Estás a un paso de comenzar tu transformación con el <span className="font-bold text-primary">{plan.title}</span>.
+        </DialogDescription>
+      </DialogHeader>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4 py-4">
+        <div className="grid gap-2">
+          <Label htmlFor="fullName">Nombre Completo</Label>
+          <Input id="fullName" {...form.register("fullName")} />
+          {form.formState.errors.fullName && <p className="text-red-500 text-xs">{form.formState.errors.fullName.message}</p>}
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="email">Email</Label>
+          <Input id="email" type="email" {...form.register("email")} />
+          {form.formState.errors.email && <p className="text-red-500 text-xs">{form.formState.errors.email.message}</p>}
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="phone">Teléfono (Opcional)</Label>
+          <Input id="phone" {...form.register("phone")} />
+        </div>
+        <Button type="submit" disabled={isSubmitting} className="w-full mt-2 font-bold">
+          {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Finalizando...</> : "Confirmar y Agendar"}
+        </Button>
+      </form>
+    </>
+  );
+}

@@ -1,6 +1,7 @@
 "use server";
 
 import { generatePersonalizedWorkout, GeneratePersonalizedWorkoutInput } from "@/ai/flows/generate-personalized-workout";
+import { processPlanSignup, PlanSignupInput } from "@/ai/flows/plan-signup-flow";
 import { z } from "zod";
 
 const aiGeneratorSchema = z.object({
@@ -28,5 +29,15 @@ export async function handleAiGeneration(input: GeneratePersonalizedWorkoutInput
       return { error: "Los datos de entrada no son válidos. Por favor, revisa el formulario." };
     }
     return { error: "No se pudo generar el contenido. Por favor, inténtalo de nuevo más tarde." };
+  }
+}
+
+export async function handlePlanSignup(input: PlanSignupInput) {
+  try {
+    const result = await processPlanSignup(input);
+    return { data: result, error: null };
+  } catch (e) {
+    console.error(e);
+    return { data: null, error: "Ocurrió un error al procesar tu solicitud. Por favor, inténtalo de nuevo." };
   }
 }
