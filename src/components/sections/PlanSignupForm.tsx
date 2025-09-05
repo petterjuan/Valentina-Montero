@@ -57,20 +57,26 @@ export default function PlanSignupForm({ plan, onSubmitted }: PlanSignupFormProp
       planPrice: plan.price,
       isDigital: plan.isDigital,
     });
-    setIsSubmitting(false);
+    
 
     if (result.error) {
+      setIsSubmitting(false);
       toast({
         variant: "destructive",
         title: "Error",
         description: result.error,
       });
     } else {
-      setIsSubmitted(true);
-      toast({
-        title: "¡Solicitud Recibida!",
-        description: plan.isDigital ? "Revisa tu correo para completar el pago." : "Revisa tu correo para los siguientes pasos.",
-      });
+      if(result.data?.stripeCheckoutUrl){
+        window.location.href = result.data.stripeCheckoutUrl;
+      } else {
+        setIsSubmitting(false);
+        setIsSubmitted(true);
+        toast({
+            title: "¡Solicitud Recibida!",
+            description: "Revisa tu correo para los siguientes pasos.",
+        });
+      }
     }
   };
   
@@ -87,7 +93,7 @@ export default function PlanSignupForm({ plan, onSubmitted }: PlanSignupFormProp
     : "Confirmar y Agendar";
 
   const consentText = plan.isDigital
-    ? "Acepto recibir el producto digital y comunicaciones relacionadas a mi compra por correo electrónico."
+    ? "Acepto los términos y ser redirigida a la pasarela de pago segura de Stripe."
     : "Entiendo que este es el primer paso y acepto ser contactada por correo electrónico o teléfono para agendar la reunión.";
 
   if (isSubmitted) {

@@ -10,6 +10,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { getFirestore } from '@/lib/firebase';
+import { getStripe } from '@/lib/stripe';
 
 const PlanSignupInputSchema = z.object({
   fullName: z.string().describe('Nombre completo del cliente.'),
@@ -26,6 +27,7 @@ const PlanSignupOutputSchema = z.object({
   meetLink: z.string().optional(),
   clientEmail: z.string(),
   planName: z.string(),
+  stripeCheckoutUrl: z.string().optional(),
 });
 export type PlanSignupOutput = z.infer<typeof PlanSignupOutputSchema>;
 
@@ -49,8 +51,10 @@ const planSignupFlow = ai.defineFlow(
 
     if (input.isDigital) {
       // Flujo para producto digital (ej. PDF "Muscle Bites")
-      // 1. Guardar pre-lead en Firestore
-      await firestore.collection('leads').add({
+      const stripe = getStripe();
+      const leadRef = firestore.collection('leads').doc();
+
+      await leadRef.set({
         email: input.email,
         fullName: input.fullName,
         productName: input.planName,
@@ -58,16 +62,40 @@ const planSignupFlow = ai.defineFlow(
         createdAt: registrationDate,
       });
 
-      // TODO: Implementar la creación de la sesión de Stripe Checkout.
-      // const stripeSession = await createStripeCheckoutSession(input.email, input.planPrice, input.planName);
-      // Por ahora, simulamos que el pago se iniciará.
+      const customer = await stripe.customers.create({
+        email: input.email,
+        name: input.fullName,
+      });
 
-      console.log(`Simulando inicio de pago para ${input.email} por el producto ${input.planName}.`);
+      const checkoutSession = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: [
+          {
+            price_data: {
+              currency: 'usd',
+              product_data: {
+                name: input.planName,
+                description: 'Acceso instantáneo a recetas y tips de nutrición.',
+              },
+              unit_amount: input.planPrice * 100, // Precio en centavos
+            },
+            quantity: 1,
+          },
+        ],
+        mode: 'payment',
+        success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002'}?payment_success=true&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002'}?payment_cancelled=true`,
+        customer: customer.id,
+        metadata: {
+            leadId: leadRef.id,
+        }
+      });
       
       return {
-        confirmationMessage: '¡Gracias! Serás redirigido para completar el pago. Revisa tu correo después de la compra.',
+        confirmationMessage: '¡Gracias! Serás redirigido para completar el pago.',
         clientEmail: input.email,
         planName: input.planName,
+        stripeCheckoutUrl: checkoutSession.url!,
       };
 
     } else {
