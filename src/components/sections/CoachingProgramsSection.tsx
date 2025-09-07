@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -206,7 +207,7 @@ function LoadingSkeleton() {
     <section id="programs" className="py-16 sm:py-24 bg-background">
       <div className="container mx-auto px-4 md:px-6">
         <div className="mx-auto max-w-2xl text-center">
-          <div className="h-10 bg-gray-200 rounded animate-pulse mb-4"></div>
+          <div className="h-10 bg-gray-200 rounded animate-pulse mb-4 w-3/4 mx-auto"></div>
           <div className="h-6 bg-gray-200 rounded animate-pulse max-w-md mx-auto"></div>
         </div>
         <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3 lg:max-w-7xl lg:mx-auto">
@@ -297,7 +298,7 @@ function FallbackPrograms({
               Elige el plan que mejor se adapte a tus metas. Empecemos este viaje juntas.
             </p>
             <p className="mt-2 text-sm text-yellow-600">
-              ⚠️ Mostrando datos de respaldo - Verifica conexión con Shopify
+              ⚠️ Mostrando datos de respaldo. Verifica la conexión con Shopify.
             </p>
           </div>
           <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3 lg:max-w-7xl lg:mx-auto">
@@ -344,3 +345,5 @@ function FallbackPrograms({
     </>
   );
 }
+
+    
