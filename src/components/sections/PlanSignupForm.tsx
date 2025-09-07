@@ -61,10 +61,15 @@ export default function PlanSignupForm({ plan, onSubmitted }: PlanSignupFormProp
 
     if (result.error) {
       setIsSubmitting(false);
+      
+      const isStripeError = result.error.includes("Stripe no está configurado");
+      
       toast({
         variant: "destructive",
         title: "Error",
-        description: result.error,
+        description: isStripeError 
+          ? "El sistema de pagos se está configurando. Por favor, vuelve a intentarlo más tarde."
+          : result.error,
       });
     } else {
       if(result.data?.stripeCheckoutUrl){

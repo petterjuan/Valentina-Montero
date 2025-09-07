@@ -1,7 +1,7 @@
 import Stripe from 'stripe';
 
 let stripe: Stripe | null = null;
-let initializationError: Error | null = null;
+let initializationError: string | null = null;
 
 try {
   const stripeKey = process.env.STRIPE_SECRET_KEY;
@@ -10,21 +10,21 @@ try {
       apiVersion: '2024-06-20',
       typescript: true,
     });
+    console.log("Stripe SDK initialized successfully.");
   } else {
-    initializationError = new Error("Stripe secret key not found. Make sure STRIPE_SECRET_KEY is set in your environment variables.");
-    console.error(initializationError.message);
+    initializationError = "Stripe secret key not found. Stripe features will be disabled.";
+    console.warn(initializationError);
   }
 } catch (error) {
-  initializationError = new Error(`Error initializing Stripe: ${error instanceof Error ? error.message : String(error)}`);
-  console.error(initializationError.message);
+  const message = `Error initializing Stripe: ${error instanceof Error ? error.message : String(error)}`;
+  initializationError = `${message}. Stripe features will be disabled.`;
+  console.error(initializationError);
 }
 
 export const getStripe = () => {
     if (initializationError) {
-        throw initializationError;
-    }
-    if (!stripe) {
-        throw new Error("Stripe is not initialized. The SDK might have failed to initialize.");
+        console.warn(`Stripe access blocked: ${initializationError}`);
+        return null;
     }
     return stripe;
 }
