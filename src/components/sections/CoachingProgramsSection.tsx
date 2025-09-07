@@ -1,26 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Check, FileText } from "lucide-react";
+import { Check } from "lucide-react";
 import PlanSignupForm from "@/components/sections/PlanSignupForm";
-import {
-  gql,
-  type HydrogenApiVersion,
-  type Storefront,
-  useShopQuery,
-} from '@shopify/hydrogen';
 
-// Interface for Shopify product data
+import { gql } from "graphql-request";
+import { shopifyClient } from "@/lib/shopify";
+
+// Interfaces
 interface ShopifyProduct {
   id: string;
   title: string;
@@ -33,29 +29,20 @@ interface ShopifyProduct {
       currencyCode: string;
     };
   };
-  // Custom metafields
-  isPopular?: {
-    value: string;
-  };
-  features?: {
-    value: string;
-  };
-  isDigital?: {
-    value: string;
-  };
+  isPopular?: { value: string };
+  features?: { value: string };
+  isDigital?: { value: string };
 }
 
-// Transform Shopify product to match your existing Program type
 interface Program {
   title: string;
   price: number;
   features: string[];
   isPopular?: boolean;
   isDigital?: boolean;
-  handle?: string; // Add handle for tracking
+  handle?: string;
 }
 
-// Props for the component
 interface CoachingProgramsSectionProps {
   collectionHandle?: string;
   title?: string;
@@ -64,31 +51,19 @@ interface CoachingProgramsSectionProps {
 }
 
 export default function CoachingProgramsSection({
-  collectionHandle = "coaching-programs", // Default collection
+  collectionHandle = "coaching-programs",
   title = "¿Lista para Comprometerte?",
   description = "Elige el plan que mejor se adapte a tus metas. Empecemos este viaje juntas.",
   maxProducts = 10,
 }: CoachingProgramsSectionProps) {
   const [selectedPlan, setSelectedPlan] = useState<Program | null>(null);
+  const [programs, setPrograms] = useState<Program[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
-  // Fetch products from Shopify
-  const {data, error, isLoading} = useShopQuery<Storefront<HydrogenApiVersion>>({
-    query: COLLECTION_QUERY,
-    variables: {
-      handle: collectionHandle,
-      first: maxProducts,
-    },
-  });
+  const openDialog = (program: Program) => setSelectedPlan(program);
+  const closeDialog = () => setSelectedPlan(null);
 
-  const openDialog = (program: Program) => {
-    setSelectedPlan(program);
-  };
-
-  const closeDialog = () => {
-    setSelectedPlan(null);
-  };
-
-  // Transform Shopify products to match your existing Program interface
   const transformShopifyProducts = (products: ShopifyProduct[]): Program[] => {
     return products.map((product) => ({
       title: product.title,
@@ -100,25 +75,34 @@ export default function CoachingProgramsSection({
     }));
   };
 
-  // Handle loading state
-  if (isLoading) {
-    return <LoadingSkeleton />;
-  }
+  useEffect(() => {
+    async function fetchProducts() {
+      try {
+        const data = await shopifyClient.request(COLLECTION_QUERY, {
+          handle: collectionHandle,
+          first: maxProducts,
+        });
 
-  // Handle error state
-  if (error) {
-    console.error('Error loading products:', error);
-    // Fallback to hardcoded data if there's an error
-    return <FallbackPrograms onPlanSelect={openDialog} selectedPlan={selectedPlan} onClose={closeDialog} />;
-  }
+        const shopifyProducts = data.collection?.products?.nodes || [];
+        if (shopifyProducts.length > 0) {
+          setPrograms(transformShopifyProducts(shopifyProducts));
+        } else {
+          setPrograms(getFallbackPrograms());
+        }
+      } catch (err: any) {
+        console.error("Error loading products:", err);
+        setFetchError("No se pudieron cargar productos");
+        setPrograms(getFallbackPrograms());
+      } finally {
+        setLoading(false);
+      }
+    }
 
-  const collection = data?.collection;
-  const shopifyProducts = collection?.products?.nodes || [];
-  
-  // Transform products or fallback to hardcoded data
-  const programs = shopifyProducts.length > 0 
-    ? transformShopifyProducts(shopifyProducts)
-    : getFallbackPrograms(); // Fallback data
+    fetchProducts();
+  }, [collectionHandle, maxProducts]);
+
+  if (loading) return <LoadingSkeleton />;
+  if (fetchError) return <FallbackPrograms onPlanSelect={openDialog} selectedPlan={selectedPlan} onClose={closeDialog} />;
 
   return (
     <>
@@ -128,17 +112,14 @@ export default function CoachingProgramsSection({
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl font-headline">
               {title}
             </h2>
-            <p className="mt-4 text-lg text-muted-foreground">
-              {description}
-            </p>
+            <p className="mt-4 text-lg text-muted-foreground">{description}</p>
           </div>
+
           <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3 lg:max-w-7xl lg:mx-auto">
-            {programs.map((program, index) => (
+            {programs.map((program) => (
               <Card
                 key={program.handle || program.title}
-                className={`flex flex-col ${
-                  program.isPopular ? "border-primary shadow-lg" : ""
-                }`}
+                className={`flex flex-col ${program.isPopular ? "border-primary shadow-lg" : ""}`}
               >
                 <CardHeader className="items-center pb-4">
                   {program.isPopular && (
@@ -146,34 +127,24 @@ export default function CoachingProgramsSection({
                       MÁS POPULAR
                     </div>
                   )}
-                  <CardTitle className="text-2xl font-headline text-center">
-                    {program.title}
-                  </CardTitle>
+                  <CardTitle className="text-2xl font-headline text-center">{program.title}</CardTitle>
                   <div className="flex items-baseline gap-1">
-                    <span className="text-4xl font-bold tracking-tight">
-                      ${program.price}
-                    </span>
-                    {!program.isDigital && (
-                      <span className="text-sm font-semibold text-muted-foreground">
-                        / plan
-                      </span>
-                    )}
+                    <span className="text-4xl font-bold tracking-tight">${program.price}</span>
+                    {!program.isDigital && <span className="text-sm font-semibold text-muted-foreground">/ plan</span>}
                   </div>
                 </CardHeader>
+
                 <CardContent className="flex-1">
                   <ul className="space-y-3 text-sm">
-                    {program.features.map((feature, featureIndex) => (
-                      <li key={featureIndex} className="flex items-start">
-                        {program.isDigital ? (
-                          <FileText className="mr-2 mt-1 h-4 w-4 shrink-0 text-primary" />
-                        ) : (
-                          <Check className="mr-2 mt-1 h-4 w-4 shrink-0 text-primary" />
-                        )}
+                    {program.features.map((feature, index) => (
+                      <li key={index} className="flex items-start">
+                        <Check className="mr-2 mt-1 h-4 w-4 shrink-0 text-primary" />
                         <span>{feature}</span>
                       </li>
                     ))}
                   </ul>
                 </CardContent>
+
                 <CardFooter>
                   <Button onClick={() => openDialog(program)} className="w-full font-bold">
                     {program.isDigital ? 'Comprar PDF' : 'Elegir Plan'}
@@ -194,7 +165,42 @@ export default function CoachingProgramsSection({
   );
 }
 
-// Loading skeleton component (matches your design)
+// GraphQL query
+const COLLECTION_QUERY = gql`
+  query CollectionDetails($handle: String!, $first: Int = 10) {
+    collection(handle: $handle) {
+      id
+      title
+      description
+      products(first: $first) {
+        nodes {
+          id
+          title
+          handle
+          description
+          availableForSale
+          priceRange {
+            minVariantPrice {
+              amount
+              currencyCode
+            }
+          }
+          isPopular: metafield(namespace: "custom", key: "is_popular") {
+            value
+          }
+          features: metafield(namespace: "custom", key: "features") {
+            value
+          }
+          isDigital: metafield(namespace: "custom", key: "is_digital") {
+            value
+          }
+        }
+      }
+    }
+  }
+`;
+
+// Loading Skeleton
 function LoadingSkeleton() {
   return (
     <section id="programs" className="py-16 sm:py-24 bg-background">
@@ -228,7 +234,7 @@ function LoadingSkeleton() {
   );
 }
 
-// Fallback programs (your original hardcoded data as backup)
+// Fallback programs
 function getFallbackPrograms(): Program[] {
   return [
     {
@@ -257,7 +263,6 @@ function getFallbackPrograms(): Program[] {
     {
       title: 'Muscle Bites',
       price: 25,
-      isPopular: false,
       isDigital: true,
       features: [
         "4 Tips para Combinar Snacks en el día",
@@ -268,11 +273,11 @@ function getFallbackPrograms(): Program[] {
   ];
 }
 
-// Fallback component that uses hardcoded data
-function FallbackPrograms({ 
-  onPlanSelect, 
-  selectedPlan, 
-  onClose 
+// Fallback component
+function FallbackPrograms({
+  onPlanSelect,
+  selectedPlan,
+  onClose
 }: {
   onPlanSelect: (program: Program) => void;
   selectedPlan: Program | null;
@@ -297,41 +302,24 @@ function FallbackPrograms({
           </div>
           <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3 lg:max-w-7xl lg:mx-auto">
             {programs.map((program) => (
-              <Card
-                key={program.title}
-                className={`flex flex-col ${
-                  program.isPopular ? "border-primary shadow-lg" : ""
-                }`}
-              >
+              <Card key={program.title} className={`flex flex-col ${program.isPopular ? "border-primary shadow-lg" : ""}`}>
                 <CardHeader className="items-center pb-4">
                   {program.isPopular && (
                     <div className="mb-2 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">
                       MÁS POPULAR
                     </div>
                   )}
-                  <CardTitle className="text-2xl font-headline text-center">
-                    {program.title}
-                  </CardTitle>
+                  <CardTitle className="text-2xl font-headline text-center">{program.title}</CardTitle>
                   <div className="flex items-baseline gap-1">
-                    <span className="text-4xl font-bold tracking-tight">
-                      ${program.price}
-                    </span>
-                    {!program.isDigital && (
-                      <span className="text-sm font-semibold text-muted-foreground">
-                        / plan
-                      </span>
-                    )}
+                    <span className="text-4xl font-bold tracking-tight">${program.price}</span>
+                    {!program.isDigital && <span className="text-sm font-semibold text-muted-foreground">/ plan</span>}
                   </div>
                 </CardHeader>
                 <CardContent className="flex-1">
                   <ul className="space-y-3 text-sm">
                     {program.features.map((feature, index) => (
                       <li key={index} className="flex items-start">
-                        {program.isDigital ? (
-                          <FileText className="mr-2 mt-1 h-4 w-4 shrink-0 text-primary" />
-                        ) : (
-                          <Check className="mr-2 mt-1 h-4 w-4 shrink-0 text-primary" />
-                        )}
+                        <Check className="mr-2 mt-1 h-4 w-4 shrink-0 text-primary" />
                         <span>{feature}</span>
                       </li>
                     ))}
@@ -356,41 +344,3 @@ function FallbackPrograms({
     </>
   );
 }
-
-// GraphQL query to fetch collection and products
-const COLLECTION_QUERY = gql`
-  query CollectionDetails($handle: String!, $first: Int = 10) {
-    collection(handle: $handle) {
-      id
-      title
-      description
-      products(first: $first) {
-        nodes {
-          id
-          title
-          handle
-          description
-          availableForSale
-          priceRange {
-            minVariantPrice {
-              amount
-              currencyCode
-            }
-          }
-          # Custom metafields - create these in Shopify Admin
-          isPopular: metafield(namespace: "custom", key: "is_popular") {
-            value
-          }
-          features: metafield(namespace: "custom", key: "features") {
-            value
-          }
-          isDigital: metafield(namespace: "custom", key: "is_digital") {
-            value
-          }
-        }
-      }
-    }
-  }
-`;
-
-    
