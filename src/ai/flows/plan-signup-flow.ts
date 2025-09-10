@@ -1,3 +1,4 @@
+
 "use server";
 
 /**
@@ -48,7 +49,7 @@ const planSignupFlow = ai.defineFlow(
       // Flujo para producto digital (ej. PDF "Muscle Bites")
       const stripe = getStripe();
       if (!stripe) {
-        throw new Error("Stripe no está configurado. No se puede procesar el pago.");
+        throw new Error("STRIPE_NOT_CONFIGURED");
       }
       
       const firestore = getFirestore();
