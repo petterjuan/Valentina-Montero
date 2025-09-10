@@ -136,13 +136,17 @@ function getFallbackPrograms(): Program[] {
 
 const transformShopifyProducts = (products: ShopifyProduct[]): Program[] => {
   return products.map((product) => {
-    let featuresList = [];
+    let featuresList: string[] = [];
     if (product.features?.value) {
         try {
-            featuresList = JSON.parse(product.features.value);
+            // Safely parse the features string. If it fails, default to an empty array.
+            const parsedFeatures = JSON.parse(product.features.value);
+            if (Array.isArray(parsedFeatures)) {
+                featuresList = parsedFeatures;
+            }
         } catch (e) {
             console.error(`Failed to parse features for product ${product.handle}:`, e);
-            featuresList = [];
+            // Keep featuresList as an empty array in case of parsing error
         }
     }
     
