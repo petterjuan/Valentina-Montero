@@ -1,8 +1,11 @@
 
-require('dotenv').config();
 import mongoose from 'mongoose';
 import PostModel from '@/models/Post';
 import TestimonialModel from '@/models/Testimonial';
+
+// It's recommended to load environment variables from your execution environment
+// For local development, you can use a .env file and a script in package.json
+// e.g., "seed": "ts-node -r dotenv/config src/lib/seed.ts"
 
 const fallbackTestimonials = [
   {
@@ -69,7 +72,7 @@ async function seedDatabase() {
     const uri = process.env.MONGODB_URI;
 
     if (!uri) {
-        console.error("Missing MONGODB_URI in .env file");
+        console.error("Missing MONGODB_URI in environment variables.");
         process.exit(1);
     }
 

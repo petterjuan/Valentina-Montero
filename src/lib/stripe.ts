@@ -11,10 +11,8 @@ try {
       apiVersion: '2024-06-20',
       typescript: true,
     });
-    console.log("Stripe SDK initialized successfully.");
   } else {
     initializationError = "Stripe secret key not found. Stripe features will be disabled.";
-    console.warn(initializationError);
   }
 } catch (error) {
   const message = `Error initializing Stripe: ${error instanceof Error ? error.message : String(error)}`;
@@ -24,7 +22,7 @@ try {
 
 export const getStripe = () => {
     if (initializationError) {
-        console.warn(`Stripe access blocked: ${initializationError}`);
+        console.error(`Stripe access blocked: ${initializationError}`);
         return null;
     }
     return stripe;

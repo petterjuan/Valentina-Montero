@@ -14,10 +14,9 @@ try {
       });
     }
     firestore = admin.firestore();
-    console.log("Firebase Admin SDK initialized successfully.");
   } else {
     initializationError = "Firebase service account key not found. Firestore features will be disabled.";
-    console.warn(initializationError);
+    console.error(initializationError);
   }
 } catch (error) {
   const message = `Error initializing Firebase Admin SDK: ${error instanceof Error ? error.message : String(error)}`;
@@ -29,7 +28,7 @@ try {
 export const getFirestore = () => {
     if (initializationError) {
         // Log the reason for failure when access is attempted.
-        console.warn(`Firestore access blocked: ${initializationError}`);
+        console.error(`Firestore access blocked: ${initializationError}`);
         return null;
     }
     return firestore;

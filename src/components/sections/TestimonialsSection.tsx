@@ -3,26 +3,20 @@ import { getTestimonials } from "@/app/actions";
 import type { Testimonial } from "@/types";
 import TestimonialsCarousel from "./TestimonialsCarousel";
 
-const fallbackTestimonials: Testimonial[] = [
+const fallbackTestimonials: Omit<Testimonial, "_id" | "id">[] = [
   {
-    _id: "fallback-1",
-    id: "fallback-1",
     name: "Clienta Satisfecha",
     story: "Este programa superó mis expectativas. ¡Me siento más fuerte y con más energía que nunca!",
     image: "https://picsum.photos/seed/test1/100/100",
     aiHint: "happy woman",
   },
   {
-    _id: "fallback-2",
-    id: "fallback-2",
     name: "Participante Feliz",
     story: "La guía y el apoyo de Valentina fueron clave para mi transformación. ¡Totalmente recomendado!",
     image: "https://picsum.photos/seed/test2/100/100",
     aiHint: "smiling person",
   },
   {
-    _id: "fallback-3",
-    id: "fallback-3",
     name: "Testimonio de Éxito",
     story: "Un enfoque muy profesional y personalizado. Los resultados hablan por sí solos.",
     image: "https://picsum.photos/seed/test3/100/100",
@@ -31,18 +25,13 @@ const fallbackTestimonials: Testimonial[] = [
 ];
 
 export default async function TestimonialsSection() {
-    let testimonials: Testimonial[];
+    let testimonials: (Testimonial | Omit<Testimonial, "id" | "_id">)[];
 
-    try {
-        const fetchedTestimonials = await getTestimonials();
-        if (fetchedTestimonials) {
-            testimonials = fetchedTestimonials;
-        } else {
-            console.warn("⚠️ Mostrando datos de respaldo. Verifica la conexión con MongoDB.");
-            testimonials = fallbackTestimonials;
-        }
-    } catch (error) {
-        console.error("Error crítico al obtener testimonios. Mostrando datos de respaldo.", error);
+    const fetchedTestimonials = await getTestimonials();
+    if (fetchedTestimonials && fetchedTestimonials.length > 0) {
+        testimonials = fetchedTestimonials;
+    } else {
+        console.error("⚠️ MongoDB data not found, showing fallback data. Please verify MongoDB connection.");
         testimonials = fallbackTestimonials;
     }
 

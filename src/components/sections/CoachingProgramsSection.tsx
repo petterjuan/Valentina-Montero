@@ -79,23 +79,14 @@ export default async function CoachingProgramsSection({
 }: CoachingProgramsSectionProps) {
   
   let programs: Program[];
-  let source: 'shopify' | 'fallback' = 'shopify';
 
-  try {
-    const fetchedPrograms = await getPrograms(collectionHandle, maxProducts);
-    if (fetchedPrograms && fetchedPrograms.length > 0) {
-        programs = fetchedPrograms;
-    } else {
-        console.warn("⚠️ Mostrando datos de respaldo. Verifica la conexión con Shopify.");
-        programs = fallbackPrograms;
-        source = 'fallback';
-    }
-  } catch (error) {
-    console.error("Error crítico al obtener programas. Mostrando datos de respaldo.", error);
-    programs = fallbackPrograms;
-    source = 'fallback';
+  const fetchedPrograms = await getPrograms(collectionHandle, maxProducts);
+  if (fetchedPrograms && fetchedPrograms.length > 0) {
+      programs = fetchedPrograms;
+  } else {
+      console.error("⚠️ Shopify data not found, showing fallback data. Please verify Shopify connection and collection handle.");
+      programs = fallbackPrograms;
   }
-
 
   return (
     <section id="programs" className="py-16 sm:py-24 bg-background">

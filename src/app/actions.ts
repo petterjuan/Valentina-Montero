@@ -133,15 +133,7 @@ export async function getTestimonials(): Promise<Testimonial[] | null> {
             .limit(10)
             .lean();
         
-        if (testimonials.length === 0) {
-            return null;
-        }
-
-        return testimonials.map(testimonial => ({
-            ...testimonial,
-            id: testimonial._id.toString(),
-            _id: testimonial._id.toString(),
-        }));
+        return testimonials;
     } catch (error) {
         console.error("Error fetching testimonials:", error);
         return null;
@@ -241,7 +233,6 @@ export async function getPrograms(collectionHandle: string, maxProducts: number)
   const token = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN;
 
   if (!domain || !token) {
-    console.warn("Shopify environment variables are not set. Returning null.");
     return null;
   }
   
