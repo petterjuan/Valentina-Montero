@@ -1,6 +1,24 @@
 
 "use server";
 
+import * as fs from 'fs';
+import * as path from 'path';
+
+// Manually load environment variables from .env file
+const envPath = path.resolve(process.cwd(), '.env');
+if (fs.existsSync(envPath)) {
+  const envFile = fs.readFileSync(envPath, 'utf-8');
+  const envVars = envFile.split('\n');
+  for (const line of envVars) {
+    const [key, ...valueParts] = line.split('=');
+    if (key && valueParts.length > 0) {
+      const value = valueParts.join('=').trim().replace(/(^"|"$)|(^'|'$)/g, '');
+      process.env[key.trim()] = value;
+    }
+  }
+}
+
+
 import { generatePersonalizedWorkout, GeneratePersonalizedWorkoutInput, GeneratePersonalizedWorkoutOutput } from "@/ai/flows/generate-personalized-workout";
 import { processPlanSignup, PlanSignupInput } from "@/ai/flows/plan-signup-flow";
 import { z } from "zod";
@@ -28,12 +46,15 @@ async function connectToDb() {
   }
   
   if (process.env.NODE_ENV === "development") {
+    // In development mode, use a global variable so that the value
+    // is preserved across module reloads caused by HMR (Hot Module Replacement).
     if (!global._mongoClientPromise) {
       client = new MongoClient(uri);
       global._mongoClientPromise = client.connect();
     }
     client = await global._mongoClientPromise;
   } else {
+    // In production mode, it's best to not use a global variable.
     client = new MongoClient(uri);
     await client.connect();
   }
@@ -303,3 +324,5 @@ export async function getPrograms(collectionHandle: string, maxProducts: number)
     return null;
   }
 }
+
+    
