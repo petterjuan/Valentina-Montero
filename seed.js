@@ -72,7 +72,7 @@ async function seedDatabase() {
         process.exit(1);
     }
 
-    const client = new MongoClient(encodeURI(uri));
+    const client = new MongoClient(uri);
 
     try {
         await client.connect();

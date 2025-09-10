@@ -100,6 +100,7 @@ export async function getBlogPosts(limit?: number): Promise<Post[]> {
 
     return posts.map(post => ({
         ...post,
+        _id: post._id,
         id: post._id.toString(),
         createdAt: new Date(post.createdAt),
     }))
@@ -127,6 +128,7 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
     
     return {
         ...post,
+        _id: post._id,
         id: post._id.toString(),
         createdAt: new Date(post.createdAt),
     };
@@ -150,6 +152,7 @@ export async function getTestimonials(): Promise<Testimonial[]> {
 
         return testimonials.map(testimonial => ({
             ...testimonial,
+            _id: testimonial._id,
             id: testimonial._id.toString(),
         }));
     } catch (error) {
