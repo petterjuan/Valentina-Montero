@@ -65,9 +65,9 @@ const fallbackPosts = [
 
 async function seedDatabase() {
     const uri = process.env.MONGODB_URI;
-    const dbName = process.env.MONGODB_DB_NAME;
+    const dbName = "sample_training";
 
-    if (!uri || !dbName) {
+    if (!uri) {
         console.error("Missing MONGODB_URI or MONGODB_DB_NAME in .env file");
         process.exit(1);
     }
