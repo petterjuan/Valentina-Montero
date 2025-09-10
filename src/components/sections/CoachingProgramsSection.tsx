@@ -186,7 +186,7 @@ async function getProgramsFromShopify(collectionHandle: string, maxProducts: num
         },
       }),
        // Use Next.js caching features
-      next: { revalidate: 3600 } // Revalidate every hour
+       cache: 'no-store',
     });
 
     if (!response.ok) {

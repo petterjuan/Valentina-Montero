@@ -110,9 +110,6 @@ const planSignupFlow = ai.defineFlow(
           meetLink,
           registrationDate,
         });
-         console.log("Notificación para Valentina (guardado en Firestore):", `Nueva inscripción: ${input.fullName} (${input.email}) se ha inscrito en el ${input.planName}. Enlace de Meet generado: ${meetLink}`);
-      } else {
-        console.log("Notificación para Valentina (sin guardar en DB):", `Nueva inscripción: ${input.fullName} (${input.email}) se ha inscrito en el ${input.planName}. Enlace de Meet generado: ${meetLink}`);
       }
       
       return {
