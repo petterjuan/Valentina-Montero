@@ -8,6 +8,7 @@ import { type Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import DOMPurify from 'isomorphic-dompurify';
 
 interface BlogPostPageProps {
   params: {
@@ -49,6 +50,8 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
     notFound();
   }
 
+  const sanitizedContent = DOMPurify.sanitize(post.content || "");
+
   return (
     <article className="py-12 sm:py-20">
       <div className="container mx-auto px-4 md:px-6">
@@ -85,7 +88,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
           
           <div 
             className="prose prose-lg dark:prose-invert max-w-none mt-8"
-            dangerouslySetInnerHTML={{ __html: post.content || "" }}
+            dangerouslySetInnerHTML={{ __html: sanitizedContent }}
           />
 
           <Separator className="my-12" />
