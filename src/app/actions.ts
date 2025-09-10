@@ -1,28 +1,10 @@
 
 "use server";
 
-import * as fs from 'fs';
-import * as path from 'path';
-
-// Manually load environment variables from .env file
-const envPath = path.resolve(process.cwd(), '.env');
-if (fs.existsSync(envPath)) {
-  const envFile = fs.readFileSync(envPath, 'utf-8');
-  const envVars = envFile.split('\n');
-  for (const line of envVars) {
-    const [key, ...valueParts] = line.split('=');
-    if (key && valueParts.length > 0) {
-      const value = valueParts.join('=').trim().replace(/(^"|"$)|(^'|'$)/g, '');
-      process.env[key.trim()] = value;
-    }
-  }
-}
-
-
 import { generatePersonalizedWorkout, GeneratePersonalizedWorkoutInput, GeneratePersonalizedWorkoutOutput } from "@/ai/flows/generate-personalized-workout";
 import { processPlanSignup, PlanSignupInput } from "@/ai/flows/plan-signup-flow";
 import { z } from "zod";
-import { MongoClient, Db, ObjectId } from "mongodb";
+import { MongoClient, Db } from "mongodb";
 import { Post, Testimonial } from "@/types";
 import { getFirestore } from "@/lib/firebase";
 import { Program } from "@/components/sections/CoachingProgramsSection";
@@ -31,10 +13,10 @@ const uri = process.env.MONGODB_URI;
 const dbName = process.env.MONGODB_DB_NAME;
 
 if (!uri) {
-  throw new Error('Invalid/Missing environment variable: "MONGODB_URI"');
+  console.error('Invalid/Missing environment variable: "MONGODB_URI"');
 }
 if (!dbName) {
-    throw new Error('Invalid/Missing environment variable: "MONGODB_DB_NAME"');
+    console.error('Invalid/Missing environment variable: "MONGODB_DB_NAME"');
 }
 
 let client: MongoClient;
@@ -49,13 +31,13 @@ async function connectToDb() {
     // In development mode, use a global variable so that the value
     // is preserved across module reloads caused by HMR (Hot Module Replacement).
     if (!global._mongoClientPromise) {
-      client = new MongoClient(uri);
+      client = new MongoClient(uri!);
       global._mongoClientPromise = client.connect();
     }
     client = await global._mongoClientPromise;
   } else {
     // In production mode, it's best to not use a global variable.
-    client = new MongoClient(uri);
+    client = new MongoClient(uri!);
     await client.connect();
   }
   db = client.db(dbName);
@@ -133,6 +115,7 @@ export async function handleLeadSubmission(formData: { email: string }) {
 }
 
 export async function getBlogPosts(limit?: number): Promise<Post[]> {
+  if (!uri || !dbName) return [];
   try {
     const { db } = await connectToDb();
     const postsCollection = db.collection<Post>("posts");
@@ -141,7 +124,6 @@ export async function getBlogPosts(limit?: number): Promise<Post[]> {
 
     return posts.map(post => ({
         ...post,
-        _id: post._id,
         id: post._id.toString(),
         createdAt: new Date(post.createdAt),
     }));
@@ -153,6 +135,7 @@ export async function getBlogPosts(limit?: number): Promise<Post[]> {
 }
 
 export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
+  if (!uri || !dbName) return null;
   try {
     const { db } = await connectToDb();
     const postsCollection = db.collection<Post>("posts");
@@ -164,7 +147,6 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
     
     return {
         ...post,
-        _id: post._id,
         id: post._id.toString(),
         createdAt: new Date(post.createdAt),
     };
@@ -176,6 +158,7 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
 }
 
 export async function getTestimonials(): Promise<Testimonial[]> {
+    if (!uri || !dbName) return [];
     try {
         const { db } = await connectToDb();
         const testimonialsCollection = db.collection<Testimonial>("testimonials");
@@ -183,7 +166,6 @@ export async function getTestimonials(): Promise<Testimonial[]> {
 
         return testimonials.map(testimonial => ({
             ...testimonial,
-            _id: testimonial._id,
             id: testimonial._id.toString(),
         }));
     } catch (error) {
@@ -324,5 +306,3 @@ export async function getPrograms(collectionHandle: string, maxProducts: number)
     return null;
   }
 }
-
-    
