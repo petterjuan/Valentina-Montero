@@ -135,18 +135,30 @@ function getFallbackPrograms(): Program[] {
 }
 
 const transformShopifyProducts = (products: ShopifyProduct[]): Program[] => {
-  return products.map((product) => ({
-    title: product.title,
-    price: Math.round(parseFloat(product.priceRange.minVariantPrice.amount)),
-    features: product.features?.value ? JSON.parse(product.features.value) : [],
-    isPopular: product.isPopular?.value === 'true',
-    isDigital: product.isDigital?.value === 'true',
-    handle: product.handle,
-    image: product.featuredImage ? {
-        src: product.featuredImage.url,
-        alt: product.featuredImage.altText || product.title,
-    } : undefined,
-  }));
+  return products.map((product) => {
+    let featuresList = [];
+    if (product.features?.value) {
+        try {
+            featuresList = JSON.parse(product.features.value);
+        } catch (e) {
+            console.error(`Failed to parse features for product ${product.handle}:`, e);
+            featuresList = [];
+        }
+    }
+    
+    return {
+        title: product.title,
+        price: Math.round(parseFloat(product.priceRange.minVariantPrice.amount)),
+        features: featuresList,
+        isPopular: product.isPopular?.value === 'true',
+        isDigital: product.isDigital?.value === 'true',
+        handle: product.handle,
+        image: product.featuredImage ? {
+            src: product.featuredImage.url,
+            alt: product.featuredImage.altText || product.title,
+        } : undefined,
+    };
+  });
 };
 
 async function getProgramsFromShopify(collectionHandle: string, maxProducts: number): Promise<Program[] | null> {
@@ -160,13 +172,13 @@ async function getProgramsFromShopify(collectionHandle: string, maxProducts: num
           first: maxProducts,
         });
 
-        const shopifyProducts = data.collection?.products?.nodes || [];
-        if (shopifyProducts.length > 0) {
+        const shopifyProducts = data.collection?.products?.nodes;
+        if (shopifyProducts && shopifyProducts.length > 0) {
           return transformShopifyProducts(shopifyProducts);
         }
         return null;
     } catch (err: any) {
-        console.error("Error loading products from Shopify:", err);
+        console.error("Error loading products from Shopify:", err.message);
         return null;
     }
 }
