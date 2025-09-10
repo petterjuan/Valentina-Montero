@@ -11,6 +11,7 @@ import { Check } from "lucide-react";
 import { gql } from "graphql-request";
 import { shopifyClient } from "@/lib/shopify";
 import PlanSignupDialog from "@/components/sections/PlanSignupDialog";
+import Image from "next/image";
 
 // Interfaces
 interface ShopifyProduct {
@@ -19,6 +20,10 @@ interface ShopifyProduct {
   handle: string;
   description: string;
   availableForSale: boolean;
+  featuredImage?: {
+    url: string;
+    altText: string;
+  };
   priceRange: {
     minVariantPrice: {
       amount: string;
@@ -34,6 +39,10 @@ export interface Program {
   title: string;
   price: number;
   features: string[];
+  image?: {
+    src: string;
+    alt: string;
+  };
   isPopular?: boolean;
   isDigital?: boolean;
   handle?: string;
@@ -59,6 +68,10 @@ const COLLECTION_QUERY = gql`
           handle
           description
           availableForSale
+          featuredImage {
+              url(transform: {maxWidth: 600, maxHeight: 400, crop: CENTER})
+              altText
+          }
           priceRange {
             minVariantPrice {
               amount
@@ -85,6 +98,7 @@ function getFallbackPrograms(): Program[] {
     {
       title: "Plan de Coaching de 6 Semanas",
       price: 167,
+      image: { src: "https://picsum.photos/seed/p1/600/400", alt: "Plan de 6 semanas" },
       features: [
         "Plan de entrenamiento personalizado",
         "Seguimiento de progreso quincenal",
@@ -97,6 +111,7 @@ function getFallbackPrograms(): Program[] {
       title: "Plan de Coaching de 12 Semanas",
       price: 267,
       isPopular: true,
+      image: { src: "https://picsum.photos/seed/p2/600/400", alt: "Plan de 12 semanas" },
       features: [
         "Todo lo del plan de 6 semanas",
         "+ Mini Guía de Suplementos y Vitaminas",
@@ -109,6 +124,7 @@ function getFallbackPrograms(): Program[] {
       title: 'Muscle Bites',
       price: 25,
       isDigital: true,
+      image: { src: "https://picsum.photos/seed/p3/600/400", alt: "Guía Muscle Bites" },
       features: [
         "4 Tips para Combinar Snacks en el día",
         "10 Recetas (Pre-Entrenamiento)",
@@ -126,6 +142,10 @@ const transformShopifyProducts = (products: ShopifyProduct[]): Program[] => {
     isPopular: product.isPopular?.value === 'true',
     isDigital: product.isDigital?.value === 'true',
     handle: product.handle,
+    image: product.featuredImage ? {
+        src: product.featuredImage.url,
+        alt: product.featuredImage.altText || product.title,
+    } : undefined,
   }));
 };
 
@@ -188,16 +208,28 @@ export default async function CoachingProgramsSection({
               key={program.handle || program.title}
               className={`flex flex-col ${program.isPopular ? "border-primary shadow-lg" : ""}`}
             >
-              <CardHeader className="items-center pb-4">
-                {program.isPopular && (
-                  <div className="mb-2 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">
-                    MÁS POPULAR
-                  </div>
-                )}
-                <CardTitle className="text-2xl font-headline text-center">{program.title}</CardTitle>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-bold tracking-tight">${program.price}</span>
-                  {!program.isDigital && <span className="text-sm font-semibold text-muted-foreground">/ plan</span>}
+              <CardHeader className="p-0">
+                 {program.image && (
+                    <div className="aspect-video relative w-full overflow-hidden rounded-t-lg">
+                        <Image 
+                            src={program.image.src}
+                            alt={program.image.alt}
+                            fill
+                            className="object-cover"
+                        />
+                    </div>
+                 )}
+                <div className="p-6 items-center flex flex-col">
+                    {program.isPopular && (
+                      <div className="mb-2 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">
+                        MÁS POPULAR
+                      </div>
+                    )}
+                    <CardTitle className="text-2xl font-headline text-center">{program.title}</CardTitle>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-4xl font-bold tracking-tight">${program.price}</span>
+                      {!program.isDigital && <span className="text-sm font-semibold text-muted-foreground">/ plan</span>}
+                    </div>
                 </div>
               </CardHeader>
 
