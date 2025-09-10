@@ -47,36 +47,19 @@ export async function handlePlanSignup(input: PlanSignupInput) {
   }
 }
 
-const getDbName = () => {
-    if (!process.env.MONGODB_URI) {
-        throw new Error('Invalid/Missing environment variable: "MONGODB_URI"');
-    }
-    try {
-        const url = new URL(process.env.MONGODB_URI);
-        const dbName = url.pathname.substring(1);
-        if (!dbName) {
-            // This fallback is for connection strings that don't specify the database in the path.
-            // Adjust this to your default database name if necessary.
-            return "petter2001us_db";
-        }
-        return dbName;
-    } catch (e) {
-        console.error("Failed to parse MONGODB_URI", e);
-        throw new Error("Could not determine database name from MONGODB_URI");
-    }
-}
-
-
 const leadSchema = z.object({
     email: z.string().email({ message: "Por favor, introduce un email válido." }),
 });
 
 export async function handleLeadSubmission(formData: { email: string }) {
+    if (!process.env.MONGODB_DB_NAME) {
+        throw new Error('Invalid/Missing environment variable: "MONGODB_DB_NAME"');
+    }
     try {
         const { email } = leadSchema.parse(formData);
 
         const client = await clientPromise;
-        const db = client.db(getDbName());
+        const db = client.db(process.env.MONGODB_DB_NAME);
         
         await db.collection("leads").insertOne({
             email,
@@ -95,9 +78,12 @@ export async function handleLeadSubmission(formData: { email: string }) {
 }
 
 export async function getBlogPosts(limit?: number): Promise<Post[]> {
+  if (!process.env.MONGODB_DB_NAME) {
+    throw new Error('Invalid/Missing environment variable: "MONGODB_DB_NAME"');
+  }
   try {
     const client = await clientPromise;
-    const db = client.db(getDbName());
+    const db = client.db(process.env.MONGODB_DB_NAME);
 
     const postsCollection = db.collection<Post>("posts");
     let query = postsCollection.find({}).sort({ createdAt: -1 });
@@ -122,9 +108,12 @@ export async function getBlogPosts(limit?: number): Promise<Post[]> {
 }
 
 export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
+  if (!process.env.MONGODB_DB_NAME) {
+    throw new Error('Invalid/Missing environment variable: "MONGODB_DB_NAME"');
+  }
   try {
     const client = await clientPromise;
-    const db = client.db(getDbName());
+    const db = client.db(process.env.MONGODB_DB_NAME);
     
     const postsCollection = db.collection<Post>("posts");
     const post = await postsCollection.findOne({ slug });
@@ -146,9 +135,12 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
 }
 
 export async function getTestimonials(): Promise<Testimonial[]> {
+    if (!process.env.MONGODB_DB_NAME) {
+        throw new Error('Invalid/Missing environment variable: "MONGODB_DB_NAME"');
+    }
     try {
         const client = await clientPromise;
-        const db = client.db(getDbName());
+        const db = client.db(process.env.MONGODB_DB_NAME);
 
         const testimonialsCollection = db.collection<Testimonial>("testimonials");
         const testimonials = await testimonialsCollection.find({}).sort({ order: 1 }).toArray();
