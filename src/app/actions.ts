@@ -4,10 +4,18 @@
 import { generatePersonalizedWorkout, GeneratePersonalizedWorkoutInput, GeneratePersonalizedWorkoutOutput } from "@/ai/flows/generate-personalized-workout";
 import { processPlanSignup, PlanSignupInput } from "@/ai/flows/plan-signup-flow";
 import { z } from "zod";
-import clientPromise from "@/lib/mongodb";
+import { MongoClient, ObjectId } from "mongodb";
 import { Post, Testimonial } from "@/types";
-import { ObjectId } from "mongodb";
 
+const uri = process.env.MONGODB_URI;
+const dbName = process.env.MONGODB_DB_NAME;
+
+if (!uri) {
+  throw new Error('Invalid/Missing environment variable: "MONGODB_URI"');
+}
+if (!dbName) {
+    throw new Error('Invalid/Missing environment variable: "MONGODB_DB_NAME"');
+}
 
 const aiGeneratorSchema = z.object({
   fitnessGoal: z.string(),
@@ -52,14 +60,12 @@ const leadSchema = z.object({
 });
 
 export async function handleLeadSubmission(formData: { email: string }) {
-    if (!process.env.MONGODB_DB_NAME) {
-        throw new Error('Invalid/Missing environment variable: "MONGODB_DB_NAME"');
-    }
+    const client = new MongoClient(uri);
     try {
         const { email } = leadSchema.parse(formData);
-
-        const client = await clientPromise;
-        const db = client.db(process.env.MONGODB_DB_NAME);
+        
+        await client.connect();
+        const db = client.db(dbName);
         
         await db.collection("leads").insertOne({
             email,
@@ -74,16 +80,16 @@ export async function handleLeadSubmission(formData: { email: string }) {
             return { success: false, message: e.errors[0].message };
         }
         return { success: false, message: "Hubo un problema con tu solicitud. Por favor, inténtalo de nuevo." };
+    } finally {
+        await client.close();
     }
 }
 
 export async function getBlogPosts(limit?: number): Promise<Post[]> {
-  if (!process.env.MONGODB_DB_NAME) {
-    throw new Error('Invalid/Missing environment variable: "MONGODB_DB_NAME"');
-  }
+  const client = new MongoClient(uri);
   try {
-    const client = await clientPromise;
-    const db = client.db(process.env.MONGODB_DB_NAME);
+    await client.connect();
+    const db = client.db(dbName);
 
     const postsCollection = db.collection<Post>("posts");
     let query = postsCollection.find({}).sort({ createdAt: -1 });
@@ -94,7 +100,6 @@ export async function getBlogPosts(limit?: number): Promise<Post[]> {
     
     const posts = await query.toArray();
 
-    // Map _id to id
     return posts.map(post => ({
         ...post,
         id: post._id.toString(),
@@ -104,16 +109,16 @@ export async function getBlogPosts(limit?: number): Promise<Post[]> {
   } catch (error) {
     console.error("Error fetching blog posts:", error);
     return [];
+  } finally {
+      await client.close();
   }
 }
 
 export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
-  if (!process.env.MONGODB_DB_NAME) {
-    throw new Error('Invalid/Missing environment variable: "MONGODB_DB_NAME"');
-  }
+  const client = new MongoClient(uri);
   try {
-    const client = await clientPromise;
-    const db = client.db(process.env.MONGODB_DB_NAME);
+    await client.connect();
+    const db = client.db(dbName);
     
     const postsCollection = db.collection<Post>("posts");
     const post = await postsCollection.findOne({ slug });
@@ -131,16 +136,16 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
   } catch (error) {
     console.error(`Error fetching post with slug "${slug}":`, error);
     return null;
+  } finally {
+      await client.close();
   }
 }
 
 export async function getTestimonials(): Promise<Testimonial[]> {
-    if (!process.env.MONGODB_DB_NAME) {
-        throw new Error('Invalid/Missing environment variable: "MONGODB_DB_NAME"');
-    }
+    const client = new MongoClient(uri);
     try {
-        const client = await clientPromise;
-        const db = client.db(process.env.MONGODB_DB_NAME);
+        await client.connect();
+        const db = client.db(dbName);
 
         const testimonialsCollection = db.collection<Testimonial>("testimonials");
         const testimonials = await testimonialsCollection.find({}).sort({ order: 1 }).toArray();
@@ -152,5 +157,7 @@ export async function getTestimonials(): Promise<Testimonial[]> {
     } catch (error) {
         console.error("Error fetching testimonials:", error);
         return [];
+    } finally {
+        await client.close();
     }
 }
