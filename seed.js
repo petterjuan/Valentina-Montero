@@ -71,12 +71,14 @@ async function seedDatabase() {
         process.exit(1);
     }
 
-    const client = new MongoClient(encodeURI(uri));
+    const client = new MongoClient(encodeURI(uri), {
+        dbName: dbName,
+    });
 
     try {
         await client.connect();
         console.log("Connected to database.");
-        const db = client.db(dbName);
+        const db = client.db(); // No need to pass dbName here again
 
         // Seed Testimonials
         const testimonialsCollection = db.collection('testimonials');
