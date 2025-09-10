@@ -1,8 +1,8 @@
 
-import { ObjectId } from "mongodb";
+import { Document } from 'mongoose';
 
 export interface Post {
-    _id: ObjectId;
+    _id: string;
     id: string;
     title: string;
     slug: string;
@@ -14,10 +14,15 @@ export interface Post {
 }
 
 export interface Testimonial {
-    _id: ObjectId;
+    _id: string;
     id: string;
     name: string;
     story: string;
     image: string;
     aiHint?: string;
+    order?: number;
 }
+
+// Mongoose document interfaces
+export interface PostDocument extends Omit<Post, '_id' | 'id'>, Document {}
+export interface TestimonialDocument extends Omit<Testimonial, '_id' | 'id'>, Document {}

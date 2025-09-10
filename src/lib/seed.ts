@@ -1,6 +1,8 @@
 
 require('dotenv').config();
-const { MongoClient } = require('mongodb');
+import mongoose from 'mongoose';
+import PostModel from '@/models/Post';
+import TestimonialModel from '@/models/Testimonial';
 
 const fallbackTestimonials = [
   {
@@ -65,41 +67,35 @@ const fallbackPosts = [
 
 async function seedDatabase() {
     const uri = process.env.MONGODB_URI;
-    const dbName = "sample_training";
 
     if (!uri) {
-        console.error("Missing MONGODB_URI or MONGODB_DB_NAME in .env file");
+        console.error("Missing MONGODB_URI in .env file");
         process.exit(1);
     }
 
-    const client = new MongoClient(uri);
-
     try {
-        await client.connect();
-        console.log("Connected to database.");
-        const db = client.db(dbName);
+        await mongoose.connect(uri);
+        console.log("Connected to database via Mongoose.");
 
         // Seed Testimonials
-        const testimonialsCollection = db.collection('testimonials');
-        await testimonialsCollection.deleteMany({});
+        await TestimonialModel.deleteMany({});
         console.log("Cleared 'testimonials' collection.");
-        const testimonialsResult = await testimonialsCollection.insertMany(fallbackTestimonials);
-        console.log(`Seeded ${testimonialsResult.insertedCount} testimonials.`);
+        await TestimonialModel.insertMany(fallbackTestimonials);
+        console.log(`Seeded ${fallbackTestimonials.length} testimonials.`);
         
         // Seed Posts
-        const postsCollection = db.collection('posts');
-        await postsCollection.deleteMany({});
+        await PostModel.deleteMany({});
         console.log("Cleared 'posts' collection.");
-        const postsResult = await postsCollection.insertMany(fallbackPosts);
-        console.log(`Seeded ${postsResult.insertedCount} posts.`);
+        await PostModel.insertMany(fallbackPosts);
+        console.log(`Seeded ${fallbackPosts.length} posts.`);
 
         console.log("\nDatabase seeding completed successfully!");
 
     } catch (err) {
         console.error("Error seeding database:", err);
     } finally {
-        await client.close();
-        console.log("Database connection closed.");
+        await mongoose.disconnect();
+        console.log("Mongoose connection closed.");
     }
 }
 

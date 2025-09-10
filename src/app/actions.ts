@@ -5,43 +5,12 @@ require('dotenv').config();
 import { generatePersonalizedWorkout, GeneratePersonalizedWorkoutInput, GeneratePersonalizedWorkoutOutput } from "@/ai/flows/generate-personalized-workout";
 import { processPlanSignup, PlanSignupInput } from "@/ai/flows/plan-signup-flow";
 import { z } from "zod";
-import { MongoClient, Db } from "mongodb";
-import { Post, Testimonial } from "@/types";
+import { Post, Testimonial, PostDocument, TestimonialDocument } from "@/types";
 import { getFirestore } from "@/lib/firebase";
 import { Program } from "@/components/sections/CoachingProgramsSection";
-
-const uri = process.env.MONGODB_URI;
-const dbName = process.env.MONGODB_DB_NAME;
-
-let client: MongoClient;
-let db: Db;
-
-async function connectToDb() {
-  if (client && db) {
-    return { client, db };
-  }
-  
-  if (!uri) {
-    throw new Error("MongoDB URI is not set in environment variables.");
-  }
-
-  if (process.env.NODE_ENV === "development") {
-    // In development mode, use a global variable so that the value
-    // is preserved across module reloads caused by HMR (Hot Module Replacement).
-    if (!(global as any)._mongoClientPromise) {
-      client = new MongoClient(uri);
-      (global as any)._mongoClientPromise = client.connect();
-    }
-    client = await (global as any)._mongoClientPromise;
-  } else {
-    // In production mode, it's best to not use a global variable.
-    client = new MongoClient(uri);
-    await client.connect();
-  }
-  db = client.db(dbName);
-  return { client, db };
-}
-
+import connectToDb from "@/lib/mongoose";
+import PostModel from "@/models/Post";
+import TestimonialModel from "@/models/Testimonial";
 
 const aiGeneratorSchema = z.object({
   fitnessGoal: z.string(),
@@ -113,19 +82,19 @@ export async function handleLeadSubmission(formData: { email: string }) {
 }
 
 export async function getBlogPosts(limit?: number): Promise<Post[]> {
-  if (!uri || !dbName) return [];
   try {
-    const { db } = await connectToDb();
-    const postsCollection = db.collection<Post>("posts");
-    const query = postsCollection.find({}).sort({ createdAt: -1 }).limit(limit || 20);
-    const posts = await query.toArray();
+    await connectToDb();
+    const posts: PostDocument[] = await PostModel.find({})
+      .sort({ createdAt: -1 })
+      .limit(limit || 20)
+      .lean();
 
     return posts.map(post => ({
         ...post,
         id: post._id.toString(),
+        _id: post._id.toString(),
         createdAt: new Date(post.createdAt),
     }));
-
   } catch (error) {
     console.error("Error fetching blog posts:", error);
     return [];
@@ -133,11 +102,9 @@ export async function getBlogPosts(limit?: number): Promise<Post[]> {
 }
 
 export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
-  if (!uri || !dbName) return null;
   try {
-    const { db } = await connectToDb();
-    const postsCollection = db.collection<Post>("posts");
-    const post = await postsCollection.findOne({ slug });
+    await connectToDb();
+    const post: PostDocument | null = await PostModel.findOne({ slug }).lean();
 
     if (!post) {
       return null;
@@ -146,9 +113,9 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
     return {
         ...post,
         id: post._id.toString(),
+        _id: post._id.toString(),
         createdAt: new Date(post.createdAt),
     };
-
   } catch (error) {
     console.error(`Error fetching post with slug "${slug}":`, error);
     return null;
@@ -156,15 +123,17 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
 }
 
 export async function getTestimonials(): Promise<Testimonial[]> {
-    if (!uri || !dbName) return [];
     try {
-        const { db } = await connectToDb();
-        const testimonialsCollection = db.collection<Testimonial>("testimonials");
-        const testimonials = await testimonialsCollection.find({}).sort({ order: 1 }).limit(10).toArray();
+        await connectToDb();
+        const testimonials: TestimonialDocument[] = await TestimonialModel.find({})
+            .sort({ order: 1 })
+            .limit(10)
+            .lean();
 
         return testimonials.map(testimonial => ({
             ...testimonial,
             id: testimonial._id.toString(),
+            _id: testimonial._id.toString(),
         }));
     } catch (error) {
         console.error("Error fetching testimonials:", error);
