@@ -5,6 +5,9 @@ import { generatePersonalizedWorkout, GeneratePersonalizedWorkoutInput, Generate
 import { processPlanSignup, PlanSignupInput } from "@/ai/flows/plan-signup-flow";
 import { z } from "zod";
 import clientPromise from "@/lib/mongodb";
+import { Post } from "@/types";
+import { ObjectId } from "mongodb";
+
 
 const aiGeneratorSchema = z.object({
   fitnessGoal: z.string(),
@@ -70,4 +73,55 @@ export async function handleLeadSubmission(formData: { email: string }) {
         }
         return { success: false, message: "Hubo un problema con tu solicitud. Por favor, inténtalo de nuevo." };
     }
+}
+
+export async function getBlogPosts(limit?: number): Promise<Post[]> {
+  try {
+    const client = await clientPromise;
+    const db = client.db();
+
+    const postsCollection = db.collection<Post>("posts");
+    let query = postsCollection.find({}).sort({ createdAt: -1 });
+
+    if (limit) {
+      query = query.limit(limit);
+    }
+    
+    const posts = await query.toArray();
+
+    // Map _id to id
+    return posts.map(post => ({
+        ...post,
+        id: post._id.toString(),
+        createdAt: new Date(post.createdAt),
+    }))
+
+  } catch (error) {
+    console.error("Error fetching blog posts:", error);
+    return [];
+  }
+}
+
+export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
+  try {
+    const client = await clientPromise;
+    const db = client.db();
+    
+    const postsCollection = db.collection<Post>("posts");
+    const post = await postsCollection.findOne({ slug });
+
+    if (!post) {
+      return null;
+    }
+    
+    return {
+        ...post,
+        id: post._id.toString(),
+        createdAt: new Date(post.createdAt),
+    };
+
+  } catch (error) {
+    console.error(`Error fetching post with slug "${slug}":`, error);
+    return null;
+  }
 }

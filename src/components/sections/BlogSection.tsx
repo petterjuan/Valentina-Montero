@@ -9,32 +9,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { getBlogPosts } from "@/app/actions";
+import { Badge } from "../ui/badge";
 
-const blogPosts = [
-  {
-    title: "5 Mitos Comunes del Fitness Desmentidos",
-    excerpt: "Deja que estas ideas falsas te impidan alcanzar tus metas. Aclaramos las cosas de una vez por todas.",
-    imageUrl: "https://picsum.photos/600/400?random=8",
-    aiHint: "woman working-out",
-    slug: "#",
-  },
-  {
-    title: "La Guía Definitiva para Preparar Comidas",
-    excerpt: "Ahorra tiempo, come más sano y mantén tu nutrición bajo control. Nuestra guía paso a paso hace que la preparación de comidas sea fácil y agradable.",
-    imageUrl: "https://picsum.photos/600/400?random=9",
-    aiHint: "woman eating-healthy",
-    slug: "#",
-  },
-  {
-    title: "Cómo Mantener la Motivación en tu Viaje Fitness",
-    excerpt: "La motivación va y viene. Aprende los secretos para desarrollar la disciplina y ser constante incluso cuando no tienes ganas.",
-    imageUrl: "https://picsum.photos/600/400?random=10",
-    aiHint: "woman running",
-    slug: "#",
-  },
-];
+export default async function BlogSection() {
+  const blogPosts = await getBlogPosts(3);
 
-export default function BlogSection() {
   return (
     <section id="blog" className="py-16 sm:py-24 bg-background">
       <div className="container mx-auto px-4 md:px-6">
@@ -47,31 +27,45 @@ export default function BlogSection() {
           </p>
         </div>
         <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-          {blogPosts.map((post) => (
-            <Card key={post.title} className="flex flex-col overflow-hidden">
-              <div className="aspect-video relative">
-                <Image
-                  src={post.imageUrl}
-                  alt={post.title}
-                  fill
-                  className="object-cover"
-                  data-ai-hint={post.aiHint}
-                />
-              </div>
-              <CardHeader>
-                <CardTitle className="font-headline">{post.title}</CardTitle>
-              </CardHeader>
-              <CardContent className="flex-1">
-                <CardDescription>{post.excerpt}</CardDescription>
-              </CardContent>
-              <CardFooter>
-                <Button asChild variant="secondary" className="w-full">
-                  <Link href={post.slug}>Leer Más</Link>
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
+          {blogPosts.length > 0 ? (
+            blogPosts.map((post) => (
+              <Card key={post.id} className="flex flex-col overflow-hidden">
+                <Link href={`/blog/${post.slug}`} className="aspect-video relative block">
+                  <Image
+                    src={post.imageUrl || "https://picsum.photos/600/400?random=8"}
+                    alt={post.title}
+                    fill
+                    className="object-cover"
+                    data-ai-hint={post.aiHint}
+                  />
+                </Link>
+                <CardHeader>
+                  <CardTitle className="font-headline">{post.title}</CardTitle>
+                </CardHeader>
+                <CardContent className="flex-1">
+                  <CardDescription>{post.excerpt}</CardDescription>
+                </CardContent>
+                <CardFooter>
+                  <Button asChild variant="secondary" className="w-full">
+                    <Link href={`/blog/${post.slug}`}>Leer Más</Link>
+                  </Button>
+                </CardFooter>
+              </Card>
+            ))
+          ) : (
+             <div className="md:col-span-2 lg:col-span-3 text-center py-12">
+                <h3 className="text-xl font-semibold">No hay artículos aún</h3>
+                <p className="text-muted-foreground mt-2">Vuelve pronto para leer nuevos artículos.</p>
+            </div>
+          )}
         </div>
+        {blogPosts.length > 0 && (
+            <div className="mt-12 text-center">
+                <Button asChild>
+                    <Link href="/blog">Ver todos los artículos</Link>
+                </Button>
+            </div>
+        )}
       </div>
     </section>
   );
