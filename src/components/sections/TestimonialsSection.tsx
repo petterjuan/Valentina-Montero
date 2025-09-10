@@ -1,19 +1,7 @@
 
-"use client";
-
-import Image from "next/image";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
-import { Card, CardContent } from "@/components/ui/card";
-import Autoplay from "embla-carousel-autoplay";
-import type { Testimonial } from "@/types";
 import { getTestimonials } from "@/app/actions";
-import { useEffect, useState } from "react";
+import type { Testimonial } from "@/types";
+import TestimonialsCarousel from "./TestimonialsCarousel";
 
 const fallbackTestimonials: Omit<Testimonial, "id" | "_id">[] = [
   {
@@ -42,19 +30,13 @@ const fallbackTestimonials: Omit<Testimonial, "id" | "_id">[] = [
   },
 ];
 
-export default function TestimonialsSection() {
-    const [testimonials, setTestimonials] = useState<Omit<Testimonial, "id" | "_id">[]>(fallbackTestimonials);
+export default async function TestimonialsSection() {
+    let testimonials = await getTestimonials();
 
-    useEffect(() => {
-        async function fetchTestimonials() {
-            const fetchedTestimonials = await getTestimonials();
-            if (fetchedTestimonials && fetchedTestimonials.length > 0) {
-                setTestimonials(fetchedTestimonials);
-            }
-        }
-        fetchTestimonials();
-    }, []);
-
+    if (!testimonials || testimonials.length === 0) {
+        // Since we can't add ObjectId to fallback, we map it to string for consistency
+        testimonials = fallbackTestimonials.map((t, i) => ({ ...t, id: `fallback-${i}`, _id: `fallback-${i}` as any }));
+    }
 
   return (
     <section id="testimonials" className="py-16 sm:py-24 bg-secondary">
@@ -67,47 +49,7 @@ export default function TestimonialsSection() {
             Mira lo que mis clientas tienen que decir sobre su viaje de transformación.
           </p>
         </div>
-        <Carousel
-          opts={{
-            align: "start",
-            loop: true,
-          }}
-          plugins={[
-            Autoplay({
-              delay: 5000,
-            }),
-          ]}
-          className="mt-12 w-full max-w-4xl mx-auto"
-        >
-          <CarouselContent>
-            {testimonials.map((testimonial, index) => (
-              <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/2">
-                <div className="p-1">
-                  <Card className="h-full">
-                    <CardContent className="flex flex-col items-center justify-center p-6 text-center">
-                      <Image
-                        src={testimonial.image}
-                        alt={testimonial.name}
-                        width={80}
-                        height={80}
-                        className="rounded-full mb-4"
-                        data-ai-hint={testimonial.aiHint}
-                      />
-                      <p className="text-muted-foreground italic">
-                        &quot;{testimonial.story}&quot;
-                      </p>
-                      <p className="mt-4 font-bold font-headline text-lg text-foreground">
-                        - {testimonial.name}
-                      </p>
-                    </CardContent>
-                  </Card>
-                </div>
-              </CarouselItem>
-            ))}
-          </CarouselContent>
-          <CarouselPrevious className="hidden sm:flex" />
-          <CarouselNext className="hidden sm:flex" />
-        </Carousel>
+        <TestimonialsCarousel testimonials={testimonials} />
       </div>
     </section>
   );
