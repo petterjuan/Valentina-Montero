@@ -18,27 +18,35 @@ if (!dbName) {
     throw new Error('Invalid/Missing environment variable: "MONGODB_DB_NAME"');
 }
 
-let client: MongoClient | null = null;
-let db: Db | null = null;
+// Per Next.js documentation, use a global variable to preserve the database connection
+// across hot reloads in development.
+// https://www.mongodb.com/docs/atlas/app-services/functions/nextjs-example/
+// https://github.com/vercel/next.js/blob/canary/examples/with-mongodb/lib/mongodb.ts
 
-async function connectToDb() {
-    if (db) {
-        return { client, db };
-    }
-    
-    try {
-        client = new MongoClient(uri);
-        await client.connect();
-        db = client.db(dbName);
-        console.log("New connection to MongoDB established.");
-        return { client, db };
-    } catch (e) {
-        console.error("Failed to connect to MongoDB", e);
-        // Clean up on failed connection
-        client = null;
-        db = null;
-        throw e;
-    }
+declare global {
+  var _mongoClientPromise: Promise<MongoClient> | undefined;
+}
+
+let client: MongoClient;
+let clientPromise: Promise<MongoClient>;
+
+if (process.env.NODE_ENV === "development") {
+  // In development mode, use a global variable so that the value
+  // is preserved across module reloads caused by HMR (Hot Module Replacement).
+  if (!global._mongoClientPromise) {
+    client = new MongoClient(uri);
+    global._mongoClientPromise = client.connect();
+  }
+  clientPromise = global._mongoClientPromise;
+} else {
+  // In production mode, it's best to not use a global variable.
+  client = new MongoClient(uri);
+  clientPromise = client.connect();
+}
+
+async function getDb(): Promise<Db> {
+    const mongoClient = await clientPromise;
+    return mongoClient.db(dbName);
 }
 
 
@@ -113,9 +121,7 @@ export async function handleLeadSubmission(formData: { email: string }) {
 
 export async function getBlogPosts(limit?: number): Promise<Post[]> {
   try {
-    const { db } = await connectToDb();
-    if (!db) throw new Error("Database connection failed.");
-
+    const db = await getDb();
     const postsCollection = db.collection<Post>("posts");
     const query = postsCollection.find({}).sort({ createdAt: -1 }).limit(limit || 20);
     const posts = await query.toArray();
@@ -135,9 +141,7 @@ export async function getBlogPosts(limit?: number): Promise<Post[]> {
 
 export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
   try {
-    const { db } = await connectToDb();
-    if (!db) throw new Error("Database connection failed.");
-    
+    const db = await getDb();
     const postsCollection = db.collection<Post>("posts");
     const post = await postsCollection.findOne({ slug });
 
@@ -160,9 +164,7 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
 
 export async function getTestimonials(): Promise<Testimonial[]> {
     try {
-        const { db } = await connectToDb();
-        if (!db) throw new Error("Database connection failed.");
-
+        const db = await getDb();
         const testimonialsCollection = db.collection<Testimonial>("testimonials");
         const testimonials = await testimonialsCollection.find({}).sort({ order: 1 }).limit(10).toArray();
 

@@ -170,22 +170,17 @@ async function getProgramsFromShopify(collectionHandle: string, maxProducts: num
     return null;
   }
   
-  const endpoint = `https://${domain}/api/2025-07/graphql.json`;
+  const endpoint = `https://${domain}/api/2024-07/graphql.json`;
 
   try {
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'X-Shopify-Storefront-Access-Token': token,
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/graphql',
       },
-      body: JSON.stringify({
-        query: COLLECTION_QUERY,
-        variables: {
-          handle: collectionHandle,
-          first: maxProducts,
-        },
-      }),
+      body: COLLECTION_QUERY,
+      next: { revalidate: 3600 }
     });
 
     if (!response.ok) {
@@ -205,7 +200,7 @@ async function getProgramsFromShopify(collectionHandle: string, maxProducts: num
     }
     
     // Return null if collection is found but has no products
-    return null; 
+    return []; 
   } catch (err: any) {
     console.error("Error fetching from Shopify:", err.message);
     return null;
