@@ -3,40 +3,47 @@ import { getTestimonials } from "@/app/actions";
 import type { Testimonial } from "@/types";
 import TestimonialsCarousel from "./TestimonialsCarousel";
 
-const fallbackTestimonials: Omit<Testimonial, "id" | "_id">[] = [
+const fallbackTestimonials: Testimonial[] = [
   {
-    name: "Maria G.",
-    story: "¡Valentina cambió mi vida! Perdí 9 kilos y gané muchísima confianza. Su plan de 12 semanas fue duro pero increíblemente gratificante.",
-    image: "https://picsum.photos/100/100?random=13",
+    _id: "fallback-1",
+    id: "fallback-1",
+    name: "Clienta Satisfecha",
+    story: "Este programa superó mis expectativas. ¡Me siento más fuerte y con más energía que nunca!",
+    image: "https://picsum.photos/seed/test1/100/100",
     aiHint: "happy woman",
   },
   {
-    name: "Ana P.",
-    story: "La guía de nutrición fue un antes y un después. Finalmente entiendo cómo alimentar mi cuerpo correctamente. Valentina es un gran apoyo y sabe mucho.",
-    image: "https://picsum.photos/100/100?random=14",
+    _id: "fallback-2",
+    id: "fallback-2",
+    name: "Participante Feliz",
+    story: "La guía y el apoyo de Valentina fueron clave para mi transformación. ¡Totalmente recomendado!",
+    image: "https://picsum.photos/seed/test2/100/100",
+    aiHint: "smiling person",
+  },
+  {
+    _id: "fallback-3",
+    id: "fallback-3",
+    name: "Testimonio de Éxito",
+    story: "Un enfoque muy profesional y personalizado. Los resultados hablan por sí solos.",
+    image: "https://picsum.photos/seed/test3/100/100",
     aiHint: "woman portrait",
-  },
-  {
-    name: "Laura M.",
-    story: "Después de solo 12 semanas, mis niveles de energía están por las nubes y he alcanzado todas mis metas de fuerza iniciales. Fue la mejor inversión en mi salud.",
-    image: "https://picsum.photos/100/100?random=15",
-    aiHint: "woman hiking",
-  },
-  {
-    name: "Sofia R.",
-    story: "Nunca pensé que disfrutaría hacer ejercicio. El plan personalizado me mantuvo enganchada y nunca me he sentido más fuerte. ¡Recomiendo el plan de 6 semanas!",
-    image: "https://picsum.photos/100/100?random=16",
-    aiHint: "smiling woman",
   },
 ];
 
 export default async function TestimonialsSection() {
-    let testimonials: (Testimonial | Omit<Testimonial, "id" | "_id">)[] = await getTestimonials();
+    let testimonials: Testimonial[];
 
-    let usingFallback = false;
-    if (!testimonials || testimonials.length === 0) {
+    try {
+        const fetchedTestimonials = await getTestimonials();
+        if (fetchedTestimonials) {
+            testimonials = fetchedTestimonials;
+        } else {
+            console.warn("⚠️ Mostrando datos de respaldo. Verifica la conexión con MongoDB.");
+            testimonials = fallbackTestimonials;
+        }
+    } catch (error) {
+        console.error("Error crítico al obtener testimonios. Mostrando datos de respaldo.", error);
         testimonials = fallbackTestimonials;
-        usingFallback = true;
     }
 
   return (
@@ -49,11 +56,6 @@ export default async function TestimonialsSection() {
           <p className="mt-4 text-lg text-muted-foreground">
             Mira lo que mis clientas tienen que decir sobre su viaje de transformación.
           </p>
-           {usingFallback && (
-              <p className="mt-2 text-sm text-yellow-600">
-                ⚠️ Mostrando datos de respaldo. Verifica la conexión con MongoDB.
-              </p>
-          )}
         </div>
         <TestimonialsCarousel testimonials={testimonials} />
       </div>

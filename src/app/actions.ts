@@ -45,6 +45,10 @@ export async function handlePlanSignup(input: PlanSignupInput) {
     return { data: result, error: null };
   } catch (e) {
     console.error(e);
+     const isStripeError = e instanceof Error && e.message.includes("STRIPE_NOT_CONFIGURED");
+      if (isStripeError) {
+        return { data: null, error: "El sistema de pagos aún no está configurado. Por favor, inténtalo más tarde." };
+      }
     return { data: null, error: "Ocurrió un error al procesar tu solicitud. Por favor, inténtalo de nuevo." };
   }
 }
@@ -121,13 +125,17 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
   }
 }
 
-export async function getTestimonials(): Promise<Testimonial[]> {
+export async function getTestimonials(): Promise<Testimonial[] | null> {
     try {
         await connectToDb();
         const testimonials: TestimonialDocument[] = await TestimonialModel.find({})
             .sort({ order: 1 })
             .limit(10)
             .lean();
+        
+        if (testimonials.length === 0) {
+            return null;
+        }
 
         return testimonials.map(testimonial => ({
             ...testimonial,
@@ -136,7 +144,7 @@ export async function getTestimonials(): Promise<Testimonial[]> {
         }));
     } catch (error) {
         console.error("Error fetching testimonials:", error);
-        return [];
+        return null;
     }
 }
 
@@ -233,11 +241,11 @@ export async function getPrograms(collectionHandle: string, maxProducts: number)
   const token = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN;
 
   if (!domain || !token) {
-    console.warn("Shopify environment variables are not set.");
+    console.warn("Shopify environment variables are not set. Returning null.");
     return null;
   }
   
-  const endpoint = `https://${domain}/api/2024-07/graphql.json`;
+  const endpoint = `https://${domain}/api/graphql.json`;
 
   try {
     const response = await fetch(endpoint, {
@@ -252,21 +260,21 @@ export async function getPrograms(collectionHandle: string, maxProducts: number)
 
     if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Shopify API request failed: ${response.status} ${errorText}`);
+        throw new Error(`Shopify API request failed with status ${response.status}: ${errorText}`);
     }
 
     const jsonResponse = await response.json();
     if(jsonResponse.errors) {
-        throw new Error(`GraphQL Errors: ${JSON.stringify(jsonResponse.errors)}`);
+        throw new Error(`GraphQL Errors from Shopify: ${JSON.stringify(jsonResponse.errors)}`);
     }
     
     const shopifyProducts = jsonResponse.data?.collection?.products?.nodes;
     
-    if (shopifyProducts && shopifyProducts.length > 0) {
+    if (shopifyProducts && Array.isArray(shopifyProducts)) {
       return transformShopifyProducts(shopifyProducts);
     }
     
-    return []; 
+    return null;
   } catch (err: any) {
     console.error("Error fetching from Shopify:", err.message);
     return null;

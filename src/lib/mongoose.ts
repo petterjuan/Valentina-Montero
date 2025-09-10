@@ -17,7 +17,7 @@ if (!cached) {
 async function connectToDb() {
   if (!MONGODB_URI) {
     throw new Error(
-      'Please define the MONGODB_URI environment variable'
+      'Please define the MONGODB_URI environment variable inside .env.local'
     );
   }
   

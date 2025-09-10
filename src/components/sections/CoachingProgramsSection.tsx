@@ -25,47 +25,6 @@ export interface Program {
   handle?: string;
 }
 
-function getFallbackPrograms(): Program[] {
-  return [
-    {
-      title: "Plan de Coaching de 6 Semanas",
-      price: 167,
-      image: { src: "https://picsum.photos/seed/p1/600/400", alt: "Plan de 6 semanas" },
-      features: [
-        "Plan de entrenamiento personalizado",
-        "Seguimiento de progreso quincenal",
-        "Guía de nutrición y macros",
-        "Soporte 24/7 para preguntas",
-        "Enfoque en mentalidad y motivación",
-      ],
-    },
-    {
-      title: "Plan de Coaching de 12 Semanas",
-      price: 267,
-      isPopular: true,
-      image: { src: "https://picsum.photos/seed/p2/600/400", alt: "Plan de 12 semanas" },
-      features: [
-        "Todo lo del plan de 6 semanas",
-        "+ Mini Guía de Suplementos y Vitaminas",
-        "Seguimiento avanzado del progreso",
-        "Sugerencias de comidas personalizadas",
-        "Sesión de estrategia al final del plan",
-      ],
-    },
-    {
-      title: 'Muscle Bites',
-      price: 25,
-      isDigital: true,
-      image: { src: "https://picsum.photos/seed/p3/600/400", alt: "Guía Muscle Bites" },
-      features: [
-        "4 Tips para Combinar Snacks en el día",
-        "10 Recetas (Pre-Entrenamiento)",
-        "5 Recetas (Post-Entrenamiento)",
-      ],
-    },
-  ];
-}
-
 interface CoachingProgramsSectionProps {
   collectionHandle?: string;
   title?: string;
@@ -73,6 +32,44 @@ interface CoachingProgramsSectionProps {
   maxProducts?: number;
 }
 
+const fallbackPrograms: Program[] = [
+    {
+      title: "Plan de Coaching de 12 Semanas",
+      price: 299,
+      features: [
+        "Plan de entrenamiento 100% personalizado",
+        "Guía de nutrición y seguimiento de macros",
+        "Check-ins semanales por video-llamada",
+        "Soporte por WhatsApp 24/7",
+        "Acceso a comunidad privada",
+      ],
+      isPopular: true,
+      image: { src: "https://picsum.photos/seed/coaching1/600/400", alt: "Mujer levantando pesas" },
+    },
+    {
+      title: "Plan de Coaching de 6 Semanas",
+      price: 179,
+      features: [
+        "Plan de entrenamiento adaptado a tus metas",
+        "Recomendaciones de nutrición",
+        "Check-ins quincenales por video-llamada",
+        "Soporte por WhatsApp",
+      ],
+      image: { src: "https://picsum.photos/seed/coaching2/600/400", alt: "Mujer haciendo yoga" },
+    },
+    {
+        title: "Guía PDF: Muscle Bites",
+        price: 25,
+        features: [
+          "Más de 50 recetas altas en proteína",
+          "Planes de comida de ejemplo",
+          "Tips para meal-prep y compras inteligentes",
+          "Acceso instantáneo en formato digital",
+        ],
+        isDigital: true,
+        image: { src: "https://picsum.photos/seed/coaching3/600/400", alt: "Plato de comida saludable" },
+    },
+];
 
 export default async function CoachingProgramsSection({
   collectionHandle = "coaching-programs",
@@ -81,13 +78,24 @@ export default async function CoachingProgramsSection({
   maxProducts = 10,
 }: CoachingProgramsSectionProps) {
   
-  let programs = await getPrograms(collectionHandle, maxProducts);
-  let usingFallback = false;
+  let programs: Program[];
+  let source: 'shopify' | 'fallback' = 'shopify';
 
-  if (!programs) {
-    programs = getFallbackPrograms();
-    usingFallback = true;
+  try {
+    const fetchedPrograms = await getPrograms(collectionHandle, maxProducts);
+    if (fetchedPrograms && fetchedPrograms.length > 0) {
+        programs = fetchedPrograms;
+    } else {
+        console.warn("⚠️ Mostrando datos de respaldo. Verifica la conexión con Shopify.");
+        programs = fallbackPrograms;
+        source = 'fallback';
+    }
+  } catch (error) {
+    console.error("Error crítico al obtener programas. Mostrando datos de respaldo.", error);
+    programs = fallbackPrograms;
+    source = 'fallback';
   }
+
 
   return (
     <section id="programs" className="py-16 sm:py-24 bg-background">
@@ -97,11 +105,6 @@ export default async function CoachingProgramsSection({
             {title}
           </h2>
           <p className="mt-4 text-lg text-muted-foreground">{description}</p>
-          {usingFallback && (
-              <p className="mt-2 text-sm text-yellow-600">
-                ⚠️ Mostrando datos de respaldo. Verifica la conexión con Shopify.
-              </p>
-          )}
         </div>
 
         <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3 lg:max-w-7xl lg:mx-auto">
