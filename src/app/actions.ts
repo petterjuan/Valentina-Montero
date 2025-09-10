@@ -92,12 +92,8 @@ export async function getBlogPosts(limit?: number): Promise<Post[]> {
     const db = client.db(dbName);
 
     const postsCollection = db.collection<Post>("posts");
-    let query = postsCollection.find({}).sort({ createdAt: -1 });
+    let query = postsCollection.find({}).sort({ createdAt: -1 }).limit(limit || 20);
 
-    if (limit) {
-      query = query.limit(limit);
-    }
-    
     const posts = await query.toArray();
 
     return posts.map(post => ({
@@ -148,7 +144,7 @@ export async function getTestimonials(): Promise<Testimonial[]> {
         const db = client.db(dbName);
 
         const testimonialsCollection = db.collection<Testimonial>("testimonials");
-        const testimonials = await testimonialsCollection.find({}).sort({ order: 1 }).toArray();
+        const testimonials = await testimonialsCollection.find({}).sort({ order: 1 }).limit(10).toArray();
 
         return testimonials.map(testimonial => ({
             ...testimonial,

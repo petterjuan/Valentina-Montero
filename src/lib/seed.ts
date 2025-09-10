@@ -1,3 +1,4 @@
+
 require('dotenv').config();
 const { MongoClient } = require('mongodb');
 
@@ -7,24 +8,28 @@ const fallbackTestimonials = [
     story: "¡Valentina cambió mi vida! Perdí 9 kilos y gané muchísima confianza. Su plan de 12 semanas fue duro pero increíblemente gratificante.",
     image: "https://picsum.photos/100/100?random=13",
     aiHint: "happy woman",
+    order: 1,
   },
   {
     name: "Ana P.",
     story: "La guía de nutrición fue un antes y un después. Finalmente entiendo cómo alimentar mi cuerpo correctamente. Valentina es un gran apoyo y sabe mucho.",
     image: "https://picsum.photos/100/100?random=14",
     aiHint: "woman portrait",
+    order: 2,
   },
   {
     name: "Laura M.",
     story: "Después de solo 12 semanas, mis niveles de energía están por las nubes y he alcanzado todas mis metas de fuerza iniciales. Fue la mejor inversión en mi salud.",
     image: "https://picsum.photos/100/100?random=15",
     aiHint: "woman hiking",
+    order: 3,
   },
   {
     name: "Sofia R.",
     story: "Nunca pensé que disfrutaría hacer ejercicio. El plan personalizado me mantuvo enganchada y nunca me he sentido más fuerte. ¡Recomiendo el plan de 6 semanas!",
     image: "https://picsum.photos/100/100?random=16",
     aiHint: "smiling woman",
+    order: 4,
   },
 ];
 
