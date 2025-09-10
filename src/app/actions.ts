@@ -6,6 +6,7 @@ import { processPlanSignup, PlanSignupInput } from "@/ai/flows/plan-signup-flow"
 import { z } from "zod";
 import { MongoClient, ObjectId } from "mongodb";
 import { Post, Testimonial } from "@/types";
+import { getFirestore } from "@/lib/firebase";
 
 const uri = process.env.MONGODB_URI;
 const dbName = process.env.MONGODB_DB_NAME;
@@ -60,18 +61,21 @@ const leadSchema = z.object({
 });
 
 export async function handleLeadSubmission(formData: { email: string }) {
-    const client = new MongoClient(encodeURI(uri));
     try {
         const { email } = leadSchema.parse(formData);
         
-        await client.connect();
-        const db = client.db(dbName);
-        
-        await db.collection("leads").insertOne({
+        const firestore = getFirestore();
+        if (!firestore) {
+            throw new Error("Firestore no está configurado. No se puede guardar el lead.");
+        }
+
+        const leadRef = firestore.collection('leads').doc(email);
+        await leadRef.set({
             email,
             source: "Guía Gratuita - 10k Pasos",
+            status: "subscribed",
             createdAt: new Date(),
-        });
+        }, { merge: true });
         
         return { success: true, message: "¡Éxito! Tu guía está en camino." };
     } catch (e) {
@@ -80,8 +84,6 @@ export async function handleLeadSubmission(formData: { email: string }) {
             return { success: false, message: e.errors[0].message };
         }
         return { success: false, message: "Hubo un problema con tu solicitud. Por favor, inténtalo de nuevo." };
-    } finally {
-        await client.close();
     }
 }
 
