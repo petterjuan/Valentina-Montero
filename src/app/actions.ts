@@ -252,12 +252,14 @@ export async function getPrograms(collectionHandle: string, maxProducts: number)
 
     if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Shopify API request failed with status ${response.status}: ${errorText}`);
+        console.error(`Shopify API request failed with status ${response.status}: ${errorText}`);
+        return null;
     }
 
     const jsonResponse = await response.json();
     if(jsonResponse.errors) {
-        throw new Error(`GraphQL Errors from Shopify: ${JSON.stringify(jsonResponse.errors)}`);
+        console.error(`GraphQL Errors from Shopify: ${JSON.stringify(jsonResponse.errors)}`);
+        return null;
     }
     
     const shopifyProducts = jsonResponse.data?.collection?.products?.nodes;
