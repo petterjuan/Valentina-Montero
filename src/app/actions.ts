@@ -57,7 +57,7 @@ export async function handleLeadSubmission(formData: { email: string }) {
         const { email } = leadSchema.parse(formData);
 
         const client = await clientPromise;
-        const db = client.db();
+        const db = client.db("petter2001us_db");
         
         await db.collection("leads").insertOne({
             email,
@@ -78,7 +78,7 @@ export async function handleLeadSubmission(formData: { email: string }) {
 export async function getBlogPosts(limit?: number): Promise<Post[]> {
   try {
     const client = await clientPromise;
-    const db = client.db();
+    const db = client.db("petter2001us_db");
 
     const postsCollection = db.collection<Post>("posts");
     let query = postsCollection.find({}).sort({ createdAt: -1 });
@@ -105,7 +105,7 @@ export async function getBlogPosts(limit?: number): Promise<Post[]> {
 export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
   try {
     const client = await clientPromise;
-    const db = client.db();
+    const db = client.db("petter2001us_db");
     
     const postsCollection = db.collection<Post>("posts");
     const post = await postsCollection.findOne({ slug });
@@ -129,7 +129,7 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
 export async function getTestimonials(): Promise<Testimonial[]> {
     try {
         const client = await clientPromise;
-        const db = client.db();
+        const db = client.db("petter2001us_db");
 
         const testimonialsCollection = db.collection<Testimonial>("testimonials");
         const testimonials = await testimonialsCollection.find({}).sort({ order: 1 }).toArray();
