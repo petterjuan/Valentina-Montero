@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -8,32 +7,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Check } from "lucide-react";
-import { gql } from "graphql-request";
-import { shopifyClient } from "@/lib/shopify";
+import { getProgramsFromShopify } from "@/lib/shopify";
 import PlanSignupDialog from "@/components/sections/PlanSignupDialog";
 import Image from "next/image";
-
-// Interfaces
-interface ShopifyProduct {
-  id: string;
-  title: string;
-  handle: string;
-  description: string;
-  availableForSale: boolean;
-  featuredImage?: {
-    url: string;
-    altText: string;
-  };
-  priceRange: {
-    minVariantPrice: {
-      amount: string;
-      currencyCode: string;
-    };
-  };
-  isPopular?: { value: string };
-  features?: { value: string };
-  isDigital?: { value: string };
-}
 
 export interface Program {
   title: string;
@@ -54,44 +30,6 @@ interface CoachingProgramsSectionProps {
   description?: string;
   maxProducts?: number;
 }
-
-const COLLECTION_QUERY = gql`
-  query CollectionDetails($handle: String!, $first: Int = 10) {
-    collection(handle: $handle) {
-      id
-      title
-      description
-      products(first: $first) {
-        nodes {
-          id
-          title
-          handle
-          description
-          availableForSale
-          featuredImage {
-              url(transform: {maxWidth: 600, maxHeight: 400, crop: CENTER})
-              altText
-          }
-          priceRange {
-            minVariantPrice {
-              amount
-              currencyCode
-            }
-          }
-          isPopular: metafield(namespace: "custom", key: "is_popular") {
-            value
-          }
-          features: metafield(namespace: "custom", key: "features") {
-            value
-          }
-          isDigital: metafield(namespace: "custom", key: "is_digital") {
-            value
-          }
-        }
-      }
-    }
-  }
-`;
 
 function getFallbackPrograms(): Program[] {
   return [
@@ -133,60 +71,6 @@ function getFallbackPrograms(): Program[] {
     },
   ];
 }
-
-const transformShopifyProducts = (products: ShopifyProduct[]): Program[] => {
-  return products.map((product) => {
-    let featuresList: string[] = [];
-    if (product.features?.value) {
-        try {
-            // Safely parse the features string. If it fails, default to an empty array.
-            const parsedFeatures = JSON.parse(product.features.value);
-            if (Array.isArray(parsedFeatures)) {
-                featuresList = parsedFeatures;
-            }
-        } catch (e) {
-            console.error(`Failed to parse features for product ${product.handle}:`, e);
-            // Keep featuresList as an empty array in case of parsing error
-        }
-    }
-    
-    return {
-        title: product.title,
-        price: Math.round(parseFloat(product.priceRange.minVariantPrice.amount)),
-        features: featuresList,
-        isPopular: product.isPopular?.value === 'true',
-        isDigital: product.isDigital?.value === 'true',
-        handle: product.handle,
-        image: product.featuredImage ? {
-            src: product.featuredImage.url,
-            alt: product.featuredImage.altText || product.title,
-        } : undefined,
-    };
-  });
-};
-
-async function getProgramsFromShopify(collectionHandle: string, maxProducts: number): Promise<Program[] | null> {
-    if (!shopifyClient) {
-        console.warn("Shopify client not available. Skipping fetch.");
-        return null;
-    }
-    try {
-        const data = await shopifyClient.request<{ collection: { products: { nodes: ShopifyProduct[] } } }>(COLLECTION_QUERY, {
-          handle: collectionHandle,
-          first: maxProducts,
-        });
-
-        const shopifyProducts = data.collection?.products?.nodes;
-        if (shopifyProducts && shopifyProducts.length > 0) {
-          return transformShopifyProducts(shopifyProducts);
-        }
-        return null;
-    } catch (err: any) {
-        console.error("Error loading products from Shopify:", err.message);
-        return null;
-    }
-}
-
 
 export default async function CoachingProgramsSection({
   collectionHandle = "coaching-programs",
