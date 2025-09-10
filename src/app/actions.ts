@@ -1,5 +1,6 @@
 
 "use server";
+require('dotenv').config();
 
 import { generatePersonalizedWorkout, GeneratePersonalizedWorkoutInput, GeneratePersonalizedWorkoutOutput } from "@/ai/flows/generate-personalized-workout";
 import { processPlanSignup, PlanSignupInput } from "@/ai/flows/plan-signup-flow";
@@ -9,8 +10,8 @@ import { Post, Testimonial } from "@/types";
 import { getFirestore } from "@/lib/firebase";
 import { Program } from "@/components/sections/CoachingProgramsSection";
 
-const uri = "mongodb+srv://petter2001us_db_user:Sa147405sa@cluster0.gbsm1da.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
-const dbName = "sample_training";
+const uri = process.env.MONGODB_URI;
+const dbName = process.env.MONGODB_DB_NAME;
 
 let client: MongoClient;
 let db: Db;
@@ -20,14 +21,18 @@ async function connectToDb() {
     return { client, db };
   }
   
+  if (!uri) {
+    throw new Error("MongoDB URI is not set in environment variables.");
+  }
+
   if (process.env.NODE_ENV === "development") {
     // In development mode, use a global variable so that the value
     // is preserved across module reloads caused by HMR (Hot Module Replacement).
-    if (!global._mongoClientPromise) {
+    if (!(global as any)._mongoClientPromise) {
       client = new MongoClient(uri);
-      global._mongoClientPromise = client.connect();
+      (global as any)._mongoClientPromise = client.connect();
     }
-    client = await global._mongoClientPromise;
+    client = await (global as any)._mongoClientPromise;
   } else {
     // In production mode, it's best to not use a global variable.
     client = new MongoClient(uri);
@@ -256,8 +261,8 @@ const transformShopifyProducts = (products: ShopifyProduct[]): Program[] => {
 };
 
 export async function getPrograms(collectionHandle: string, maxProducts: number): Promise<Program[] | null> {
-  const domain = "valentmontero.myshopify.com";
-  const token = "1347690caf48a60944a91df4befa7a74";
+  const domain = process.env.SHOPIFY_STORE_DOMAIN;
+  const token = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN;
 
   if (!domain || !token) {
     console.warn("Shopify environment variables are not set.");
