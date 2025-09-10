@@ -14,7 +14,7 @@ import Autoplay from "embla-carousel-autoplay";
 import type { Testimonial } from "@/types";
 
 interface TestimonialsCarouselProps {
-    testimonials: Testimonial[];
+    testimonials: (Testimonial | Omit<Testimonial, "id" | "_id">)[];
 }
 
 export default function TestimonialsCarousel({ testimonials }: TestimonialsCarouselProps) {
@@ -33,7 +33,7 @@ export default function TestimonialsCarousel({ testimonials }: TestimonialsCarou
     >
       <CarouselContent>
         {testimonials.map((testimonial, index) => (
-          <CarouselItem key={testimonial.id || index} className="md:basis-1/2 lg:basis-1/2">
+          <CarouselItem key={'id' in testimonial ? testimonial.id : index} className="md:basis-1/2 lg:basis-1/2">
             <div className="p-1">
               <Card className="h-full">
                 <CardContent className="flex flex-col items-center justify-center p-6 text-center">

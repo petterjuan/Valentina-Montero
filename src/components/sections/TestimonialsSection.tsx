@@ -31,15 +31,11 @@ const fallbackTestimonials: Omit<Testimonial, "id" | "_id">[] = [
 ];
 
 export default async function TestimonialsSection() {
-    let testimonials = await getTestimonials();
+    let testimonials: (Testimonial | Omit<Testimonial, "id" | "_id">)[] = await getTestimonials();
 
     let usingFallback = false;
     if (!testimonials || testimonials.length === 0) {
-        testimonials = fallbackTestimonials.map((t, i) => ({ 
-            ...t, 
-            id: `fallback-${i}`, 
-            _id: `fallback-${i}` as any 
-        }));
+        testimonials = fallbackTestimonials;
         usingFallback = true;
     }
 
