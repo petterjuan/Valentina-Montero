@@ -27,7 +27,7 @@ Welcome to the GitHub repository for the VM Fitness Hub, a modern, feature-rich 
 - **Database**: [MongoDB](https://www.mongodb.com/) (for blog posts and testimonials) & [Firebase Firestore](https://firebase.google.com/docs/firestore) (for signups/leads)
 - **Payments**: [Stripe](https://stripe.com/)
 - **E-commerce Source**: [Shopify Storefront API](https://shopify.dev/docs/api/storefront)
-- **Deployment**: [Firebase App Hosting](https://firebase.google.com/docs/app-hosting)
+- **Deployment**: [Vercel](https://vercel.com/)
 
 ---
 
@@ -55,7 +55,7 @@ npm install
 
 ### 3. Set Up Environment Variables
 
-Create a file named `.env` in the root of your project and add the following variables.
+Create a file named `.env` in the root of your project and add the following variables. These should also be configured in your hosting provider (e.g., Vercel).
 
 ```env
 # MongoDB Connection
@@ -111,4 +111,4 @@ The application should now be running on [http://localhost:9002](http://localhos
 
 ## ☁️ Deployment
 
-This application is configured for easy deployment with **Firebase App Hosting**. The `apphosting.yaml` file is included. To deploy, connect your GitHub repository to a Firebase project with App Hosting enabled.
+This application is ready for deployment on **Vercel**. Connect your GitHub repository to a Vercel project and configure the environment variables as listed in the `.env` section. Vercel will automatically build and deploy the application on every push to the `main` branch.
