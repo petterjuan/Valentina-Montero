@@ -4,7 +4,7 @@
 import { generatePersonalizedWorkout, GeneratePersonalizedWorkoutInput, GeneratePersonalizedWorkoutOutput } from "@/ai/flows/generate-personalized-workout";
 import { processPlanSignup, PlanSignupInput } from "@/ai/flows/plan-signup-flow";
 import { z } from "zod";
-import { MongoClient, ObjectId } from "mongodb";
+import { MongoClient, Db, ObjectId } from "mongodb";
 import { Post, Testimonial } from "@/types";
 import { getFirestore } from "@/lib/firebase";
 
@@ -17,6 +17,30 @@ if (!uri) {
 if (!dbName) {
     throw new Error('Invalid/Missing environment variable: "MONGODB_DB_NAME"');
 }
+
+let client: MongoClient | null = null;
+let db: Db | null = null;
+
+async function connectToDb() {
+    if (db) {
+        return { client, db };
+    }
+    
+    try {
+        client = new MongoClient(uri);
+        await client.connect();
+        db = client.db(dbName);
+        console.log("New connection to MongoDB established.");
+        return { client, db };
+    } catch (e) {
+        console.error("Failed to connect to MongoDB", e);
+        // Clean up on failed connection
+        client = null;
+        db = null;
+        throw e;
+    }
+}
+
 
 const aiGeneratorSchema = z.object({
   fitnessGoal: z.string(),
@@ -88,14 +112,12 @@ export async function handleLeadSubmission(formData: { email: string }) {
 }
 
 export async function getBlogPosts(limit?: number): Promise<Post[]> {
-  const client = new MongoClient(encodeURI(uri));
   try {
-    await client.connect();
-    const db = client.db(dbName);
+    const { db } = await connectToDb();
+    if (!db) throw new Error("Database connection failed.");
 
     const postsCollection = db.collection<Post>("posts");
-    let query = postsCollection.find({}).sort({ createdAt: -1 }).limit(limit || 20);
-
+    const query = postsCollection.find({}).sort({ createdAt: -1 }).limit(limit || 20);
     const posts = await query.toArray();
 
     return posts.map(post => ({
@@ -103,21 +125,18 @@ export async function getBlogPosts(limit?: number): Promise<Post[]> {
         _id: post._id,
         id: post._id.toString(),
         createdAt: new Date(post.createdAt),
-    }))
+    }));
 
   } catch (error) {
     console.error("Error fetching blog posts:", error);
     return [];
-  } finally {
-      await client.close();
   }
 }
 
 export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
-  const client = new MongoClient(encodeURI(uri));
   try {
-    await client.connect();
-    const db = client.db(dbName);
+    const { db } = await connectToDb();
+    if (!db) throw new Error("Database connection failed.");
     
     const postsCollection = db.collection<Post>("posts");
     const post = await postsCollection.findOne({ slug });
@@ -136,16 +155,13 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
   } catch (error) {
     console.error(`Error fetching post with slug "${slug}":`, error);
     return null;
-  } finally {
-      await client.close();
   }
 }
 
 export async function getTestimonials(): Promise<Testimonial[]> {
-    const client = new MongoClient(encodeURI(uri));
     try {
-        await client.connect();
-        const db = client.db(dbName);
+        const { db } = await connectToDb();
+        if (!db) throw new Error("Database connection failed.");
 
         const testimonialsCollection = db.collection<Testimonial>("testimonials");
         const testimonials = await testimonialsCollection.find({}).sort({ order: 1 }).limit(10).toArray();
@@ -158,7 +174,5 @@ export async function getTestimonials(): Promise<Testimonial[]> {
     } catch (error) {
         console.error("Error fetching testimonials:", error);
         return [];
-    } finally {
-        await client.close();
     }
 }
