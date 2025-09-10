@@ -233,6 +233,7 @@ export async function getPrograms(collectionHandle: string, maxProducts: number)
   const token = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN;
 
   if (!domain || !token) {
+    console.error("Shopify domain or token not configured in environment variables.");
     return null;
   }
   

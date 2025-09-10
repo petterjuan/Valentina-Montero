@@ -11,6 +11,7 @@ import { Check } from "lucide-react";
 import PlanSignupDialog from "@/components/sections/PlanSignupDialog";
 import Image from "next/image";
 import { getPrograms } from "@/app/actions";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
 
 export interface Program {
@@ -25,6 +26,44 @@ export interface Program {
   isDigital?: boolean;
   handle?: string;
 }
+
+const fallbackPrograms: Program[] = [
+    {
+      title: "Plan de Coaching de 12 Semanas",
+      price: 499,
+      features: [
+        "Seguimiento personalizado semanal",
+        "Plan de nutrición adaptado a tus metas",
+        "Acceso a comunidad privada",
+        "Check-ins por video llamada",
+      ],
+      isPopular: true,
+      image: { src: "https://picsum.photos/seed/prog1/600/400", alt: "Mujer levantando pesas" },
+    },
+    {
+      title: "Plan de Coaching de 6 Semanas",
+      price: 299,
+      features: [
+        "Plan de entrenamiento intensivo",
+        "Guía de nutrición y recetas",
+        "Soporte por email",
+        "Revisión de progreso quincenal",
+      ],
+      image: { src: "https://picsum.photos/seed/prog2/600/400", alt: "Mujer haciendo yoga" },
+    },
+    {
+      title: 'Guía PDF "Muscle Bites"',
+      price: 29,
+      features: [
+        "Más de 50 recetas altas en proteína",
+        "Tips para meal prep",
+        "Guía de suplementación básica",
+        "Acceso instantáneo de por vida",
+      ],
+      isDigital: true,
+      image: { src: "https://picsum.photos/seed/prog3/600/400", alt: "Comida saludable" },
+    },
+];
 
 interface CoachingProgramsSectionProps {
   collectionHandle?: string;
@@ -41,16 +80,18 @@ export default async function CoachingProgramsSection({
 }: CoachingProgramsSectionProps) {
   
   let programs: Program[] | null = null;
-  let error: string | null = null;
+  let shopifyError = false;
 
   try {
     programs = await getPrograms(collectionHandle, maxProducts);
   } catch (e) {
-    console.error(`[CoachingProgramsSection] Error: ${e instanceof Error ? e.message : String(e)}`);
-    error = "No se pudieron cargar los programas desde Shopify. Por favor, verifica la configuración de la API.";
+    console.error(`[CoachingProgramsSection] Error fetching programs: ${e instanceof Error ? e.message : String(e)}`);
+    shopifyError = true;
   }
   
-  const hasPrograms = programs && programs.length > 0;
+  // Decide which programs to display
+  const displayPrograms = (programs && programs.length > 0) ? programs : fallbackPrograms;
+  const usingFallback = !programs || programs.length === 0;
 
   return (
     <section id="programs" className="py-16 sm:py-24 bg-background">
@@ -62,28 +103,18 @@ export default async function CoachingProgramsSection({
           <p className="mt-4 text-lg text-muted-foreground">{description}</p>
         </div>
 
-        <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3 lg:max-w-7xl lg:mx-auto">
-          {error && (
-             <div className="md:col-span-3">
-                <Card className="border-destructive bg-destructive/10">
-                    <CardContent className="p-4">
-                        <div className="flex items-center gap-3">
-                        <AlertTriangle className="h-5 w-5 text-destructive" />
-                        <p className="text-sm font-semibold text-destructive">{error}</p>
-                        </div>
-                    </CardContent>
-                </Card>
-             </div>
-          )}
+        {usingFallback && (
+             <Alert variant="destructive" className="mt-8 max-w-2xl mx-auto">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Error de Conexión</AlertTitle>
+                <AlertDescription>
+                   Mostrando datos de respaldo. Verifica la conexión con Shopify.
+                </AlertDescription>
+            </Alert>
+        )}
 
-          {!error && !hasPrograms && (
-            <div className="md:col-span-3 text-center py-12">
-                <h3 className="text-xl font-semibold">No hay programas disponibles</h3>
-                <p className="text-muted-foreground mt-2">No se encontraron productos en la colección '{collectionHandle}'.</p>
-            </div>
-          )}
-          
-          {hasPrograms && programs.map((program) => (
+        <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3 lg:max-w-7xl lg:mx-auto">
+          {displayPrograms.map((program) => (
             <Card
               key={program.handle || program.title}
               className={`flex flex-col ${program.isPopular ? "border-primary shadow-lg" : ""}`}
