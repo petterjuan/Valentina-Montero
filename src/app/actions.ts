@@ -1,5 +1,6 @@
 
 "use server";
+require('dotenv').config();
 
 import { generatePersonalizedWorkout, GeneratePersonalizedWorkoutInput, GeneratePersonalizedWorkoutOutput } from "@/ai/flows/generate-personalized-workout";
 import { processPlanSignup, PlanSignupInput } from "@/ai/flows/plan-signup-flow";
@@ -18,28 +19,16 @@ if (!dbName) {
     throw new Error('Invalid/Missing environment variable: "MONGODB_DB_NAME"');
 }
 
-// Per Next.js documentation, use a global variable to preserve the database connection
-// across hot reloads in development.
-// https://www.mongodb.com/docs/atlas/app-services/functions/nextjs-example/
-// https://github.com/vercel/next.js/blob/canary/examples/with-mongodb/lib/mongodb.ts
-
-declare global {
-  var _mongoClientPromise: Promise<MongoClient> | undefined;
-}
-
 let client: MongoClient;
 let clientPromise: Promise<MongoClient>;
 
 if (process.env.NODE_ENV === "development") {
-  // In development mode, use a global variable so that the value
-  // is preserved across module reloads caused by HMR (Hot Module Replacement).
   if (!global._mongoClientPromise) {
     client = new MongoClient(uri);
     global._mongoClientPromise = client.connect();
   }
   clientPromise = global._mongoClientPromise;
 } else {
-  // In production mode, it's best to not use a global variable.
   client = new MongoClient(uri);
   clientPromise = client.connect();
 }

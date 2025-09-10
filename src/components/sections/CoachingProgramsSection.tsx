@@ -10,6 +10,7 @@ import {
 import { Check } from "lucide-react";
 import PlanSignupDialog from "@/components/sections/PlanSignupDialog";
 import Image from "next/image";
+require('dotenv').config();
 
 export interface Program {
   title: string;
