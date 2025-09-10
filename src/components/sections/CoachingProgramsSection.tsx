@@ -9,7 +9,6 @@ import {
 import { Check } from "lucide-react";
 import PlanSignupDialog from "@/components/sections/PlanSignupDialog";
 import Image from "next/image";
-import { GraphQLClient, gql } from 'graphql-request';
 
 export interface Program {
   title: string;
@@ -53,7 +52,7 @@ interface CollectionData {
   };
 }
 
-const COLLECTION_QUERY = gql`
+const COLLECTION_QUERY = /* GraphQL */`
   query CollectionDetails($handle: String!, $first: Int = 10) {
     collection(handle: $handle) {
       id
@@ -101,7 +100,7 @@ const transformShopifyProducts = (products: ShopifyProduct[]): Program[] => {
           featuresList = parsedFeatures;
         }
       } catch (e) {
-        // Silently fail if parsing fails
+        // Silently fail if parsing fails, default to empty array
       }
     }
     
@@ -119,14 +118,6 @@ const transformShopifyProducts = (products: ShopifyProduct[]): Program[] => {
     };
   });
 };
-
-
-interface CoachingProgramsSectionProps {
-  collectionHandle?: string;
-  title?: string;
-  description?: string;
-  maxProducts?: number;
-}
 
 function getFallbackPrograms(): Program[] {
   return [
@@ -174,33 +165,61 @@ async function getProgramsFromShopify(collectionHandle: string, maxProducts: num
   const token = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN;
 
   if (!domain || !token) {
+    console.warn("Shopify environment variables are not set.");
     return null;
   }
   
   const endpoint = `https://${domain}/api/2025-07/graphql.json`;
-  const client = new GraphQLClient(endpoint, {
-    headers: {
-      'X-Shopify-Storefront-Access-Token': token,
-      'Content-Type': 'application/json',
-    },
-  });
 
   try {
-    const data = await client.request<CollectionData>(COLLECTION_QUERY, {
-      handle: collectionHandle,
-      first: maxProducts,
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'X-Shopify-Storefront-Access-Token': token,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        query: COLLECTION_QUERY,
+        variables: {
+          handle: collectionHandle,
+          first: maxProducts,
+        },
+      }),
+       // Use Next.js caching features
+      next: { revalidate: 3600 } // Revalidate every hour
     });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Shopify API request failed: ${response.status} ${errorText}`);
+    }
+
+    const jsonResponse = await response.json();
+    if(jsonResponse.errors) {
+        throw new Error(`GraphQL Errors: ${JSON.stringify(jsonResponse.errors)}`);
+    }
     
-    const shopifyProducts = data.collection?.products?.nodes;
+    const shopifyProducts = jsonResponse.data?.collection?.products?.nodes;
+    
     if (shopifyProducts && shopifyProducts.length > 0) {
       return transformShopifyProducts(shopifyProducts);
     }
-    return null;
+    
+    // Return null if collection is found but has no products
+    return null; 
   } catch (err: any) {
-    console.error("Error loading products from Shopify:", err.message);
+    console.error("Error fetching from Shopify:", err.message);
     return null;
   }
 }
+
+interface CoachingProgramsSectionProps {
+  collectionHandle?: string;
+  title?: string;
+  description?: string;
+  maxProducts?: number;
+}
+
 
 export default async function CoachingProgramsSection({
   collectionHandle = "coaching-programs",
