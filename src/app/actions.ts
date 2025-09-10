@@ -84,7 +84,7 @@ export async function handleLeadSubmission(formData: { email: string }) {
     }
 }
 
-export async function getBlogPosts(limit?: number): Promise<Post[]> {
+export async function getBlogPosts(limit?: number): Promise<Post[] | null> {
   try {
     await connectToDb();
     const posts: PostDocument[] = await PostModel.find({})
@@ -100,7 +100,8 @@ export async function getBlogPosts(limit?: number): Promise<Post[]> {
     }));
   } catch (error) {
     console.error("Error fetching blog posts:", error);
-    return [];
+    // Return null instead of an empty array to distinguish between "no posts" and "an error occurred"
+    return null;
   }
 }
 
