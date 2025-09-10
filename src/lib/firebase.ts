@@ -1,3 +1,4 @@
+
 import * as admin from 'firebase-admin';
 
 let firestore: admin.firestore.Firestore | null = null;
