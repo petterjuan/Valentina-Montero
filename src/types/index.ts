@@ -12,3 +12,12 @@ export interface Post {
     aiHint?: string;
     createdAt: Date;
 }
+
+export interface Testimonial {
+    _id: ObjectId;
+    id: string;
+    name: string;
+    story: string;
+    image: string;
+    aiHint?: string;
+}

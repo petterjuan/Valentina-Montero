@@ -5,7 +5,7 @@ import { generatePersonalizedWorkout, GeneratePersonalizedWorkoutInput, Generate
 import { processPlanSignup, PlanSignupInput } from "@/ai/flows/plan-signup-flow";
 import { z } from "zod";
 import clientPromise from "@/lib/mongodb";
-import { Post } from "@/types";
+import { Post, Testimonial } from "@/types";
 import { ObjectId } from "mongodb";
 
 
@@ -124,4 +124,22 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
     console.error(`Error fetching post with slug "${slug}":`, error);
     return null;
   }
+}
+
+export async function getTestimonials(): Promise<Testimonial[]> {
+    try {
+        const client = await clientPromise;
+        const db = client.db();
+
+        const testimonialsCollection = db.collection<Testimonial>("testimonials");
+        const testimonials = await testimonialsCollection.find({}).sort({ order: 1 }).toArray();
+
+        return testimonials.map(testimonial => ({
+            ...testimonial,
+            id: testimonial._id.toString(),
+        }));
+    } catch (error) {
+        console.error("Error fetching testimonials:", error);
+        return [];
+    }
 }

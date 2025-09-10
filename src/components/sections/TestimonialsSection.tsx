@@ -1,3 +1,4 @@
+
 "use client";
 
 import Image from "next/image";
@@ -10,8 +11,11 @@ import {
 } from "@/components/ui/carousel";
 import { Card, CardContent } from "@/components/ui/card";
 import Autoplay from "embla-carousel-autoplay";
+import type { Testimonial } from "@/types";
+import { getTestimonials } from "@/app/actions";
+import { useEffect, useState } from "react";
 
-const testimonials = [
+const fallbackTestimonials: Omit<Testimonial, "id" | "_id">[] = [
   {
     name: "Maria G.",
     story: "¡Valentina cambió mi vida! Perdí 9 kilos y gané muchísima confianza. Su plan de 12 semanas fue duro pero increíblemente gratificante.",
@@ -39,6 +43,19 @@ const testimonials = [
 ];
 
 export default function TestimonialsSection() {
+    const [testimonials, setTestimonials] = useState<Omit<Testimonial, "id" | "_id">[]>(fallbackTestimonials);
+
+    useEffect(() => {
+        async function fetchTestimonials() {
+            const fetchedTestimonials = await getTestimonials();
+            if (fetchedTestimonials && fetchedTestimonials.length > 0) {
+                setTestimonials(fetchedTestimonials);
+            }
+        }
+        fetchTestimonials();
+    }, []);
+
+
   return (
     <section id="testimonials" className="py-16 sm:py-24 bg-secondary">
       <div className="container mx-auto px-4 md:px-6">
