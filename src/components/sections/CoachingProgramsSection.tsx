@@ -11,6 +11,7 @@ import { Check } from "lucide-react";
 import PlanSignupDialog from "@/components/sections/PlanSignupDialog";
 import Image from "next/image";
 import { getPrograms } from "@/app/actions";
+import { AlertTriangle } from "lucide-react";
 
 export interface Program {
   title: string;
@@ -32,45 +33,6 @@ interface CoachingProgramsSectionProps {
   maxProducts?: number;
 }
 
-const fallbackPrograms: Program[] = [
-    {
-      title: "Plan de Coaching de 12 Semanas",
-      price: 299,
-      features: [
-        "Plan de entrenamiento 100% personalizado",
-        "Guía de nutrición y seguimiento de macros",
-        "Check-ins semanales por video-llamada",
-        "Soporte por WhatsApp 24/7",
-        "Acceso a comunidad privada",
-      ],
-      isPopular: true,
-      image: { src: "https://picsum.photos/seed/coaching1/600/400", alt: "Mujer levantando pesas" },
-    },
-    {
-      title: "Plan de Coaching de 6 Semanas",
-      price: 179,
-      features: [
-        "Plan de entrenamiento adaptado a tus metas",
-        "Recomendaciones de nutrición",
-        "Check-ins quincenales por video-llamada",
-        "Soporte por WhatsApp",
-      ],
-      image: { src: "https://picsum.photos/seed/coaching2/600/400", alt: "Mujer haciendo yoga" },
-    },
-    {
-        title: "Guía PDF: Muscle Bites",
-        price: 25,
-        features: [
-          "Más de 50 recetas altas en proteína",
-          "Planes de comida de ejemplo",
-          "Tips para meal-prep y compras inteligentes",
-          "Acceso instantáneo en formato digital",
-        ],
-        isDigital: true,
-        image: { src: "https://picsum.photos/seed/coaching3/600/400", alt: "Plato de comida saludable" },
-    },
-];
-
 export default async function CoachingProgramsSection({
   collectionHandle = "coaching-programs",
   title = "¿Lista para Comprometerte?",
@@ -78,15 +40,17 @@ export default async function CoachingProgramsSection({
   maxProducts = 10,
 }: CoachingProgramsSectionProps) {
   
-  let programs: Program[];
+  let programs: Program[] | null = null;
+  let error: string | null = null;
 
-  const fetchedPrograms = await getPrograms(collectionHandle, maxProducts);
-  if (fetchedPrograms && fetchedPrograms.length > 0) {
-      programs = fetchedPrograms;
-  } else {
-      console.error("⚠️ Shopify data not found, showing fallback data. Please verify Shopify connection and collection handle.");
-      programs = fallbackPrograms;
+  try {
+    programs = await getPrograms(collectionHandle, maxProducts);
+  } catch (e) {
+    console.error(`[CoachingProgramsSection] Error: ${e instanceof Error ? e.message : String(e)}`);
+    error = "No se pudieron cargar los programas desde Shopify. Por favor, verifica la configuración de la API.";
   }
+  
+  const hasPrograms = programs && programs.length > 0;
 
   return (
     <section id="programs" className="py-16 sm:py-24 bg-background">
@@ -99,7 +63,27 @@ export default async function CoachingProgramsSection({
         </div>
 
         <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3 lg:max-w-7xl lg:mx-auto">
-          {programs.map((program) => (
+          {error && (
+             <div className="md:col-span-3">
+                <Card className="border-destructive bg-destructive/10">
+                    <CardContent className="p-4">
+                        <div className="flex items-center gap-3">
+                        <AlertTriangle className="h-5 w-5 text-destructive" />
+                        <p className="text-sm font-semibold text-destructive">{error}</p>
+                        </div>
+                    </CardContent>
+                </Card>
+             </div>
+          )}
+
+          {!error && !hasPrograms && (
+            <div className="md:col-span-3 text-center py-12">
+                <h3 className="text-xl font-semibold">No hay programas disponibles</h3>
+                <p className="text-muted-foreground mt-2">No se encontraron productos en la colección '{collectionHandle}'.</p>
+            </div>
+          )}
+          
+          {hasPrograms && programs.map((program) => (
             <Card
               key={program.handle || program.title}
               className={`flex flex-col ${program.isPopular ? "border-primary shadow-lg" : ""}`}
