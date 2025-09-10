@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useForm, type SubmitHandler } from "react-hook-form";
@@ -15,6 +16,7 @@ import {
 } from "@/components/ui/form";
 import { useState } from "react";
 import { CheckCircle } from "lucide-react";
+import { handleLeadSubmission } from "@/app/actions";
 
 const FormSchema = z.object({
   email: z.string().email({ message: "Por favor, introduce un email válido." }),
@@ -34,21 +36,20 @@ export default function LeadMagnetSection() {
   });
 
   const onSubmit: SubmitHandler<FormData> = async (data) => {
-    console.log("Enviando email:", data.email);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+    const result = await handleLeadSubmission(data);
+    
+    if (result.success) {
       setIsSubmitted(true);
       toast({
         title: "¡Éxito!",
         description: "Tu guía está en camino a tu bandeja de entrada.",
       });
       form.reset();
-    } catch (error) {
+    } else {
       toast({
         variant: "destructive",
         title: "¡Uy! Algo salió mal.",
-        description: "Hubo un problema con tu solicitud. Por favor, inténtalo de nuevo.",
+        description: result.message,
       });
     }
   };
@@ -65,7 +66,7 @@ export default function LeadMagnetSection() {
                     Tu guía está en camino. Revisa tu bandeja de entrada y prepárate para transformar tu rutina.
                 </p>
                 <Button onClick={() => setIsSubmitted(false)} variant="outline" className="mt-4">
-                    Descargar otra guía
+                    Suscribir otro correo
                 </Button>
             </div>
           ) : (
