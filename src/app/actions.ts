@@ -9,15 +9,8 @@ import { Post, Testimonial } from "@/types";
 import { getFirestore } from "@/lib/firebase";
 import { Program } from "@/components/sections/CoachingProgramsSection";
 
-const uri = process.env.MONGODB_URI;
-const dbName = process.env.MONGODB_DB_NAME;
-
-if (!uri) {
-  console.error('Invalid/Missing environment variable: "MONGODB_URI"');
-}
-if (!dbName) {
-    console.error('Invalid/Missing environment variable: "MONGODB_DB_NAME"');
-}
+const uri = "mongodb+srv://petter2001us_db_user:Sa147405sa@cluster0.gbsm1da.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
+const dbName = "sample_training";
 
 let client: MongoClient;
 let db: Db;
@@ -31,13 +24,13 @@ async function connectToDb() {
     // In development mode, use a global variable so that the value
     // is preserved across module reloads caused by HMR (Hot Module Replacement).
     if (!global._mongoClientPromise) {
-      client = new MongoClient(uri!);
+      client = new MongoClient(uri);
       global._mongoClientPromise = client.connect();
     }
     client = await global._mongoClientPromise;
   } else {
     // In production mode, it's best to not use a global variable.
-    client = new MongoClient(uri!);
+    client = new MongoClient(uri);
     await client.connect();
   }
   db = client.db(dbName);
@@ -263,8 +256,8 @@ const transformShopifyProducts = (products: ShopifyProduct[]): Program[] => {
 };
 
 export async function getPrograms(collectionHandle: string, maxProducts: number): Promise<Program[] | null> {
-  const domain = process.env.SHOPIFY_STORE_DOMAIN;
-  const token = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN;
+  const domain = "valentmontero.myshopify.com";
+  const token = "1347690caf48a60944a91df4befa7a74";
 
   if (!domain || !token) {
     console.warn("Shopify environment variables are not set.");
