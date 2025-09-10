@@ -10,7 +10,7 @@ import {
 import { Check } from "lucide-react";
 import PlanSignupDialog from "@/components/sections/PlanSignupDialog";
 import Image from "next/image";
-require('dotenv').config();
+import { getPrograms } from "@/app/actions";
 
 export interface Program {
   title: string;
@@ -24,102 +24,6 @@ export interface Program {
   isDigital?: boolean;
   handle?: string;
 }
-
-interface ShopifyProduct {
-  id: string;
-  title: string;
-  handle: string;
-  description: string;
-  availableForSale: boolean;
-  featuredImage?: {
-    url: string;
-    altText: string;
-  };
-  priceRange: {
-    minVariantPrice: {
-      amount: string;
-      currencyCode: string;
-    };
-  };
-  isPopular?: { value: string };
-  features?: { value: string };
-  isDigital?: { value: string };
-}
-
-interface CollectionData {
-  collection: {
-    products: {
-      nodes: ShopifyProduct[];
-    };
-  };
-}
-
-const COLLECTION_QUERY = /* GraphQL */`
-  query CollectionDetails($handle: String!, $first: Int = 10) {
-    collection(handle: $handle) {
-      id
-      title
-      description
-      products(first: $first) {
-        nodes {
-          id
-          title
-          handle
-          description
-          availableForSale
-          featuredImage {
-              url(transform: {maxWidth: 600, maxHeight: 400, crop: CENTER})
-              altText
-          }
-          priceRange {
-            minVariantPrice {
-              amount
-              currencyCode
-            }
-          }
-          isPopular: metafield(namespace: "custom", key: "is_popular") {
-            value
-          }
-          features: metafield(namespace: "custom", key: "features") {
-            value
-          }
-          isDigital: metafield(namespace: "custom", key: "is_digital") {
-            value
-          }
-        }
-      }
-    }
-  }
-`;
-
-const transformShopifyProducts = (products: ShopifyProduct[]): Program[] => {
-  return products.map((product) => {
-    let featuresList: string[] = [];
-    if (product.features?.value) {
-      try {
-        const parsedFeatures = JSON.parse(product.features.value);
-        if (Array.isArray(parsedFeatures)) {
-          featuresList = parsedFeatures;
-        }
-      } catch (e) {
-        // Silently fail if parsing fails, default to empty array
-      }
-    }
-    
-    return {
-      title: product.title,
-      price: Math.round(parseFloat(product.priceRange.minVariantPrice.amount)),
-      features: featuresList,
-      isPopular: product.isPopular?.value === 'true',
-      isDigital: product.isDigital?.value === 'true',
-      handle: product.handle,
-      image: product.featuredImage ? {
-        src: product.featuredImage.url,
-        alt: product.featuredImage.altText || product.title,
-      } : undefined,
-    };
-  });
-};
 
 function getFallbackPrograms(): Program[] {
   return [
@@ -162,52 +66,6 @@ function getFallbackPrograms(): Program[] {
   ];
 }
 
-async function getProgramsFromShopify(collectionHandle: string, maxProducts: number): Promise<Program[] | null> {
-  const domain = process.env.SHOPIFY_STORE_DOMAIN;
-  const token = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN;
-
-  if (!domain || !token) {
-    console.warn("Shopify environment variables are not set.");
-    return null;
-  }
-  
-  const endpoint = `https://${domain}/api/2024-07/graphql.json`;
-
-  try {
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'X-Shopify-Storefront-Access-Token': token,
-        'Content-Type': 'application/graphql',
-      },
-      body: COLLECTION_QUERY,
-      next: { revalidate: 3600 }
-    });
-
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Shopify API request failed: ${response.status} ${errorText}`);
-    }
-
-    const jsonResponse = await response.json();
-    if(jsonResponse.errors) {
-        throw new Error(`GraphQL Errors: ${JSON.stringify(jsonResponse.errors)}`);
-    }
-    
-    const shopifyProducts = jsonResponse.data?.collection?.products?.nodes;
-    
-    if (shopifyProducts && shopifyProducts.length > 0) {
-      return transformShopifyProducts(shopifyProducts);
-    }
-    
-    // Return null if collection is found but has no products
-    return []; 
-  } catch (err: any) {
-    console.error("Error fetching from Shopify:", err.message);
-    return null;
-  }
-}
-
 interface CoachingProgramsSectionProps {
   collectionHandle?: string;
   title?: string;
@@ -223,7 +81,7 @@ export default async function CoachingProgramsSection({
   maxProducts = 10,
 }: CoachingProgramsSectionProps) {
   
-  let programs = await getProgramsFromShopify(collectionHandle, maxProducts);
+  let programs = await getPrograms(collectionHandle, maxProducts);
   let usingFallback = false;
 
   if (!programs) {
