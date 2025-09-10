@@ -1,3 +1,4 @@
+
 require('dotenv').config();
 const { MongoClient } = require('mongodb');
 
@@ -71,14 +72,12 @@ async function seedDatabase() {
         process.exit(1);
     }
 
-    const client = new MongoClient(encodeURI(uri), {
-        dbName: dbName,
-    });
+    const client = new MongoClient(encodeURI(uri));
 
     try {
         await client.connect();
         console.log("Connected to database.");
-        const db = client.db(); // No need to pass dbName here again
+        const db = client.db(dbName);
 
         // Seed Testimonials
         const testimonialsCollection = db.collection('testimonials');
