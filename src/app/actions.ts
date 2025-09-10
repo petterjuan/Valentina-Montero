@@ -1,5 +1,6 @@
 
 "use server";
+require('dotenv').config();
 
 import { generatePersonalizedWorkout, GeneratePersonalizedWorkoutInput, GeneratePersonalizedWorkoutOutput } from "@/ai/flows/generate-personalized-workout";
 import { processPlanSignup, PlanSignupInput } from "@/ai/flows/plan-signup-flow";
@@ -275,9 +276,9 @@ export async function getPrograms(collectionHandle: string, maxProducts: number)
       method: 'POST',
       headers: {
         'X-Shopify-Storefront-Access-Token': token,
-        'Content-Type': 'application/graphql',
+        'Content-Type': 'application/json',
       },
-      body: COLLECTION_QUERY,
+      body: JSON.stringify({ query: COLLECTION_QUERY, variables: { handle: collectionHandle, first: maxProducts } }),
       next: { revalidate: 3600 }
     });
 
@@ -297,7 +298,6 @@ export async function getPrograms(collectionHandle: string, maxProducts: number)
       return transformShopifyProducts(shopifyProducts);
     }
     
-    // Return null if collection is found but has no products
     return []; 
   } catch (err: any) {
     console.error("Error fetching from Shopify:", err.message);
