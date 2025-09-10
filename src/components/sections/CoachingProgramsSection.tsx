@@ -7,9 +7,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Check } from "lucide-react";
-import { getProgramsFromShopify } from "@/lib/shopify";
 import PlanSignupDialog from "@/components/sections/PlanSignupDialog";
 import Image from "next/image";
+import { GraphQLClient, gql } from 'graphql-request';
 
 export interface Program {
   title: string;
@@ -23,6 +23,103 @@ export interface Program {
   isDigital?: boolean;
   handle?: string;
 }
+
+interface ShopifyProduct {
+  id: string;
+  title: string;
+  handle: string;
+  description: string;
+  availableForSale: boolean;
+  featuredImage?: {
+    url: string;
+    altText: string;
+  };
+  priceRange: {
+    minVariantPrice: {
+      amount: string;
+      currencyCode: string;
+    };
+  };
+  isPopular?: { value: string };
+  features?: { value: string };
+  isDigital?: { value: string };
+}
+
+interface CollectionData {
+  collection: {
+    products: {
+      nodes: ShopifyProduct[];
+    };
+  };
+}
+
+const COLLECTION_QUERY = gql`
+  query CollectionDetails($handle: String!, $first: Int = 10) {
+    collection(handle: $handle) {
+      id
+      title
+      description
+      products(first: $first) {
+        nodes {
+          id
+          title
+          handle
+          description
+          availableForSale
+          featuredImage {
+              url(transform: {maxWidth: 600, maxHeight: 400, crop: CENTER})
+              altText
+          }
+          priceRange {
+            minVariantPrice {
+              amount
+              currencyCode
+            }
+          }
+          isPopular: metafield(namespace: "custom", key: "is_popular") {
+            value
+          }
+          features: metafield(namespace: "custom", key: "features") {
+            value
+          }
+          isDigital: metafield(namespace: "custom", key: "is_digital") {
+            value
+          }
+        }
+      }
+    }
+  }
+`;
+
+const transformShopifyProducts = (products: ShopifyProduct[]): Program[] => {
+  return products.map((product) => {
+    let featuresList: string[] = [];
+    if (product.features?.value) {
+      try {
+        const parsedFeatures = JSON.parse(product.features.value);
+        if (Array.isArray(parsedFeatures)) {
+          featuresList = parsedFeatures;
+        }
+      } catch (e) {
+        // Silently fail if parsing fails
+      }
+    }
+    
+    return {
+      title: product.title,
+      price: Math.round(parseFloat(product.priceRange.minVariantPrice.amount)),
+      features: featuresList,
+      isPopular: product.isPopular?.value === 'true',
+      isDigital: product.isDigital?.value === 'true',
+      handle: product.handle,
+      image: product.featuredImage ? {
+        src: product.featuredImage.url,
+        alt: product.featuredImage.altText || product.title,
+      } : undefined,
+    };
+  });
+};
+
 
 interface CoachingProgramsSectionProps {
   collectionHandle?: string;
@@ -70,6 +167,39 @@ function getFallbackPrograms(): Program[] {
       ],
     },
   ];
+}
+
+async function getProgramsFromShopify(collectionHandle: string, maxProducts: number): Promise<Program[] | null> {
+  const domain = process.env.SHOPIFY_STORE_DOMAIN;
+  const token = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN;
+
+  if (!domain || !token) {
+    return null;
+  }
+  
+  const endpoint = `https://${domain}/api/2025-07/graphql.json`;
+  const client = new GraphQLClient(endpoint, {
+    headers: {
+      'X-Shopify-Storefront-Access-Token': token,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  try {
+    const data = await client.request<CollectionData>(COLLECTION_QUERY, {
+      handle: collectionHandle,
+      first: maxProducts,
+    });
+    
+    const shopifyProducts = data.collection?.products?.nodes;
+    if (shopifyProducts && shopifyProducts.length > 0) {
+      return transformShopifyProducts(shopifyProducts);
+    }
+    return null;
+  } catch (err: any) {
+    console.error("Error loading products from Shopify:", err.message);
+    return null;
+  }
 }
 
 export default async function CoachingProgramsSection({
