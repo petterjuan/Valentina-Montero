@@ -33,9 +33,14 @@ const fallbackTestimonials: Omit<Testimonial, "id" | "_id">[] = [
 export default async function TestimonialsSection() {
     let testimonials = await getTestimonials();
 
+    let usingFallback = false;
     if (!testimonials || testimonials.length === 0) {
-        // Since we can't add ObjectId to fallback, we map it to string for consistency
-        testimonials = fallbackTestimonials.map((t, i) => ({ ...t, id: `fallback-${i}`, _id: `fallback-${i}` as any }));
+        testimonials = fallbackTestimonials.map((t, i) => ({ 
+            ...t, 
+            id: `fallback-${i}`, 
+            _id: `fallback-${i}` as any 
+        }));
+        usingFallback = true;
     }
 
   return (
@@ -48,6 +53,11 @@ export default async function TestimonialsSection() {
           <p className="mt-4 text-lg text-muted-foreground">
             Mira lo que mis clientas tienen que decir sobre su viaje de transformación.
           </p>
+           {usingFallback && (
+              <p className="mt-2 text-sm text-yellow-600">
+                ⚠️ Mostrando datos de respaldo. Verifica la conexión con MongoDB.
+              </p>
+          )}
         </div>
         <TestimonialsCarousel testimonials={testimonials} />
       </div>
