@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -185,8 +186,6 @@ async function getProgramsFromShopify(collectionHandle: string, maxProducts: num
           first: maxProducts,
         },
       }),
-       // Use Next.js caching features
-       cache: 'no-store',
     });
 
     if (!response.ok) {
