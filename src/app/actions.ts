@@ -60,7 +60,7 @@ const leadSchema = z.object({
 });
 
 export async function handleLeadSubmission(formData: { email: string }) {
-    const client = new MongoClient(uri);
+    const client = new MongoClient(encodeURI(uri));
     try {
         const { email } = leadSchema.parse(formData);
         
@@ -86,7 +86,7 @@ export async function handleLeadSubmission(formData: { email: string }) {
 }
 
 export async function getBlogPosts(limit?: number): Promise<Post[]> {
-  const client = new MongoClient(uri);
+  const client = new MongoClient(encodeURI(uri));
   try {
     await client.connect();
     const db = client.db(dbName);
@@ -111,7 +111,7 @@ export async function getBlogPosts(limit?: number): Promise<Post[]> {
 }
 
 export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
-  const client = new MongoClient(uri);
+  const client = new MongoClient(encodeURI(uri));
   try {
     await client.connect();
     const db = client.db(dbName);
@@ -138,7 +138,7 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
 }
 
 export async function getTestimonials(): Promise<Testimonial[]> {
-    const client = new MongoClient(uri);
+    const client = new MongoClient(encodeURI(uri));
     try {
         await client.connect();
         const db = client.db(dbName);
