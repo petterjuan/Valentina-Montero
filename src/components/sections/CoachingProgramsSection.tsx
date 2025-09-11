@@ -80,13 +80,13 @@ export default async function CoachingProgramsSection({
 }: CoachingProgramsSectionProps) {
   
   let programs: Program[] | null = null;
-  let errorOccurred = false;
+  let errorMessage: string | null = null;
 
   try {
     programs = await getPrograms(collectionHandle, maxProducts);
   } catch (e) {
-    errorOccurred = true;
-    console.error(`[CoachingProgramsSection] Error fetching programs: ${e instanceof Error ? e.message : String(e)}`);
+    errorMessage = e instanceof Error ? e.message : "Ocurrió un error desconocido.";
+    console.error(`[CoachingProgramsSection] Error fetching programs: ${errorMessage}`);
   }
   
   const displayPrograms = (programs && programs.length > 0) ? programs : fallbackPrograms;
@@ -101,12 +101,12 @@ export default async function CoachingProgramsSection({
           <p className="mt-4 text-lg text-muted-foreground">{description}</p>
         </div>
 
-        {errorOccurred && (
+        {errorMessage && (
           <Alert variant="destructive" className="my-8 max-w-2xl mx-auto">
             <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Error de Conexión</AlertTitle>
+            <AlertTitle>Error de Conexión con Shopify</AlertTitle>
             <AlertDescription>
-              Mostrando datos de respaldo. Verifica la conexión con Shopify.
+              {errorMessage}
             </AlertDescription>
           </Alert>
         )}
@@ -167,5 +167,3 @@ export default async function CoachingProgramsSection({
     </section>
   );
 }
-
-    
