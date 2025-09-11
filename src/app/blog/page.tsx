@@ -29,29 +29,36 @@ export default async function BlogIndexPage() {
                 </div>
 
                 <div className="mt-16 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-                    {posts.map((post) => (
-                        <Card key={post.id} className="flex flex-col overflow-hidden">
-                            <Link href={`/blog/${post.slug}`} className="aspect-video relative block">
-                                <Image
-                                    src={post.imageUrl || "https://picsum.photos/600/400?random=8"}
-                                    alt={post.title}
-                                    fill
-                                    className="object-cover"
-                                />
-                            </Link>
-                            <CardHeader>
-                                <CardTitle className="font-headline">{post.title}</CardTitle>
-                            </CardHeader>
-                            <CardContent className="flex-1">
-                                <CardDescription>{post.excerpt}</CardDescription>
-                            </CardContent>
-                            <CardFooter>
-                                <Button asChild variant="secondary" className="w-full">
-                                <Link href={`/blog/${post.slug}`}>Leer Más</Link>
-                                </Button>
-                            </CardFooter>
-                        </Card>
-                    ))}
+                    {posts && posts.length > 0 ? (
+                        posts.map((post) => (
+                            <Card key={post.id} className="flex flex-col overflow-hidden">
+                                <Link href={`/blog/${post.slug}`} className="aspect-video relative block">
+                                    <Image
+                                        src={post.imageUrl || "https://picsum.photos/600/400?random=8"}
+                                        alt={post.title}
+                                        fill
+                                        className="object-cover"
+                                    />
+                                </Link>
+                                <CardHeader>
+                                    <CardTitle className="font-headline">{post.title}</CardTitle>
+                                </CardHeader>
+                                <CardContent className="flex-1">
+                                    <CardDescription>{post.excerpt}</CardDescription>
+                                </CardContent>
+                                <CardFooter>
+                                    <Button asChild variant="secondary" className="w-full">
+                                    <Link href={`/blog/${post.slug}`}>Leer Más</Link>
+                                    </Button>
+                                </CardFooter>
+                            </Card>
+                        ))
+                    ) : (
+                        <div className="col-span-1 md:col-span-2 lg:col-span-3 text-center py-12">
+                            <h3 className="text-xl font-semibold">No hay artículos aún</h3>
+                            <p className="text-muted-foreground mt-2">Vuelve pronto para leer nuevos artículos o comprueba la conexión con la base de datos si eres el administrador.</p>
+                        </div>
+                    )}
                 </div>
             </div>
         </section>
