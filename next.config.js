@@ -26,6 +26,12 @@ const nextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'valentmontero.myshopify.com',
+        port: '',
+        pathname: '/**',
+      }
     ],
   },
 };
