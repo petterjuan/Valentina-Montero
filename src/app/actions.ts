@@ -133,7 +133,11 @@ export async function getTestimonials(): Promise<Testimonial[] | null> {
             .limit(10)
             .lean();
         
-        return testimonials;
+        return testimonials.map(testimonial => ({
+            ...testimonial,
+            _id: testimonial._id.toString(),
+            id: testimonial._id.toString(),
+        }));
     } catch (error) {
         console.error("Error fetching testimonials:", error);
         return null;
