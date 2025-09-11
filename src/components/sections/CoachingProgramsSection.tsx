@@ -89,8 +89,7 @@ export default async function CoachingProgramsSection({
     console.error(`[CoachingProgramsSection] Error fetching programs: ${e instanceof Error ? e.message : String(e)}`);
   }
   
-  const usingFallback = !programs || programs.length === 0;
-  const displayPrograms = usingFallback ? fallbackPrograms : programs;
+  const displayPrograms = (programs && programs.length > 0) ? programs : fallbackPrograms;
 
   return (
     <section id="programs" className="py-16 sm:py-24 bg-background">
@@ -168,3 +167,5 @@ export default async function CoachingProgramsSection({
     </section>
   );
 }
+
+    

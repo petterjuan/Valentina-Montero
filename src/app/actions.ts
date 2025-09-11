@@ -272,3 +272,5 @@ export async function getPrograms(collectionHandle: string, maxProducts: number)
     throw new Error(`Failed to fetch programs from Shopify: ${err.message}`);
   }
 }
+
+    
