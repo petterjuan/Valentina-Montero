@@ -257,25 +257,27 @@ export async function getPrograms(collectionHandle: string, maxProducts: number)
       next: { revalidate: 3600 }
     });
 
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Shopify API request failed with status ${response.status}: ${errorText}`);
-    }
+    const responseBody = await response.json();
 
-    const jsonResponse = await response.json();
-    if(jsonResponse.errors) {
-        throw new Error(`GraphQL Errors from Shopify: ${JSON.stringify(jsonResponse.errors)}`);
+    if (!response.ok || responseBody.errors) {
+        const errorDetails = {
+            status: response.status,
+            statusText: response.statusText,
+            responseBody: responseBody
+        };
+        throw new Error(`Shopify API request failed: ${JSON.stringify(errorDetails)}`);
     }
     
-    const shopifyProducts = jsonResponse.data?.collection?.products?.nodes;
+    const shopifyProducts = responseBody.data?.collection?.products?.nodes;
     
     if (shopifyProducts && Array.isArray(shopifyProducts)) {
       return transformShopifyProducts(shopifyProducts);
     }
     
     return null;
-  } catch (err: any) {
-    console.error("Error fetching from Shopify:", err.message);
-    return null;
+  } catch (err) {
+    console.error("Error completo al obtener datos de Shopify:", err);
+    // Re-throw the error to make it visible in server logs
+    throw err;
   }
 }
