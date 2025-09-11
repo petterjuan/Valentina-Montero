@@ -234,8 +234,7 @@ export async function getPrograms(collectionHandle: string, maxProducts: number)
   const token = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN;
 
   if (!domain || !token) {
-    console.error("Shopify domain or token not configured in environment variables.");
-    return null;
+    throw new Error("Shopify domain or token not configured in environment variables.");
   }
   
   const endpoint = `https://${domain}/api/graphql.json`;
@@ -253,14 +252,12 @@ export async function getPrograms(collectionHandle: string, maxProducts: number)
 
     if (!response.ok) {
         const errorText = await response.text();
-        console.error(`Shopify API request failed with status ${response.status}: ${errorText}`);
-        return null;
+        throw new Error(`Shopify API request failed with status ${response.status}: ${errorText}`);
     }
 
     const jsonResponse = await response.json();
     if(jsonResponse.errors) {
-        console.error(`GraphQL Errors from Shopify: ${JSON.stringify(jsonResponse.errors)}`);
-        return null;
+        throw new Error(`GraphQL Errors from Shopify: ${JSON.stringify(jsonResponse.errors)}`);
     }
     
     const shopifyProducts = jsonResponse.data?.collection?.products?.nodes;
@@ -272,6 +269,6 @@ export async function getPrograms(collectionHandle: string, maxProducts: number)
     return null;
   } catch (err: any) {
     console.error("Error fetching from Shopify:", err.message);
-    return null;
+    throw new Error(`Failed to fetch programs from Shopify: ${err.message}`);
   }
 }

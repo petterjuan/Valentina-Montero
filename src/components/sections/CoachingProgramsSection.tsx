@@ -7,10 +7,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Check } from "lucide-react";
+import { Check, AlertTriangle } from "lucide-react";
 import PlanSignupDialog from "@/components/sections/PlanSignupDialog";
 import Image from "next/image";
 import { getPrograms } from "@/app/actions";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
 
 export interface Program {
   title: string;
@@ -78,16 +80,17 @@ export default async function CoachingProgramsSection({
 }: CoachingProgramsSectionProps) {
   
   let programs: Program[] | null = null;
-  
+  let errorOccurred = false;
+
   try {
     programs = await getPrograms(collectionHandle, maxProducts);
   } catch (e) {
-    // Errors are now logged inside getPrograms, so we just proceed
-    console.error(`[CoachingProgramsSection] Fallback activado: ${e instanceof Error ? e.message : String(e)}`);
+    errorOccurred = true;
+    console.error(`[CoachingProgramsSection] Error fetching programs: ${e instanceof Error ? e.message : String(e)}`);
   }
   
-  // Decide which programs to display
-  const displayPrograms = (programs && programs.length > 0) ? programs : fallbackPrograms;
+  const usingFallback = !programs || programs.length === 0;
+  const displayPrograms = usingFallback ? fallbackPrograms : programs;
 
   return (
     <section id="programs" className="py-16 sm:py-24 bg-background">
@@ -98,6 +101,16 @@ export default async function CoachingProgramsSection({
           </h2>
           <p className="mt-4 text-lg text-muted-foreground">{description}</p>
         </div>
+
+        {errorOccurred && (
+          <Alert variant="destructive" className="my-8 max-w-2xl mx-auto">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Error de Conexión</AlertTitle>
+            <AlertDescription>
+              Mostrando datos de respaldo. Verifica la conexión con Shopify.
+            </AlertDescription>
+          </Alert>
+        )}
 
         <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3 lg:max-w-7xl lg:mx-auto">
           {displayPrograms.map((program) => (
