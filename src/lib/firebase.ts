@@ -7,13 +7,13 @@ let initializationError: string | null = null;
 try {
   const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
   if (serviceAccountKey) {
-    // The key might be Base64 encoded, try to decode it.
     let serviceAccount;
     try {
+        // First, assume it's Base64 encoded and try to decode.
         const decodedKey = Buffer.from(serviceAccountKey, 'base64').toString('utf-8');
         serviceAccount = JSON.parse(decodedKey);
-    } catch(e) {
-        // If decoding or parsing fails, assume it's a plain JSON string.
+    } catch (e) {
+        // If decoding fails, assume it's a plain JSON string.
         try {
             serviceAccount = JSON.parse(serviceAccountKey);
         } catch (jsonError) {
@@ -38,11 +38,8 @@ try {
   console.error(initializationError);
 }
 
-// Export a function to get Firestore. It will now return null if initialization failed.
 export const getFirestore = () => {
     if (initializationError) {
-        // Log the reason for failure when access is attempted.
-        // Using warn to avoid spamming logs with errors on every access attempt.
         console.warn(`Firestore access blocked: ${initializationError}`);
         return null;
     }
