@@ -100,8 +100,7 @@ export async function getBlogPosts(limit?: number): Promise<Post[] | null> {
     }));
   } catch (error) {
     console.error("Error fetching blog posts:", error);
-    // Propagate the error to be caught by the component
-    throw new Error(`Failed to fetch blog posts: ${error instanceof Error ? error.message : String(error)}`);
+    return null;
   }
 }
 
@@ -122,7 +121,7 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
     };
   } catch (error) {
     console.error(`Error fetching post with slug "${slug}":`, error);
-    throw new Error(`Failed to fetch post with slug "${slug}": ${error instanceof Error ? error.message : String(error)}`);
+    return null;
   }
 }
 
@@ -137,7 +136,7 @@ export async function getTestimonials(): Promise<Testimonial[] | null> {
         return testimonials;
     } catch (error) {
         console.error("Error fetching testimonials:", error);
-        throw new Error(`Failed to fetch testimonials: ${error instanceof Error ? error.message : String(error)}`);
+        return null;
     }
 }
 
@@ -234,7 +233,8 @@ export async function getPrograms(collectionHandle: string, maxProducts: number)
   const token = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN;
 
   if (!domain || !token) {
-    throw new Error("Shopify domain or token not configured in environment variables.");
+    console.error("Shopify domain or token not configured in environment variables.");
+    return null;
   }
   
   const endpoint = `https://${domain}/api/2024-04/graphql.json`;
@@ -269,6 +269,6 @@ export async function getPrograms(collectionHandle: string, maxProducts: number)
     return null;
   } catch (err: any) {
     console.error("Error fetching from Shopify:", err.message);
-    throw new Error(`Failed to fetch programs from Shopify: ${err.message}`);
+    return null;
   }
 }

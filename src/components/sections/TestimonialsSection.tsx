@@ -2,9 +2,6 @@
 import { getTestimonials } from "@/app/actions";
 import type { Testimonial } from "@/types";
 import TestimonialsCarousel from "./TestimonialsCarousel";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertTriangle } from "lucide-react";
-
 
 const fallbackTestimonials: Omit<Testimonial, "_id" | "id">[] = [
   {
@@ -29,7 +26,6 @@ const fallbackTestimonials: Omit<Testimonial, "_id" | "id">[] = [
 
 export default async function TestimonialsSection() {
     let testimonials: (Testimonial | Omit<Testimonial, "id" | "_id">)[] = [];
-    let dbError: string | null = null;
 
     try {
         const fetchedTestimonials = await getTestimonials();
@@ -40,12 +36,8 @@ export default async function TestimonialsSection() {
             testimonials = fallbackTestimonials;
         }
     } catch(e) {
-        if (e instanceof Error) {
-            dbError = e.message;
-        } else {
-            dbError = "Ocurrió un error desconocido al cargar los testimonios.";
-        }
-        console.error(`[TestimonialsSection] Error: ${dbError}, using fallback.`);
+        // Errors are logged in the action, here we just ensure fallback.
+        console.error(`[TestimonialsSection] Could not fetch testimonials, will use fallback data.`);
         testimonials = fallbackTestimonials;
     }
 
@@ -61,16 +53,6 @@ export default async function TestimonialsSection() {
           </p>
         </div>
         
-        {dbError && (
-          <Alert variant="destructive" className="my-8 max-w-2xl mx-auto">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Error de Conexión con la Base de Datos</AlertTitle>
-            <AlertDescription>
-              {dbError}
-            </AlertDescription>
-          </Alert>
-        )}
-
         <TestimonialsCarousel testimonials={testimonials} />
       </div>
     </section>

@@ -12,8 +12,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { getBlogPosts } from "@/app/actions";
 import { Post } from "@/types";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertTriangle } from "lucide-react";
 
 const fallbackPosts: Omit<Post, "_id" | "id">[] = [
     {
@@ -48,21 +46,15 @@ const fallbackPosts: Omit<Post, "_id" | "id">[] = [
 
 export default async function BlogSection() {
   let fetchedPosts: Post[] | null = null;
-  let dbError: string | null = null;
 
   try {
     fetchedPosts = await getBlogPosts(3);
   } catch (e) {
-    if (e instanceof Error) {
-        dbError = e.message;
-    } else {
-        dbError = "Ocurrió un error desconocido al cargar los posts.";
-    }
-    console.error(`[BlogSection] Error: ${dbError}`);
+     // Errors are logged in the action, here we just ensure fallback.
+     console.error(`[BlogSection] Could not fetch posts, will use fallback data.`);
   }
   
   const displayPosts = (fetchedPosts && fetchedPosts.length > 0) ? fetchedPosts : fallbackPosts;
-  const usingFallback = !fetchedPosts || fetchedPosts.length === 0;
 
   return (
     <section id="blog" className="py-16 sm:py-24 bg-background">
@@ -75,16 +67,6 @@ export default async function BlogSection() {
             Obtén los últimos consejos, trucos e ideas sobre fitness, nutrición y mentalidad.
           </p>
         </div>
-
-        {dbError && (
-          <Alert variant="destructive" className="my-8 max-w-2xl mx-auto">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Error de Conexión con la Base de Datos</AlertTitle>
-            <AlertDescription>
-              {dbError}
-            </AlertDescription>
-          </Alert>
-        )}
 
         <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
           {displayPosts.length > 0 ? (
