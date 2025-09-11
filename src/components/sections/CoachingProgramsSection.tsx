@@ -7,12 +7,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Check, AlertTriangle } from "lucide-react";
+import { Check } from "lucide-react";
 import PlanSignupDialog from "@/components/sections/PlanSignupDialog";
 import Image from "next/image";
 import { getPrograms } from "@/app/actions";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-
 
 export interface Program {
   title: string;
@@ -80,13 +78,11 @@ export default async function CoachingProgramsSection({
 }: CoachingProgramsSectionProps) {
   
   let programs: Program[] | null = null;
-  let errorMessage: string | null = null;
-
+  
   try {
     programs = await getPrograms(collectionHandle, maxProducts);
   } catch (e) {
-    errorMessage = e instanceof Error ? e.message : "Ocurrió un error desconocido.";
-    console.error(`[CoachingProgramsSection] Error fetching programs: ${errorMessage}`);
+    console.error(`[CoachingProgramsSection] Error fetching programs: ${e instanceof Error ? e.message : String(e)}`);
   }
   
   const displayPrograms = (programs && programs.length > 0) ? programs : fallbackPrograms;
@@ -100,16 +96,6 @@ export default async function CoachingProgramsSection({
           </h2>
           <p className="mt-4 text-lg text-muted-foreground">{description}</p>
         </div>
-
-        {errorMessage && (
-          <Alert variant="destructive" className="my-8 max-w-2xl mx-auto">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Error de Conexión con Shopify</AlertTitle>
-            <AlertDescription>
-              {errorMessage}
-            </AlertDescription>
-          </Alert>
-        )}
 
         <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3 lg:max-w-7xl lg:mx-auto">
           {displayPrograms.map((program) => (

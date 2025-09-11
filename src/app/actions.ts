@@ -237,7 +237,7 @@ export async function getPrograms(collectionHandle: string, maxProducts: number)
     throw new Error("Shopify domain or token not configured in environment variables.");
   }
   
-  const endpoint = `https://${domain}/api/graphql.json`;
+  const endpoint = `https://${domain}/api/2024-04/graphql.json`;
 
   try {
     const response = await fetch(endpoint, {
@@ -272,5 +272,3 @@ export async function getPrograms(collectionHandle: string, maxProducts: number)
     throw new Error(`Failed to fetch programs from Shopify: ${err.message}`);
   }
 }
-
-    
