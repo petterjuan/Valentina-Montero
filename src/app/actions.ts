@@ -100,8 +100,8 @@ export async function getBlogPosts(limit?: number): Promise<Post[] | null> {
     }));
   } catch (error) {
     console.error("Error fetching blog posts:", error);
-    // Return null instead of an empty array to distinguish between "no posts" and "an error occurred"
-    return null;
+    // Propagate the error to be caught by the component
+    throw new Error(`Failed to fetch blog posts: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -122,7 +122,7 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
     };
   } catch (error) {
     console.error(`Error fetching post with slug "${slug}":`, error);
-    return null;
+    throw new Error(`Failed to fetch post with slug "${slug}": ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -137,7 +137,7 @@ export async function getTestimonials(): Promise<Testimonial[] | null> {
         return testimonials;
     } catch (error) {
         console.error("Error fetching testimonials:", error);
-        return null;
+        throw new Error(`Failed to fetch testimonials: ${error instanceof Error ? error.message : String(error)}`);
     }
 }
 

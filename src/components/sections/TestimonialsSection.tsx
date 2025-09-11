@@ -2,6 +2,9 @@
 import { getTestimonials } from "@/app/actions";
 import type { Testimonial } from "@/types";
 import TestimonialsCarousel from "./TestimonialsCarousel";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertTriangle } from "lucide-react";
+
 
 const fallbackTestimonials: Omit<Testimonial, "_id" | "id">[] = [
   {
@@ -25,13 +28,24 @@ const fallbackTestimonials: Omit<Testimonial, "_id" | "id">[] = [
 ];
 
 export default async function TestimonialsSection() {
-    let testimonials: (Testimonial | Omit<Testimonial, "id" | "_id">)[];
+    let testimonials: (Testimonial | Omit<Testimonial, "id" | "_id">)[] = [];
+    let dbError: string | null = null;
 
-    const fetchedTestimonials = await getTestimonials();
-    if (fetchedTestimonials && fetchedTestimonials.length > 0) {
-        testimonials = fetchedTestimonials;
-    } else {
-        console.error("⚠️ MongoDB data not found, showing fallback data. Please verify MongoDB connection.");
+    try {
+        const fetchedTestimonials = await getTestimonials();
+        if (fetchedTestimonials && fetchedTestimonials.length > 0) {
+            testimonials = fetchedTestimonials;
+        } else {
+            // This case can mean empty collection or an issue, we rely on fallback
+            testimonials = fallbackTestimonials;
+        }
+    } catch(e) {
+        if (e instanceof Error) {
+            dbError = e.message;
+        } else {
+            dbError = "Ocurrió un error desconocido al cargar los testimonios.";
+        }
+        console.error(`[TestimonialsSection] Error: ${dbError}, using fallback.`);
         testimonials = fallbackTestimonials;
     }
 
@@ -46,6 +60,17 @@ export default async function TestimonialsSection() {
             Mira lo que mis clientas tienen que decir sobre su viaje de transformación.
           </p>
         </div>
+        
+        {dbError && (
+          <Alert variant="destructive" className="my-8 max-w-2xl mx-auto">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Error de Conexión con la Base de Datos</AlertTitle>
+            <AlertDescription>
+              {dbError}
+            </AlertDescription>
+          </Alert>
+        )}
+
         <TestimonialsCarousel testimonials={testimonials} />
       </div>
     </section>

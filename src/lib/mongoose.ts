@@ -16,8 +16,9 @@ if (!cached) {
 
 async function connectToDb() {
   if (!MONGODB_URI) {
+    console.error("❌ MONGODB_URI no está definida en las variables de entorno.");
     throw new Error(
-      'Please define the MONGODB_URI environment variable inside .env.local'
+      'Por favor, define la variable MONGODB_URI dentro de .env'
     );
   }
   
@@ -31,7 +32,12 @@ async function connectToDb() {
     };
 
     cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
+      console.log("✅ Conexión a MongoDB establecida.");
       return mongoose;
+    }).catch(err => {
+      console.error("❌ Error en la conexión inicial a MongoDB:", err.message);
+      cached.promise = null; // Reset promise on error
+      throw err; // Re-throw to be caught by caller
     });
   }
   
