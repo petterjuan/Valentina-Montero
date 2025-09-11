@@ -166,7 +166,7 @@ interface ShopifyProduct {
 }
 
 const COLLECTION_QUERY = /* GraphQL */`
-  query CollectionDetails($handle: String!, $first: Int = 10) {
+  query CollectionDetails($handle: String!, $first: Int!) {
     collection(handle: $handle) {
       id
       title
@@ -250,7 +250,10 @@ export async function getPrograms(collectionHandle: string, maxProducts: number)
         'X-Shopify-Storefront-Access-Token': token,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ query: COLLECTION_QUERY, variables: { handle: collectionHandle, first: maxProducts } }),
+      body: JSON.stringify({ 
+        query: COLLECTION_QUERY, 
+        variables: { handle: collectionHandle, first: maxProducts } 
+      }),
       next: { revalidate: 3600 }
     });
 
