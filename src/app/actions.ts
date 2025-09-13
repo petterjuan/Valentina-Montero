@@ -219,11 +219,12 @@ export async function handleLeadSubmission(formData: { email: string }) {
     }
     
     const now = new Date();
-    // Sanitize email for use as a document ID
+    // Sanitize email for use as a document ID, which is safer than raw email.
     const safeId = crypto.createHash("sha256").update(email.toLowerCase()).digest("hex");
     const leadRef = firestore.collection("leads").doc(safeId);
     const existingLead = await leadRef.get();
 
+    // The `exists` property is a boolean.
     const existed = existingLead.exists;
 
     const leadData = {
@@ -231,6 +232,7 @@ export async function handleLeadSubmission(formData: { email: string }) {
         source: "Guía Gratuita - 10k Pasos",
         status: "subscribed",
         updatedAt: now,
+        // Only set createdAt if the document is new
         ...(!existed ? { createdAt: now } : {}),
     };
 
