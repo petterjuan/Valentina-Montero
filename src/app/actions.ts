@@ -1,4 +1,3 @@
-
 "use server";
 
 import { generatePersonalizedWorkout, GeneratePersonalizedWorkoutInput, GeneratePersonalizedWorkoutOutput } from "@/ai/flows/generate-personalized-workout";
@@ -11,138 +10,25 @@ import connectToDb from "@/lib/mongoose";
 import PostModel from "@/models/Post";
 import TestimonialModel from "@/models/Testimonial";
 
+// Schemas
 const aiGeneratorSchema = z.object({
-  fitnessGoal: z.string(),
-  experienceLevel: z.string(),
-  equipment: z.string(),
-  duration: z.number(),
-  frequency: z.number(),
+  fitnessGoal: z.string().min(1, "El objetivo de fitness es requerido"),
+  experienceLevel: z.string().min(1, "El nivel de experiencia es requerido"),
+  equipment: z.string().min(1, "El equipo disponible es requerido"),
+  duration: z.number().min(1, "La duración debe ser mayor a 0"),
+  frequency: z.number().min(1, "La frecuencia debe ser mayor a 0"),
 });
 
+const leadSchema = z.object({
+  email: z.string().email({ message: "Por favor, introduce un email válido." }),
+});
+
+// Types
 export type AiGeneratorFormState = {
   data?: GeneratePersonalizedWorkoutOutput;
   error?: string;
   inputs?: z.infer<typeof aiGeneratorSchema>;
 };
-
-export async function handleAiGeneration(input: GeneratePersonalizedWorkoutInput): Promise<AiGeneratorFormState> {
-  try {
-    const validatedInput = aiGeneratorSchema.parse(input);
-    const result = await generatePersonalizedWorkout(validatedInput);
-    return { data: result, inputs: validatedInput };
-  } catch (e) {
-    console.error(e);
-    if (e instanceof z.ZodError) {
-      return { error: "Los datos de entrada no son válidos. Por favor, revisa el formulario." };
-    }
-    return { error: "No se pudo generar el contenido. Por favor, inténtalo de nuevo más tarde." };
-  }
-}
-
-export async function handlePlanSignup(input: PlanSignupInput) {
-  try {
-    const result = await processPlanSignup(input);
-    return { data: result, error: null };
-  } catch (e) {
-    console.error(e);
-     const isStripeError = e instanceof Error && e.message.includes("STRIPE_NOT_CONFIGURED");
-      if (isStripeError) {
-        return { data: null, error: "El sistema de pagos aún no está configurado. Por favor, inténtalo más tarde." };
-      }
-    return { data: null, error: "Ocurrió un error al procesar tu solicitud. Por favor, inténtalo de nuevo." };
-  }
-}
-
-const leadSchema = z.object({
-    email: z.string().email({ message: "Por favor, introduce un email válido." }),
-});
-
-export async function handleLeadSubmission(formData: { email: string }) {
-    try {
-        const { email } = leadSchema.parse(formData);
-        
-        const firestore = getFirestore();
-        if (!firestore) {
-            throw new Error("Firestore no está configurado. No se puede guardar el lead.");
-        }
-
-        const leadRef = firestore.collection('leads').doc(email);
-        await leadRef.set({
-            email,
-            source: "Guía Gratuita - 10k Pasos",
-            status: "subscribed",
-            createdAt: new Date(),
-        }, { merge: true });
-        
-        return { success: true, message: "¡Éxito! Tu guía está en camino." };
-    } catch (e) {
-        console.error(e);
-        if (e instanceof z.ZodError) {
-            return { success: false, message: e.errors[0].message };
-        }
-        return { success: false, message: "Hubo un problema con tu solicitud. Por favor, inténtalo de nuevo." };
-    }
-}
-
-export async function getBlogPosts(limit?: number): Promise<Post[] | null> {
-  try {
-    await connectToDb();
-    const posts: PostDocument[] = await PostModel.find({})
-      .sort({ createdAt: -1 })
-      .limit(limit || 20)
-      .lean();
-
-    return posts.map(post => ({
-        ...post,
-        id: post._id.toString(),
-        _id: post._id.toString(),
-        createdAt: new Date(post.createdAt),
-    }));
-  } catch (error) {
-    console.error("Error fetching blog posts:", error);
-    return null;
-  }
-}
-
-export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
-  try {
-    await connectToDb();
-    const post: PostDocument | null = await PostModel.findOne({ slug }).lean();
-
-    if (!post) {
-      return null;
-    }
-    
-    return {
-        ...post,
-        id: post._id.toString(),
-        _id: post._id.toString(),
-        createdAt: new Date(post.createdAt),
-    };
-  } catch (error) {
-    console.error(`Error fetching post with slug "${slug}":`, error);
-    return null;
-  }
-}
-
-export async function getTestimonials(): Promise<Testimonial[] | null> {
-    try {
-        await connectToDb();
-        const testimonials: TestimonialDocument[] = await TestimonialModel.find({})
-            .sort({ order: 1 })
-            .limit(10)
-            .lean();
-        
-        return testimonials.map(testimonial => ({
-            ...testimonial,
-            _id: testimonial._id.toString(),
-            id: testimonial._id.toString(),
-        }));
-    } catch (error) {
-        console.error("Error fetching testimonials:", error);
-        return null;
-    }
-}
 
 interface ShopifyProduct {
   id: string;
@@ -165,6 +51,21 @@ interface ShopifyProduct {
   isDigital?: { value: string };
 }
 
+interface ShopifyCollectionResponse {
+  data?: {
+    collection?: {
+      id: string;
+      title: string;
+      description: string;
+      products: {
+        nodes: ShopifyProduct[];
+      };
+    };
+  };
+  errors?: Array<{ message: string }>;
+}
+
+// GraphQL Query
 const COLLECTION_QUERY = /* GraphQL */`
   query CollectionDetails($handle: String!, $first: Int!) {
     collection(handle: $handle) {
@@ -179,8 +80,8 @@ const COLLECTION_QUERY = /* GraphQL */`
           description
           availableForSale
           featuredImage {
-              url(transform: {maxWidth: 600, maxHeight: 400, crop: CENTER})
-              altText
+            url(transform: {maxWidth: 600, maxHeight: 400, crop: CENTER})
+            altText
           }
           priceRange {
             minVariantPrice {
@@ -203,6 +104,7 @@ const COLLECTION_QUERY = /* GraphQL */`
   }
 `;
 
+// Helper functions
 const transformShopifyProducts = (products: ShopifyProduct[]): Program[] => {
   return products.map((product) => {
     let featuresList: string[] = [];
@@ -210,10 +112,10 @@ const transformShopifyProducts = (products: ShopifyProduct[]): Program[] => {
       try {
         const parsedFeatures = JSON.parse(product.features.value);
         if (Array.isArray(parsedFeatures)) {
-          featuresList = parsedFeatures;
+          featuresList = parsedFeatures.filter(feature => typeof feature === 'string');
         }
-      } catch (e) {
-        // Silently fail if parsing fails, default to empty array
+      } catch (error) {
+        console.warn(`Failed to parse features for product ${product.id}:`, error);
       }
     }
     
@@ -232,15 +134,213 @@ const transformShopifyProducts = (products: ShopifyProduct[]): Program[] => {
   });
 };
 
-export async function getPrograms(collectionHandle: string, maxProducts: number): Promise<Program[] | null> {
+// Server Actions
+export async function handleAiGeneration(input: GeneratePersonalizedWorkoutInput): Promise<AiGeneratorFormState> {
+  try {
+    // Validate input
+    const validatedInput = aiGeneratorSchema.parse(input);
+    
+    // Generate workout
+    const result = await generatePersonalizedWorkout(validatedInput);
+    
+    if (!result) {
+      return { error: "No se pudo generar el entrenamiento. Por favor, inténtalo de nuevo." };
+    }
+    
+    return { data: result, inputs: validatedInput };
+  } catch (error) {
+    console.error("Error in handleAiGeneration:", error);
+    
+    if (error instanceof z.ZodError) {
+      const firstError = error.errors[0];
+      return { 
+        error: firstError?.message || "Los datos de entrada no son válidos. Por favor, revisa el formulario." 
+      };
+    }
+    
+    return { 
+      error: "No se pudo generar el contenido. Por favor, inténtalo de nuevo más tarde." 
+    };
+  }
+}
+
+export async function handlePlanSignup(input: PlanSignupInput) {
+  try {
+    if (!input) {
+      return { data: null, error: "Los datos de entrada son requeridos." };
+    }
+    
+    const result = await processPlanSignup(input);
+    return { data: result, error: null };
+  } catch (error) {
+    console.error("Error in handlePlanSignup:", error);
+    
+    const isStripeError = error instanceof Error && error.message.includes("STRIPE_NOT_CONFIGURED");
+    if (isStripeError) {
+      return { 
+        data: null, 
+        error: "El sistema de pagos aún no está configurado. Por favor, inténtalo más tarde." 
+      };
+    }
+    
+    return { 
+      data: null, 
+      error: "Ocurrió un error al procesar tu solicitud. Por favor, inténtalo de nuevo." 
+    };
+  }
+}
+
+export async function handleLeadSubmission(formData: { email: string }) {
+  try {
+    if (!formData?.email) {
+      return { success: false, message: "El email es requerido." };
+    }
+
+    // Validate email format
+    const { email } = leadSchema.parse(formData);
+    
+    const firestore = getFirestore();
+    if (!firestore) {
+      console.error("Firestore not configured");
+      return { 
+        success: false, 
+        message: "Servicio temporalmente no disponible. Por favor, inténtalo más tarde." 
+      };
+    }
+
+    // Check if lead already exists
+    const leadRef = firestore.collection('leads').doc(email);
+    const existingLead = await leadRef.get();
+    
+    const leadData = {
+      email,
+      source: "Guía Gratuita - 10k Pasos",
+      status: "subscribed",
+      updatedAt: new Date(),
+      ...(existingLead.exists ? {} : { createdAt: new Date() })
+    };
+
+    await leadRef.set(leadData, { merge: true });
+    
+    return { 
+      success: true, 
+      message: existingLead.exists 
+        ? "Ya estás suscrito. Tu guía está en camino."
+        : "¡Éxito! Tu guía está en camino." 
+    };
+  } catch (error) {
+    console.error("Error in handleLeadSubmission:", error);
+    
+    if (error instanceof z.ZodError) {
+      const firstError = error.errors[0];
+      return { success: false, message: firstError?.message || "Email inválido." };
+    }
+    
+    return { 
+      success: false, 
+      message: "Hubo un problema con tu solicitud. Por favor, inténtalo de nuevo." 
+    };
+  }
+}
+
+export async function getBlogPosts(limit?: number): Promise<Post[] | null> {
+  try {
+    await connectToDb();
+    
+    const validLimit = Math.min(Math.max(limit || 20, 1), 100); // Limit between 1-100
+    
+    const posts: PostDocument[] = await PostModel.find({})
+      .sort({ createdAt: -1 })
+      .limit(validLimit)
+      .lean()
+      .exec();
+
+    if (!posts || posts.length === 0) {
+      return [];
+    }
+
+    return posts.map(post => ({
+      ...post,
+      id: post._id.toString(),
+      _id: post._id.toString(),
+      createdAt: new Date(post.createdAt),
+    }));
+  } catch (error) {
+    console.error("Error fetching blog posts:", error);
+    return null;
+  }
+}
+
+export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
+  try {
+    if (!slug || typeof slug !== 'string') {
+      return null;
+    }
+
+    await connectToDb();
+    
+    const post: PostDocument | null = await PostModel.findOne({ slug })
+      .lean()
+      .exec();
+
+    if (!post) {
+      return null;
+    }
+    
+    return {
+      ...post,
+      id: post._id.toString(),
+      _id: post._id.toString(),
+      createdAt: new Date(post.createdAt),
+    };
+  } catch (error) {
+    console.error(`Error fetching post with slug "${slug}":`, error);
+    return null;
+  }
+}
+
+export async function getTestimonials(): Promise<Testimonial[] | null> {
+    try {
+        await connectToDb();
+        
+        const testimonials: TestimonialDocument[] = await TestimonialModel.find({})
+            .sort({ order: 1 })
+            .limit(10)
+            .lean()
+            .exec();
+        
+        if (!testimonials || testimonials.length === 0) {
+            return [];
+        }
+        
+        return testimonials.map(testimonial => ({
+            ...testimonial,
+            _id: testimonial._id.toString(),
+            id: testimonial._id.toString(),
+        }));
+    } catch (error) {
+        console.error("Error fetching testimonials:", error);
+        return null;
+    }
+}
+
+export async function getPrograms(collectionHandle: string, maxProducts: number = 10): Promise<Program[] | null> {
   const domain = process.env.SHOPIFY_STORE_DOMAIN;
   const token = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN;
 
+  // Validate environment variables
   if (!domain || !token) {
     console.error("Shopify domain or token not configured in environment variables.");
     return null;
   }
-  
+
+  // Validate inputs
+  if (!collectionHandle || typeof collectionHandle !== 'string') {
+    console.error("Invalid collection handle provided");
+    return null;
+  }
+
+  const validMaxProducts = Math.min(Math.max(maxProducts, 1), 100); // Limit between 1-100
   const endpoint = `https://${domain}/api/2024-04/graphql.json`;
 
   try {
@@ -252,31 +352,39 @@ export async function getPrograms(collectionHandle: string, maxProducts: number)
       },
       body: JSON.stringify({ 
         query: COLLECTION_QUERY, 
-        variables: { handle: collectionHandle, first: maxProducts } 
+        variables: { handle: collectionHandle, first: validMaxProducts } 
       }),
       next: { revalidate: 3600 }
     });
 
-    const responseBody = await response.json();
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
 
-    if (!response.ok || responseBody.errors) {
-      const errorDetails = {
-          status: response.status,
-          statusText: response.statusText,
-          responseBody: responseBody
-      };
-      throw new Error(`Shopify API request failed: ${JSON.stringify(errorDetails)}`);
+    const responseBody: ShopifyCollectionResponse = await response.json();
+
+    // Check for GraphQL errors
+    if (responseBody.errors && responseBody.errors.length > 0) {
+      const errorMessages = responseBody.errors.map(err => err.message).join(', ');
+      throw new Error(`GraphQL errors: ${errorMessages}`);
     }
     
     const shopifyProducts = responseBody.data?.collection?.products?.nodes;
     
-    if (shopifyProducts && Array.isArray(shopifyProducts)) {
-      return transformShopifyProducts(shopifyProducts);
+    if (!shopifyProducts || !Array.isArray(shopifyProducts)) {
+      console.warn(`No products found for collection: ${collectionHandle}`);
+      return [];
     }
     
-    return null;
-  } catch (err) {
-    console.error("Error completo al obtener datos de Shopify:", err);
+    return transformShopifyProducts(shopifyProducts);
+  } catch (error) {
+    console.error("Error fetching Shopify data:", {
+      error: error instanceof Error ? error.message : String(error),
+      collectionHandle,
+      maxProducts: validMaxProducts,
+      domain,
+      hasToken: !!token
+    });
     return null;
   }
 }
