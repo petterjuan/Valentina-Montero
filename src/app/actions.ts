@@ -112,12 +112,11 @@ const transformShopifyProducts = (products: ShopifyProduct[]): Program[] => {
       try {
         const parsedFeatures = JSON.parse(product.features.value);
         if (Array.isArray(parsedFeatures)) {
-          featuresList = parsedFeatures.filter(feature => typeof feature === 'string');
+          featuresList = parsedFeatures.filter((f): f is string => typeof f === 'string');
         }
       } catch (error) {
-        console.warn(`Failed to parse features for product ${product.id}:`, error);
         // Fallback for non-JSON feature strings
-        featuresList = product.features.value.split(",").map(f => f.trim());
+        featuresList = product.features.value.split(",").map(f => f.trim()).filter(Boolean);
       }
     }
     
@@ -134,11 +133,6 @@ const transformShopifyProducts = (products: ShopifyProduct[]): Program[] => {
       } : undefined,
     };
   });
-};
-
-const isValidEmail = (email: string): boolean => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
 };
 
 // Server Actions
@@ -220,13 +214,15 @@ export async function handleLeadSubmission(formData: { email: string }) {
     const leadRef = firestore.collection('leads').doc(safeId);
     const existingLead = await leadRef.get();
     
+    const existed = existingLead.exists;
+
     const leadData = {
       email,
       source: "Guía Gratuita - 10k Pasos",
       status: "subscribed",
       updatedAt: new Date(),
       // Correctly set createdAt only if the document does not exist
-      ...(!existingLead.exists ? { createdAt: new Date() } : {})
+      ...(!existed ? { createdAt: new Date() } : {})
     };
 
     await leadRef.set(leadData, { merge: true });
@@ -234,7 +230,7 @@ export async function handleLeadSubmission(formData: { email: string }) {
     return { 
       success: true, 
       // Correctly check if the lead existed before this operation
-      message: existingLead.exists 
+      message: existed
         ? "Ya estás suscrito. Tu guía está en camino."
         : "¡Éxito! Tu guía está en camino." 
     };
