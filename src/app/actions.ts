@@ -266,77 +266,50 @@ export async function handleLeadSubmission(formData: { email: string }) {
   }
 }
 
-export async function getBlogPosts(limit?: number): Promise<Post[]> {
+// Generic MongoDB fetch helper
+async function fetchDocuments<T extends { _id: any; createdAt?: any }>(
+  model: any,
+  filter: Record<string, any> = {},
+  options: { sort?: Record<string, any>; limit?: number } = {}
+): Promise<T[]> {
   try {
     await connectToDb();
-    
-    const validLimit = Math.min(Math.max(limit || 20, 1), 100); // Limit between 1-100
-    
-    const posts: PostDocument[] = await PostModel.find({})
-      .sort({ createdAt: -1 })
-      .limit(validLimit)
-      .lean()
-      .exec();
 
-    if (!posts || posts.length === 0) {
-      return [];
-    }
+    const query = model.find(filter);
 
-    return posts.map(normalizeDoc);
+    if (options.sort) query.sort(options.sort);
+    if (options.limit) query.limit(options.limit);
+
+    const docs: T[] = await query.lean().exec();
+
+    return docs.length > 0 ? docs.map(normalizeDoc) : [];
   } catch (error) {
-    console.error("Error fetching blog posts:", error);
-    return []; // Return empty array on error instead of null
+    console.error(`Error fetching documents from ${model.modelName}:`, error instanceof Error ? error.stack : String(error));
+    return [];
   }
+}
+
+// Refactored Data Fetching Actions
+export async function getBlogPosts(limit?: number): Promise<Post[]> {
+    const validLimit = Math.min(Math.max(limit || 20, 1), 100);
+    const posts = await fetchDocuments<PostDocument>(PostModel, {}, { sort: { createdAt: -1 }, limit: validLimit });
+    return posts as Post[];
 }
 
 export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
-  try {
-    if (!slug || typeof slug !== 'string' || !/^[a-z0-9-]+$/.test(slug)) {
-      console.warn(`Invalid slug provided: ${slug}`);
-      return null;
+    if (!slug || typeof slug !== 'string' || !/^[a-zA-Z0-9-_]+$/.test(slug)) {
+        console.warn(`Invalid slug provided: ${slug}`);
+        return null;
     }
-
-    await connectToDb();
-    
-    const post: PostDocument | null = await PostModel.findOne({ slug })
-      .lean()
-      .exec();
-
-    if (!post) {
-      return null;
-    }
-    
-    return normalizeDoc(post);
-  } catch (error) {
-    console.error(`Error fetching post with slug "${slug}":`, error);
-    return null;
-  }
+    const results = await fetchDocuments<PostDocument>(PostModel, { slug }, { limit: 1 });
+    return results.length > 0 ? results[0] as Post : null;
 }
 
 export async function getTestimonials(): Promise<Testimonial[]> {
-  try {
-    await connectToDb();
-    
-    const testimonials: TestimonialDocument[] = await TestimonialModel.find({})
-      .sort({ order: 1 })
-      .limit(10)
-      .lean()
-      .exec();
-    
-    if (!testimonials || testimonials.length === 0) {
-      return [];
-    }
-    
-    return testimonials.map(testimonial => ({
-      ...testimonial,
-      _id: testimonial._id.toString(),
-      id: testimonial._id.toString(),
-    }));
-  } catch (error) {
-    console.error("Error fetching testimonials:", error);
-    return []; // Return empty array on error instead of null
-  }
+    const testimonials = await fetchDocuments<TestimonialDocument>(TestimonialModel, {}, { sort: { order: 1 }, limit: 10 });
+    return testimonials as Testimonial[];
 }
+
 
 export async function getPrograms(collectionHandle: string, maxProducts: number = 10): Promise<Program[] | null> {
   const domain = process.env.SHOPIFY_STORE_DOMAIN;
