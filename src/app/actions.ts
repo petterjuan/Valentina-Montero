@@ -9,6 +9,7 @@ import { Program } from "@/components/sections/CoachingProgramsSection";
 import connectToDb from "@/lib/mongoose";
 import PostModel from "@/models/Post";
 import TestimonialModel from "@/models/Testimonial";
+import crypto from 'crypto';
 
 // Schemas
 const aiGeneratorSchema = z.object({
@@ -135,6 +136,14 @@ const transformShopifyProducts = (products: ShopifyProduct[]): Program[] => {
   });
 };
 
+const normalizeDoc = <T extends { _id: any; createdAt?: any }>(doc: T) => ({
+  ...doc,
+  id: doc._id.toString(),
+  _id: doc._id.toString(),
+  createdAt: doc.createdAt ? new Date(doc.createdAt) : new Date(),
+});
+
+
 // Server Actions
 export async function handleAiGeneration(input: GeneratePersonalizedWorkoutInput): Promise<AiGeneratorFormState> {
   try {
@@ -208,28 +217,27 @@ export async function handleLeadSubmission(formData: { email: string }) {
         message: "Servicio temporalmente no disponible. Por favor, inténtalo más tarde." 
       };
     }
-
-    // Sanitize email for use as a document ID
-    const safeId = Buffer.from(email).toString("base64");
-    const leadRef = firestore.collection('leads').doc(safeId);
-    const existingLead = await leadRef.get();
     
-    const existed = existingLead.exists();
+    const now = new Date();
+    // Sanitize email for use as a document ID
+    const safeId = crypto.createHash("sha256").update(email.toLowerCase()).digest("hex");
+    const leadRef = firestore.collection("leads").doc(safeId);
+    const existingLead = await leadRef.get();
+
+    const existed = existingLead.exists;
 
     const leadData = {
-      email,
-      source: "Guía Gratuita - 10k Pasos",
-      status: "subscribed",
-      updatedAt: new Date(),
-      // Correctly set createdAt only if the document does not exist
-      ...(!existed ? { createdAt: new Date() } : {})
+        email,
+        source: "Guía Gratuita - 10k Pasos",
+        status: "subscribed",
+        updatedAt: now,
+        ...(!existed ? { createdAt: now } : {}),
     };
 
     await leadRef.set(leadData, { merge: true });
     
     return { 
       success: true, 
-      // Correctly check if the lead existed before this operation
       message: existed
         ? "Ya estás suscrito. Tu guía está en camino."
         : "¡Éxito! Tu guía está en camino." 
@@ -265,12 +273,7 @@ export async function getBlogPosts(limit?: number): Promise<Post[]> {
       return [];
     }
 
-    return posts.map(post => ({
-      ...post,
-      id: post._id.toString(),
-      _id: post._id.toString(),
-      createdAt: post.createdAt ? new Date(post.createdAt) : new Date(),
-    }));
+    return posts.map(normalizeDoc);
   } catch (error) {
     console.error("Error fetching blog posts:", error);
     return []; // Return empty array on error instead of null
@@ -294,12 +297,7 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
       return null;
     }
     
-    return {
-      ...post,
-      id: post._id.toString(),
-      _id: post._id.toString(),
-      createdAt: post.createdAt ? new Date(post.createdAt) : new Date(),
-    };
+    return normalizeDoc(post);
   } catch (error) {
     console.error(`Error fetching post with slug "${slug}":`, error);
     return null;
