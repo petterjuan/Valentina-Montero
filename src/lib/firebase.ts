@@ -9,16 +9,16 @@ try {
   if (serviceAccountKey) {
     let serviceAccount;
     try {
-        // First, assume it's Base64 encoded and try to decode.
-        const decodedKey = Buffer.from(serviceAccountKey, 'base64').toString('utf-8');
-        serviceAccount = JSON.parse(decodedKey);
+      // First, assume it's Base64 encoded and try to decode.
+      const decodedKey = Buffer.from(serviceAccountKey, 'base64').toString('utf-8');
+      serviceAccount = JSON.parse(decodedKey);
     } catch (e) {
-        // If decoding fails, assume it's a plain JSON string.
-        try {
-            serviceAccount = JSON.parse(serviceAccountKey);
-        } catch (jsonError) {
-             throw new Error(`Failed to parse Firebase service account key. It's neither valid JSON nor valid Base64-encoded JSON.`);
-        }
+      // If decoding fails, assume it's a plain JSON string.
+      try {
+          serviceAccount = JSON.parse(serviceAccountKey);
+      } catch (jsonError) {
+           throw new Error(`Failed to parse Firebase service account key. It's neither valid JSON nor valid Base64-encoded JSON.`);
+      }
     }
 
     if (!admin.apps.length) {
@@ -40,7 +40,8 @@ try {
 
 export const getFirestore = () => {
     if (initializationError) {
-        console.warn(`Firestore access blocked: ${initializationError}`);
+        // This log is not necessary as the initialization block already logs the error.
+        // console.warn(`Firestore access blocked: ${initializationError}`);
         return null;
     }
     return firestore;

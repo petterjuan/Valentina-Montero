@@ -30,8 +30,9 @@ async function connectToDb() {
       bufferCommands: false,
     };
 
+    console.log("🟡 Attempting to connect to MongoDB...");
     cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
-      console.log("✅ New MongoDB connection established.");
+      console.log("✅ New MongoDB connection established successfully.");
       return mongoose;
     });
   }
@@ -40,8 +41,9 @@ async function connectToDb() {
     cached.conn = await cached.promise;
   } catch (e) {
     cached.promise = null; // Reset promise on error
-    console.error("❌ Failed to establish MongoDB connection:", e);
-    throw e; // Re-throw to be caught by the calling function
+    console.error("🔥 FAILED TO CONNECT TO MONGODB. This is likely an issue with your MONGODB_URI credentials.");
+    console.error("🔥 Detailed Error:", e);
+    throw e; // Re-throw to be caught by the calling function, which will prevent rendering.
   }
 
   return cached.conn;

@@ -260,12 +260,12 @@ export async function getPrograms(collectionHandle: string, maxProducts: number)
     const responseBody = await response.json();
 
     if (!response.ok || responseBody.errors) {
-        const errorDetails = {
-            status: response.status,
-            statusText: response.statusText,
-            responseBody: responseBody
-        };
-        throw new Error(`Shopify API request failed: ${JSON.stringify(errorDetails)}`);
+      const errorDetails = {
+          status: response.status,
+          statusText: response.statusText,
+          responseBody: responseBody
+      };
+      throw new Error(`Shopify API request failed: ${JSON.stringify(errorDetails)}`);
     }
     
     const shopifyProducts = responseBody.data?.collection?.products?.nodes;
@@ -277,7 +277,6 @@ export async function getPrograms(collectionHandle: string, maxProducts: number)
     return null;
   } catch (err) {
     console.error("Error completo al obtener datos de Shopify:", err);
-    // Re-throw the error to make it visible in server logs
-    throw err;
+    return null;
   }
 }
