@@ -134,6 +134,11 @@ const transformShopifyProducts = (products: ShopifyProduct[]): Program[] => {
   });
 };
 
+const isValidEmail = (email: string): boolean => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
 // Server Actions
 export async function handleAiGeneration(input: GeneratePersonalizedWorkoutInput): Promise<AiGeneratorFormState> {
   try {
@@ -217,14 +222,14 @@ export async function handleLeadSubmission(formData: { email: string }) {
       source: "Guía Gratuita - 10k Pasos",
       status: "subscribed",
       updatedAt: new Date(),
-      ...(existingLead.exists ? {} : { createdAt: new Date() })
+      ...(existingLead.exists() ? {} : { createdAt: new Date() })
     };
 
     await leadRef.set(leadData, { merge: true });
     
     return { 
       success: true, 
-      message: existingLead.exists 
+      message: existingLead.exists() 
         ? "Ya estás suscrito. Tu guía está en camino."
         : "¡Éxito! Tu guía está en camino." 
     };
@@ -300,28 +305,28 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
 }
 
 export async function getTestimonials(): Promise<Testimonial[] | null> {
-    try {
-        await connectToDb();
-        
-        const testimonials: TestimonialDocument[] = await TestimonialModel.find({})
-            .sort({ order: 1 })
-            .limit(10)
-            .lean()
-            .exec();
-        
-        if (!testimonials || testimonials.length === 0) {
-            return [];
-        }
-        
-        return testimonials.map(testimonial => ({
-            ...testimonial,
-            _id: testimonial._id.toString(),
-            id: testimonial._id.toString(),
-        }));
-    } catch (error) {
-        console.error("Error fetching testimonials:", error);
-        return null;
+  try {
+    await connectToDb();
+    
+    const testimonials: TestimonialDocument[] = await TestimonialModel.find({})
+      .sort({ order: 1 })
+      .limit(10)
+      .lean()
+      .exec();
+    
+    if (!testimonials || testimonials.length === 0) {
+      return [];
     }
+    
+    return testimonials.map(testimonial => ({
+      ...testimonial,
+      _id: testimonial._id.toString(),
+      id: testimonial._id.toString(),
+    }));
+  } catch (error) {
+    console.error("Error fetching testimonials:", error);
+    return null;
+  }
 }
 
 export async function getPrograms(collectionHandle: string, maxProducts: number = 10): Promise<Program[] | null> {
@@ -379,7 +384,7 @@ export async function getPrograms(collectionHandle: string, maxProducts: number 
     return transformShopifyProducts(shopifyProducts);
   } catch (error) {
     console.error("Error fetching Shopify data:", {
-      error: error instanceof Error ? error.message : String(error),
+      error: error instanceof Error ? error.message : error,
       collectionHandle,
       maxProducts: validMaxProducts,
       domain,
@@ -388,3 +393,4 @@ export async function getPrograms(collectionHandle: string, maxProducts: number 
     return null;
   }
 }
+    
