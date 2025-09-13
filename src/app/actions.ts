@@ -113,11 +113,18 @@ const transformShopifyProducts = (products: ShopifyProduct[]): Program[] => {
       try {
         const parsedFeatures = JSON.parse(product.features.value);
         if (Array.isArray(parsedFeatures)) {
-          featuresList = parsedFeatures.filter((f): f is string => typeof f === 'string');
+          // Ensure all features are strings and trimmed
+          featuresList = parsedFeatures
+            .filter((f): f is string => typeof f === 'string')
+            .map(f => f.trim())
+            .filter(Boolean);
         }
       } catch (error) {
-        // Fallback for non-JSON feature strings
-        featuresList = product.features.value.split(",").map(f => f.trim()).filter(Boolean);
+        // Fallback for non-JSON string
+        featuresList = product.features.value
+          .split(",")
+          .map(f => f.trim())
+          .filter(Boolean);
       }
     }
     
@@ -219,28 +226,28 @@ export async function handleLeadSubmission(formData: { email: string }) {
     }
     
     const now = new Date();
-    // Sanitize email for use as a document ID, which is safer than raw email.
+    // Sanitize email for use as a document ID
     const safeId = crypto.createHash("sha256").update(email.toLowerCase()).digest("hex");
     const leadRef = firestore.collection("leads").doc(safeId);
     const existingLead = await leadRef.get();
 
-    // The `exists` property is a boolean.
-    const existed = existingLead.exists;
+    // The `exists` property is a boolean. Coerce to be safe.
+    const isExisting = !!existingLead.exists;
 
     const leadData = {
         email,
         source: "Guía Gratuita - 10k Pasos",
         status: "subscribed",
         updatedAt: now,
-        // Only set createdAt if the document is new
-        ...(!existed ? { createdAt: now } : {}),
+        // Only set createdAt if new
+        ...(isExisting ? {} : { createdAt: now }),
     };
 
     await leadRef.set(leadData, { merge: true });
     
     return { 
       success: true, 
-      message: existed
+      message: isExisting
         ? "Ya estás suscrito. Tu guía está en camino."
         : "¡Éxito! Tu guía está en camino." 
     };
