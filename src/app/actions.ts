@@ -62,7 +62,7 @@ interface ShopifyCollectionResponse {
       };
     };
   };
-  errors?: Array<{ message: string }>;
+  errors?: Array<{ message: string; [key: string]: any }>;
 }
 
 // GraphQL Query
