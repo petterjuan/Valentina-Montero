@@ -214,7 +214,7 @@ export async function handleLeadSubmission(formData: { email: string }) {
     const leadRef = firestore.collection('leads').doc(safeId);
     const existingLead = await leadRef.get();
     
-    const existed = existingLead.exists;
+    const existed = existingLead.exists();
 
     const leadData = {
       email,
