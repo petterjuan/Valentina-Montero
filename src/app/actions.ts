@@ -116,6 +116,8 @@ const transformShopifyProducts = (products: ShopifyProduct[]): Program[] => {
         }
       } catch (error) {
         console.warn(`Failed to parse features for product ${product.id}:`, error);
+        // Fallback for non-JSON feature strings
+        featuresList = product.features.value.split(",").map(f => f.trim());
       }
     }
     
@@ -123,8 +125,8 @@ const transformShopifyProducts = (products: ShopifyProduct[]): Program[] => {
       title: product.title,
       price: Math.round(parseFloat(product.priceRange.minVariantPrice.amount)),
       features: featuresList,
-      isPopular: product.isPopular?.value === 'true',
-      isDigital: product.isDigital?.value === 'true',
+      isPopular: product.isPopular?.value?.toLowerCase() === 'true',
+      isDigital: product.isDigital?.value?.toLowerCase() === 'true',
       handle: product.handle,
       image: product.featuredImage ? {
         src: product.featuredImage.url,
@@ -213,8 +215,9 @@ export async function handleLeadSubmission(formData: { email: string }) {
       };
     }
 
-    // Check if lead already exists
-    const leadRef = firestore.collection('leads').doc(email);
+    // Sanitize email for use as a document ID
+    const safeId = Buffer.from(email).toString("base64");
+    const leadRef = firestore.collection('leads').doc(safeId);
     const existingLead = await leadRef.get();
     
     const leadData = {
@@ -222,14 +225,16 @@ export async function handleLeadSubmission(formData: { email: string }) {
       source: "Guía Gratuita - 10k Pasos",
       status: "subscribed",
       updatedAt: new Date(),
-      ...(existingLead.exists() ? {} : { createdAt: new Date() })
+      // Correctly set createdAt only if the document does not exist
+      ...(!existingLead.exists ? { createdAt: new Date() } : {})
     };
 
     await leadRef.set(leadData, { merge: true });
     
     return { 
       success: true, 
-      message: existingLead.exists() 
+      // Correctly check if the lead existed before this operation
+      message: existingLead.exists 
         ? "Ya estás suscrito. Tu guía está en camino."
         : "¡Éxito! Tu guía está en camino." 
     };
@@ -248,7 +253,7 @@ export async function handleLeadSubmission(formData: { email: string }) {
   }
 }
 
-export async function getBlogPosts(limit?: number): Promise<Post[] | null> {
+export async function getBlogPosts(limit?: number): Promise<Post[]> {
   try {
     await connectToDb();
     
@@ -268,17 +273,18 @@ export async function getBlogPosts(limit?: number): Promise<Post[] | null> {
       ...post,
       id: post._id.toString(),
       _id: post._id.toString(),
-      createdAt: new Date(post.createdAt),
+      createdAt: post.createdAt ? new Date(post.createdAt) : new Date(),
     }));
   } catch (error) {
     console.error("Error fetching blog posts:", error);
-    return null;
+    return []; // Return empty array on error instead of null
   }
 }
 
 export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
   try {
-    if (!slug || typeof slug !== 'string') {
+    if (!slug || typeof slug !== 'string' || !/^[a-z0-9-]+$/.test(slug)) {
+      console.warn(`Invalid slug provided: ${slug}`);
       return null;
     }
 
@@ -296,7 +302,7 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
       ...post,
       id: post._id.toString(),
       _id: post._id.toString(),
-      createdAt: new Date(post.createdAt),
+      createdAt: post.createdAt ? new Date(post.createdAt) : new Date(),
     };
   } catch (error) {
     console.error(`Error fetching post with slug "${slug}":`, error);
@@ -304,7 +310,7 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
   }
 }
 
-export async function getTestimonials(): Promise<Testimonial[] | null> {
+export async function getTestimonials(): Promise<Testimonial[]> {
   try {
     await connectToDb();
     
@@ -325,7 +331,7 @@ export async function getTestimonials(): Promise<Testimonial[] | null> {
     }));
   } catch (error) {
     console.error("Error fetching testimonials:", error);
-    return null;
+    return []; // Return empty array on error instead of null
   }
 }
 
@@ -359,11 +365,14 @@ export async function getPrograms(collectionHandle: string, maxProducts: number 
         query: COLLECTION_QUERY, 
         variables: { handle: collectionHandle, first: validMaxProducts } 
       }),
-      next: { revalidate: 3600 }
+      // Use Next.js App Router caching
+      next: { revalidate: 3600, tags: ['shopify'] },
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        const errorBody = await response.text();
+        console.error(`Shopify API request failed with status ${response.status}: ${errorBody}`);
+        throw new Error(`Shopify API request failed: ${response.statusText}`);
     }
 
     const responseBody: ShopifyCollectionResponse = await response.json();
@@ -383,8 +392,9 @@ export async function getPrograms(collectionHandle: string, maxProducts: number 
     
     return transformShopifyProducts(shopifyProducts);
   } catch (error) {
+    // Log the full error for better debugging
     console.error("Error fetching Shopify data:", {
-      error: error instanceof Error ? error.message : error,
+      error: error instanceof Error ? error.message : String(error),
       collectionHandle,
       maxProducts: validMaxProducts,
       domain,
