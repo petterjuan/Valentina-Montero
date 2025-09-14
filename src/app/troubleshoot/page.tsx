@@ -34,7 +34,7 @@ const StatusCheck = ({
         >
           {title}
         </h3>
-        <p className="text-sm text-gray-600">{message}</p>
+        <p className="text-sm text-gray-600" dangerouslySetInnerHTML={{ __html: message }} />
       </div>
     </div>
   );
@@ -76,12 +76,15 @@ async function checkFirebase() {
         });
     }
     
-    // Test connection by listing collections
     await admin.firestore().listCollections();
 
     return { status: "success", message: `Conectado exitosamente al proyecto de Firebase: ${serviceAccount.project_id}.` };
   } catch (error: any) {
-    return { status: "error", message: `Falló la conexión a Firebase. Error: ${error.message}` };
+    let errorMessage = `Falló la conexión a Firebase. Error: ${error.message}`;
+    if (error.message && error.message.includes('PERMISSION_DENIED')) {
+      errorMessage = `La API de Cloud Firestore no ha sido habilitada en el proyecto <b>${error.message.split('project ')[1]?.split(' ')[0] || 'vm-fitness-hub'}</b>. <a href="https://console.developers.google.com/apis/api/firestore.googleapis.com/overview?project=vm-fitness-hub" target="_blank" rel="noopener noreferrer" class="underline">Haz clic aquí para habilitarla</a>, espera 5 minutos y refresca.`;
+    }
+    return { status: "error", message: errorMessage };
   }
 }
 
@@ -90,6 +93,10 @@ async function checkMongoDB() {
     const uri = process.env.MONGODB_URI;
     if (!uri) {
         return { status: 'error', message: 'La variable de entorno MONGODB_URI no está configurada.' };
+    }
+
+    if (!uri.startsWith('mongodb+srv://') && !uri.startsWith('mongodb://')) {
+        return { status: 'error', message: `Formato de MONGODB_URI inválido. Debe empezar con 'mongodb+srv://' o 'mongodb://'. El valor actual es: "${uri.substring(0, 20)}..."` };
     }
 
     try {
@@ -126,10 +133,10 @@ async function checkShopify() {
 
         if (!response.ok) {
             if (response.status === 404) {
-                 throw new Error(`La URL de la API de Shopify no fue encontrada. Revisa que el SHOPIFY_STORE_DOMAIN ('${domain}') sea correcto. Debe ser del tipo 'tu-tienda.myshopify.com'.`);
+                 throw new Error(`La URL de la API de Shopify no fue encontrada. Revisa que el SHOPIFY_STORE_DOMAIN ('${domain}') sea correcto y no tu dominio personalizado.`);
             }
-             if (response.status === 401) {
-                 throw new Error(`Error de autenticación (Unauthorized). El Storefront Access Token es inválido o no tiene permisos para acceder a la tienda.`);
+            if (response.status === 401) {
+                 throw new Error(`Error de autenticación (Unauthorized). El Storefront Access Token es inválido o no tiene los permisos necesarios.`);
             }
             throw new Error(`La API de Shopify devolvió un estado ${response.status}.`);
         }
@@ -137,7 +144,7 @@ async function checkShopify() {
         const json = await response.json();
         
         if (json.errors) {
-            throw new Error(`Errores de GraphQL: ${json.errors.map((e: any) => e.message).join(', ')}. Esto puede indicar un token de acceso incorrecto o permisos insuficientes en la app de Shopify.`);
+             throw new Error(`Errores de GraphQL: ${json.errors.map((e: any) => e.message).join(', ')}. Esto casi siempre significa que al token le faltan permisos. Ve a la configuración de tu app en Shopify > Storefront API Scopes y asegúrate de haber marcado permisos para leer productos, colecciones, etc.`);
         }
 
         const shopName = json.data?.shop?.name;
