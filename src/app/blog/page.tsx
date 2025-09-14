@@ -2,6 +2,7 @@
 import { getBlogPosts } from "@/app/actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Post } from "@/types";
 import { type Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -13,8 +14,50 @@ export const metadata: Metadata = {
   description: "Consejos, trucos e ideas sobre fitness, nutrición y mentalidad de la mano de Valentina Montero.",
 };
 
+const fallbackPosts: Omit<Post, "_id" | "id">[] = [
+    {
+        title: "5 Mitos del Fitness que Debes Dejar de Creer Hoy",
+        slug: "5-mitos-fitness",
+        excerpt: "Desmentimos las creencias más comunes que te impiden alcanzar tus metas. Prepárate para sorprenderte y cambiar tu enfoque.",
+        content: "<p>...</p>",
+        imageUrl: "https://picsum.photos/seed/post1/600/400",
+        aiHint: "fitness myth",
+        createdAt: new Date("2024-05-10T10:00:00Z"),
+    },
+    {
+        title: "Nutrición 101: Cómo Balancear tus Macronutrientes",
+        slug: "nutricion-101-macros",
+        excerpt: "Proteínas, carbohidratos y grasas. Te explicamos de forma sencilla qué son, por qué los necesitas y cómo distribuirlos para tus objetivos.",
+        content: "<p>...</p>",
+        imageUrl: "https://picsum.photos/seed/post2/600/400",
+        aiHint: "healthy food",
+        createdAt: new Date("2024-05-15T11:30:00Z"),
+    },
+    {
+        title: "La Importancia del Descanso: Más Allá del Gimnasio",
+        slug: "importancia-del-descanso",
+        excerpt: "El entrenamiento es solo una parte de la ecuación. Descubre por qué el sueño y la recuperación activa son cruciales para tu transformación.",
+        content: "<p>...</p>",
+        imageUrl: "https://picsum.photos/seed/post3/600/400",
+        aiHint: "woman resting",
+        createdAt: new Date("2024-05-20T09:00:00Z"),
+    },
+];
+
 export default async function BlogIndexPage() {
-    const posts = await getBlogPosts();
+    let posts: (Post | Omit<Post, "_id" | "id">)[] = [];
+    try {
+        const fetchedPosts = await getBlogPosts();
+        if (fetchedPosts && fetchedPosts.length > 0) {
+            posts = fetchedPosts;
+        } else {
+            posts = fallbackPosts;
+        }
+    } catch(e) {
+        console.error("[BlogIndexPage] Error fetching posts, using fallback.");
+        posts = fallbackPosts;
+    }
+
 
     return (
         <section className="py-16 sm:py-24">
@@ -31,7 +74,7 @@ export default async function BlogIndexPage() {
                 <div className="mt-16 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
                     {posts && posts.length > 0 ? (
                         posts.map((post) => (
-                            <Card key={post.id} className="flex flex-col overflow-hidden">
+                            <Card key={post.slug} className="flex flex-col overflow-hidden">
                                 <Link href={`/blog/${post.slug}`} className="aspect-video relative block">
                                     <Image
                                         src={post.imageUrl || "https://picsum.photos/600/400?random=8"}
