@@ -56,7 +56,11 @@ async function checkFirebase() {
       const decoded = Buffer.from(key, "base64").toString("utf-8");
       serviceAccount = JSON.parse(decoded);
     } catch {
-      serviceAccount = JSON.parse(key);
+      try {
+        serviceAccount = JSON.parse(key);
+      } catch (jsonError) {
+        return { status: "error", message: `La clave de Firebase no es un JSON válido ni está codificada en Base64.` };
+      }
     }
     
     const requiredFields = ["project_id", "private_key", "client_email"];
@@ -104,7 +108,10 @@ async function checkShopify() {
     const token = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN;
 
     if (!domain || !token) {
-        return { status: 'error', message: 'Las variables SHOPIFY_STORE_DOMAIN o SHOPIFY_STOREFRONT_ACCESS_TOKEN no están configuradas.' };
+        let missingVars = [];
+        if (!domain) missingVars.push("SHOPIFY_STORE_DOMAIN");
+        if (!token) missingVars.push("SHOPIFY_STOREFRONT_ACCESS_TOKEN");
+        return { status: 'error', message: `Configuración incompleta. Faltan las siguientes variables de entorno: ${missingVars.join(', ')}.` };
     }
     
     const endpoint = `https://${domain}/api/2024-04/graphql.json`;
@@ -118,13 +125,19 @@ async function checkShopify() {
         });
 
         if (!response.ok) {
-            throw new Error(`La API de Shopify devolvió un estado ${response.status}. Asegúrate de que el SHOPIFY_STORE_DOMAIN (${domain}) sea correcto. Debe ser 'tu-tienda.myshopify.com', no un dominio personalizado.`);
+            if (response.status === 404) {
+                 throw new Error(`La URL de la API de Shopify no fue encontrada. Revisa que el SHOPIFY_STORE_DOMAIN ('${domain}') sea correcto. Debe ser del tipo 'tu-tienda.myshopify.com'.`);
+            }
+             if (response.status === 401) {
+                 throw new Error(`Error de autenticación (Unauthorized). El Storefront Access Token es inválido o no tiene permisos para acceder a la tienda.`);
+            }
+            throw new Error(`La API de Shopify devolvió un estado ${response.status}.`);
         }
         
         const json = await response.json();
         
         if (json.errors) {
-            throw new Error(`Errores de GraphQL: ${json.errors.map((e: any) => e.message).join(', ')}. Esto puede indicar un token de acceso incorrecto o permisos insuficientes.`);
+            throw new Error(`Errores de GraphQL: ${json.errors.map((e: any) => e.message).join(', ')}. Esto puede indicar un token de acceso incorrecto o permisos insuficientes en la app de Shopify.`);
         }
 
         const shopName = json.data?.shop?.name;
@@ -167,7 +180,7 @@ export default async function TroubleshootPage() {
               message={mongoStatus.message}
             />
              <StatusCheck
-              title="Conexión a Shopify"
+              title="Conexión a Shopify Storefront API"
               status={shopifyStatus.status as "success" | "error"}
               message={shopifyStatus.message}
             />
