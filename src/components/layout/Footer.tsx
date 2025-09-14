@@ -27,6 +27,9 @@ export default function Footer() {
                  <p className="text-sm text-muted-foreground">
                     © {new Date().getFullYear()} VM Fitness Hub. Todos los derechos reservados.
                  </p>
+                 <Link href="/troubleshoot" className="text-xs text-muted-foreground hover:text-primary">
+                    System Status
+                 </Link>
             </div>
           <div className="flex flex-col items-center md:items-end gap-4">
              <div className="flex items-center gap-4">

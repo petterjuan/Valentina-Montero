@@ -118,13 +118,13 @@ async function checkShopify() {
         });
 
         if (!response.ok) {
-            throw new Error(`La API de Shopify devolvió un estado ${response.status}.`);
+            throw new Error(`La API de Shopify devolvió un estado ${response.status}. Asegúrate de que el SHOPIFY_STORE_DOMAIN (${domain}) sea correcto. Debe ser 'tu-tienda.myshopify.com', no un dominio personalizado.`);
         }
         
         const json = await response.json();
         
         if (json.errors) {
-            throw new Error(`Errores de GraphQL: ${json.errors.map((e: any) => e.message).join(', ')}`);
+            throw new Error(`Errores de GraphQL: ${json.errors.map((e: any) => e.message).join(', ')}. Esto puede indicar un token de acceso incorrecto o permisos insuficientes.`);
         }
 
         const shopName = json.data?.shop?.name;
