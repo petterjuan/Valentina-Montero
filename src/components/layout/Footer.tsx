@@ -22,14 +22,21 @@ export default function Footer() {
   return (
     <footer className="bg-muted/40">
       <div className="container mx-auto px-4 py-8 md:px-6">
-        <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
-          <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} VM Fitness Hub. Todos los derechos reservados.
-          </p>
-          <div className="flex items-center gap-4">
-            <Link href="#" className="text-sm font-medium hover:text-primary">
-              Mi Tienda
-            </Link>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-center md:text-left">
+            <div>
+                 <p className="text-sm text-muted-foreground">
+                    © {new Date().getFullYear()} VM Fitness Hub. Todos los derechos reservados.
+                 </p>
+                 <Link href="/troubleshoot" className="text-xs text-muted-foreground/50 hover:text-primary">
+                    System Status
+                </Link>
+            </div>
+          <div className="flex flex-col items-center md:items-end gap-4">
+             <div className="flex items-center gap-4">
+                <Link href="#" className="text-sm font-medium hover:text-primary">
+                  Mi Tienda
+                </Link>
+             </div>
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="icon" asChild>
                 <Link href="#" aria-label="Instagram">
