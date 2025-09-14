@@ -77,15 +77,16 @@ export default async function CoachingProgramsSection({
   maxProducts = 10,
 }: CoachingProgramsSectionProps) {
   
-  let fetchedPrograms: Program[] | null = null;
+  let programs: Program[] | null = null;
   
   try {
-    fetchedPrograms = await getPrograms(collectionHandle, maxProducts);
+    programs = await getPrograms(collectionHandle, maxProducts);
   } catch (e) {
     console.error(`[CoachingProgramsSection] Error fetching programs: ${e instanceof Error ? e.message : String(e)}`);
+    // En caso de error, programs permanecerá como null.
   }
   
-  const displayPrograms = (fetchedPrograms && fetchedPrograms.length > 0) ? fetchedPrograms : fallbackPrograms;
+  const displayPrograms = programs;
 
   return (
     <section id="programs" className="py-16 sm:py-24 bg-background">
@@ -98,60 +99,67 @@ export default async function CoachingProgramsSection({
         </div>
 
         <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3 lg:max-w-7xl lg:mx-auto">
-          {displayPrograms.map((program) => (
-            <Card
-              key={program.handle || program.title}
-              className={`flex flex-col ${program.isPopular ? "border-primary shadow-lg" : ""}`}
-            >
-              <CardHeader className="p-0">
-                 {program.image && (
-                    <div className="aspect-video relative w-full overflow-hidden rounded-t-lg">
-                        <Image 
-                            src={program.image.src}
-                            alt={program.image.alt}
-                            fill
-                            className="object-cover"
-                        />
-                    </div>
-                 )}
-                <div className="p-6 items-center flex flex-col">
-                    {program.isPopular && (
-                      <div className="mb-2 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">
-                        MÁS POPULAR
+          {displayPrograms && displayPrograms.length > 0 ? (
+            displayPrograms.map((program) => (
+              <Card
+                key={program.handle || program.title}
+                className={`flex flex-col ${program.isPopular ? "border-primary shadow-lg" : ""}`}
+              >
+                <CardHeader className="p-0">
+                   {program.image && (
+                      <div className="aspect-video relative w-full overflow-hidden rounded-t-lg">
+                          <Image 
+                              src={program.image.src}
+                              alt={program.image.alt}
+                              fill
+                              className="object-cover"
+                          />
                       </div>
-                    )}
-                    <CardTitle className="text-2xl font-headline text-center">{program.title}</CardTitle>
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-4xl font-bold tracking-tight">${program.price}</span>
-                      {!program.isDigital && <span className="text-sm font-semibold text-muted-foreground">/ plan</span>}
-                    </div>
-                </div>
-              </CardHeader>
+                   )}
+                  <div className="p-6 items-center flex flex-col">
+                      {program.isPopular && (
+                        <div className="mb-2 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">
+                          MÁS POPULAR
+                        </div>
+                      )}
+                      <CardTitle className="text-2xl font-headline text-center">{program.title}</CardTitle>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-4xl font-bold tracking-tight">${program.price}</span>
+                        {!program.isDigital && <span className="text-sm font-semibold text-muted-foreground">/ plan</span>}
+                      </div>
+                  </div>
+                </CardHeader>
 
-              <CardContent className="flex-1">
-                <ul className="space-y-3 text-sm">
-                  {program.features.map((feature, index) => (
-                    <li key={index} className="flex items-start">
-                      <Check className="mr-2 mt-1 h-4 w-4 shrink-0 text-primary" />
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
+                <CardContent className="flex-1">
+                  <ul className="space-y-3 text-sm">
+                    {program.features.map((feature, index) => (
+                      <li key={index} className="flex items-start">
+                        <Check className="mr-2 mt-1 h-4 w-4 shrink-0 text-primary" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
 
-              <CardFooter>
-                 <PlanSignupDialog program={program}>
-                    <Button className="w-full font-bold">
-                        {program.isDigital ? 'Comprar PDF' : 'Elegir Plan'}
-                    </Button>
-                 </PlanSignupDialog>
-              </CardFooter>
-            </Card>
-          ))}
+                <CardFooter>
+                   <PlanSignupDialog program={program}>
+                      <Button className="w-full font-bold">
+                          {program.isDigital ? 'Comprar PDF' : 'Elegir Plan'}
+                      </Button>
+                   </PlanSignupDialog>
+                </CardFooter>
+              </Card>
+            ))
+          ) : (
+             <div className="col-span-1 md:col-span-3 text-center py-12 bg-muted/50 rounded-lg">
+                <h3 className="text-xl font-semibold text-foreground">No hay programas disponibles en este momento.</h3>
+                <p className="text-muted-foreground mt-2 max-w-md mx-auto">
+                    Si eres el administrador, verifica que la colección de Shopify (`{collectionHandle}`) contenga productos o que las credenciales de API sean correctas.
+                </p>
+            </div>
+          )}
         </div>
       </div>
     </section>
   );
 }
-
-    
