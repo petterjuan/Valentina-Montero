@@ -114,14 +114,12 @@ const transformShopifyProducts = (products: ShopifyProduct[]): Program[] => {
       try {
         const parsedFeatures = JSON.parse(product.features.value);
         if (Array.isArray(parsedFeatures)) {
-          // Ensure all features are strings and trimmed
           featuresList = parsedFeatures
             .filter((f): f is string => typeof f === 'string')
             .map(f => f.trim())
             .filter(Boolean);
         }
       } catch (error) {
-        // Fallback for non-JSON string
         featuresList = product.features.value
           .split(",")
           .map(f => f.trim())
@@ -155,10 +153,8 @@ const normalizeDoc = <T extends { _id: any; createdAt?: any }>(doc: T) => ({
 // Server Actions
 export async function handleAiGeneration(input: GeneratePersonalizedWorkoutInput): Promise<AiGeneratorFormState> {
   try {
-    // Validate input
     const validatedInput = aiGeneratorSchema.parse(input);
     
-    // Generate workout
     const result = await generatePersonalizedWorkout(validatedInput);
     
     if (!result) {
@@ -210,7 +206,6 @@ export async function handlePlanSignup(input: PlanSignupInput) {
 
 export async function handleLeadSubmission(formData: { email: string }) {
   try {
-    // Validate email format (throws ZodError on invalid)
     const { email } = leadSchema.parse(formData);
 
     const firestore = getFirestore();
@@ -220,16 +215,11 @@ export async function handleLeadSubmission(formData: { email: string }) {
     }
 
     const now = new Date();
-    // Sanitize email -> safe doc id
     const safeId = crypto.createHash("sha256").update(email.toLowerCase()).digest("hex");
     const leadRef = firestore.collection("leads").doc(safeId);
-
-    // get snapshot
     const existingLead = await leadRef.get();
 
-    // version-safe check for "exists" (works whether it's boolean property or function)
-    const existed =
-      typeof (existingLead as any).exists === "function"
+    const existed = typeof (existingLead as any).exists === "function"
         ? (existingLead as any).exists()
         : !!(existingLead as any).exists;
 
@@ -256,49 +246,66 @@ export async function handleLeadSubmission(formData: { email: string }) {
   }
 }
 
-
-// Generic MongoDB fetch helper
-async function fetchDocuments<T extends { _id: any; createdAt?: any }>(
-  model: any,
-  filter: Record<string, any> = {},
-  options: { sort?: Record<string, any>; limit?: number } = {}
-): Promise<T[]> {
-  try {
-    await connectToDb();
-
-    const query = model.find(filter);
-
-    if (options.sort) query.sort(options.sort);
-    if (options.limit) query.limit(options.limit);
-
-    const docs: T[] = await query.lean().exec();
-
-    return docs.length > 0 ? docs.map(normalizeDoc) : [];
-  } catch (error) {
-    console.error(`Error fetching documents from ${model.modelName}:`, error instanceof Error ? error.stack : String(error));
-    return [];
-  }
-}
-
-// Refactored Data Fetching Actions
+// Data Fetching Actions
 export async function getBlogPosts(limit?: number): Promise<Post[]> {
-    const validLimit = Math.min(Math.max(limit || 20, 1), 100);
-    const posts = await fetchDocuments<PostDocument>(PostModel, {}, { sort: { createdAt: -1 }, limit: validLimit });
-    return posts as Post[];
+    try {
+        await connectToDb();
+        const validLimit = Math.min(Math.max(limit || 20, 1), 100);
+        const posts = await PostModel.find({})
+            .sort({ createdAt: -1 })
+            .limit(validLimit)
+            .lean()
+            .exec();
+        
+        if (!posts || posts.length === 0) return [];
+        
+        return posts.map(normalizeDoc) as Post[];
+    } catch (error) {
+        console.error("Error fetching blog posts:", error instanceof Error ? error.stack : String(error));
+        return [];
+    }
 }
 
 export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
-    if (!slug || typeof slug !== 'string' || !/^[a-zA-Z0-9-_]+$/.test(slug)) {
-        console.warn(`Invalid slug provided: ${slug}`);
+    try {
+        if (!slug || typeof slug !== 'string' || !/^[a-zA-Z0-9-_]+$/.test(slug)) {
+            console.warn(`Invalid slug provided: ${slug}`);
+            return null;
+        }
+        await connectToDb();
+        const post = await PostModel.findOne({ slug }).lean().exec();
+
+        if (!post) return null;
+
+        return normalizeDoc(post) as Post;
+
+    } catch (error) {
+        console.error(`Error fetching post by slug "${slug}":`, error instanceof Error ? error.stack : String(error));
         return null;
     }
-    const results = await fetchDocuments<PostDocument>(PostModel, { slug }, { limit: 1 });
-    return results.length > 0 ? results[0] as Post : null;
 }
 
 export async function getTestimonials(): Promise<Testimonial[]> {
-    const testimonials = await fetchDocuments<TestimonialDocument>(TestimonialModel, {}, { sort: { order: 1 }, limit: 10 });
-    return testimonials as Testimonial[];
+    try {
+        await connectToDb();
+        const testimonials: TestimonialDocument[] = await TestimonialModel.find({})
+            .sort({ order: 1 })
+            .limit(10)
+            .lean()
+            .exec();
+        
+        if (!testimonials || testimonials.length === 0) return [];
+        
+        return testimonials.map(doc => ({
+            ...doc,
+            id: doc._id.toString(),
+            _id: doc._id.toString(),
+        })) as Testimonial[];
+
+    } catch (error) {
+        console.error("Error fetching testimonials:", error instanceof Error ? error.stack : String(error));
+        return [];
+    }
 }
 
 
@@ -306,19 +313,17 @@ export async function getPrograms(collectionHandle: string, maxProducts: number 
   const domain = process.env.SHOPIFY_STORE_DOMAIN;
   const token = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN;
 
-  // Validate environment variables
   if (!domain || !token) {
     console.error("Shopify domain or token not configured in environment variables.");
     return null;
   }
 
-  // Validate inputs
   if (!collectionHandle || typeof collectionHandle !== 'string') {
     console.error("Invalid collection handle provided");
     return null;
   }
 
-  const validMaxProducts = Math.min(Math.max(maxProducts, 1), 100); // Limit between 1-100
+  const validMaxProducts = Math.min(Math.max(maxProducts, 1), 100);
   const endpoint = `https://${domain}/api/2024-04/graphql.json`;
 
   try {
@@ -332,7 +337,6 @@ export async function getPrograms(collectionHandle: string, maxProducts: number 
         query: COLLECTION_QUERY, 
         variables: { handle: collectionHandle, first: validMaxProducts } 
       }),
-      // Use Next.js App Router caching
       next: { revalidate: 3600, tags: ['shopify'] },
     });
 
@@ -344,7 +348,6 @@ export async function getPrograms(collectionHandle: string, maxProducts: number 
 
     const responseBody: ShopifyCollectionResponse = await response.json();
 
-    // Check for GraphQL errors
     if (responseBody.errors && responseBody.errors.length > 0) {
       const errorMessages = responseBody.errors.map(err => err.message).join(', ');
       throw new Error(`GraphQL errors: ${errorMessages}`);
@@ -359,7 +362,6 @@ export async function getPrograms(collectionHandle: string, maxProducts: number 
     
     return transformShopifyProducts(shopifyProducts);
   } catch (error) {
-    // Log the full error for better debugging
     console.error("Error fetching Shopify data:", {
       error: error instanceof Error ? error.message : String(error),
       collectionHandle,

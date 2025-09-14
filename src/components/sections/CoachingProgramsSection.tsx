@@ -77,15 +77,15 @@ export default async function CoachingProgramsSection({
   maxProducts = 10,
 }: CoachingProgramsSectionProps) {
   
-  let programs: Program[] | null = null;
+  let fetchedPrograms: Program[] | null = null;
   
   try {
-    programs = await getPrograms(collectionHandle, maxProducts);
+    fetchedPrograms = await getPrograms(collectionHandle, maxProducts);
   } catch (e) {
     console.error(`[CoachingProgramsSection] Error fetching programs: ${e instanceof Error ? e.message : String(e)}`);
   }
   
-  const displayPrograms = (programs && programs.length > 0) ? programs : fallbackPrograms;
+  const displayPrograms = (fetchedPrograms && fetchedPrograms.length > 0) ? fetchedPrograms : fallbackPrograms;
 
   return (
     <section id="programs" className="py-16 sm:py-24 bg-background">
@@ -153,3 +153,5 @@ export default async function CoachingProgramsSection({
     </section>
   );
 }
+
+    
