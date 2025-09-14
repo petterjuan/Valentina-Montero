@@ -210,62 +210,52 @@ export async function handlePlanSignup(input: PlanSignupInput) {
 
 export async function handleLeadSubmission(formData: { email: string }) {
   try {
-    if (!formData?.email) {
-      return { success: false, message: "El email es requerido." };
-    }
-
-    // Validate email format
+    // Validate email format (throws ZodError on invalid)
     const { email } = leadSchema.parse(formData);
-    
+
     const firestore = getFirestore();
     if (!firestore) {
       console.error("Firestore not configured");
-      return { 
-        success: false, 
-        message: "Servicio temporalmente no disponible. Por favor, inténtalo más tarde." 
-      };
+      return { success: false, message: "Servicio temporalmente no disponible. Por favor, inténtalo más tarde." };
     }
-    
+
     const now = new Date();
-    // Sanitize email for use as a document ID
+    // Sanitize email -> safe doc id
     const safeId = crypto.createHash("sha256").update(email.toLowerCase()).digest("hex");
     const leadRef = firestore.collection("leads").doc(safeId);
+
+    // get snapshot
     const existingLead = await leadRef.get();
 
-    // The `exists` property is a boolean. Coerce to be safe.
-    const isExisting = !!existingLead.exists;
+    // version-safe check for "exists" (works whether it's boolean property or function)
+    const existed =
+      typeof (existingLead as any).exists === "function"
+        ? (existingLead as any).exists()
+        : !!(existingLead as any).exists;
 
     const leadData = {
-        email,
-        source: "Guía Gratuita - 10k Pasos",
-        status: "subscribed",
-        updatedAt: now,
-        // Only set createdAt if new
-        ...(isExisting ? {} : { createdAt: now }),
+      email,
+      source: "Guía Gratuita - 10k Pasos",
+      status: "subscribed",
+      updatedAt: now,
+      ...(existed ? {} : { createdAt: now }),
     };
 
     await leadRef.set(leadData, { merge: true });
-    
-    return { 
-      success: true, 
-      message: isExisting
-        ? "Ya estás suscrito. Tu guía está en camino."
-        : "¡Éxito! Tu guía está en camino." 
+
+    return {
+      success: true,
+      message: existed ? "Ya estás suscrito. Tu guía está en camino." : "¡Éxito! Tu guía está en camino.",
     };
   } catch (error) {
-    console.error("Error in handleLeadSubmission:", error);
-    
+    console.error("Error in handleLeadSubmission:", error instanceof Error ? error.stack : String(error));
     if (error instanceof z.ZodError) {
-      const firstError = error.errors[0];
-      return { success: false, message: firstError?.message || "Email inválido." };
+      return { success: false, message: error.errors[0]?.message || "Email inválido." };
     }
-    
-    return { 
-      success: false, 
-      message: "Hubo un problema con tu solicitud. Por favor, inténtalo de nuevo." 
-    };
+    return { success: false, message: "Hubo un problema con tu solicitud. Por favor, inténtalo de nuevo." };
   }
 }
+
 
 // Generic MongoDB fetch helper
 async function fetchDocuments<T extends { _id: any; createdAt?: any }>(
@@ -380,4 +370,6 @@ export async function getPrograms(collectionHandle: string, maxProducts: number 
     return null;
   }
 }
+    
+
     
