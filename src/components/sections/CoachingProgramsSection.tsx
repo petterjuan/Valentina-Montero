@@ -86,6 +86,8 @@ export default async function CoachingProgramsSection({
     // En caso de error, programs permanecerá como null.
   }
   
+  // Si 'programs' es null, la conexión falló.
+  // Si 'programs' es un array vacío, la conexión fue exitosa pero no hay productos.
   const displayPrograms = programs;
 
   return (
@@ -152,9 +154,17 @@ export default async function CoachingProgramsSection({
             ))
           ) : (
              <div className="col-span-1 md:col-span-3 text-center py-12 bg-muted/50 rounded-lg">
-                <h3 className="text-xl font-semibold text-foreground">No hay programas disponibles en este momento.</h3>
+                <h3 className="text-xl font-semibold text-foreground">
+                  {programs === null 
+                    ? "No se pudieron cargar los programas."
+                    : "No hay programas disponibles en esta colección."
+                  }
+                </h3>
                 <p className="text-muted-foreground mt-2 max-w-md mx-auto">
-                    Si eres el administrador, verifica que la colección de Shopify (`{collectionHandle}`) contenga productos o que las credenciales de API sean correctas.
+                    {programs === null
+                      ? "Si eres el administrador, verifica que las credenciales de la API de Shopify (token y dominio) sean correctas en las variables de entorno."
+                      : `Si eres el administrador, asegúrate de que haya productos activos en la colección de Shopify con el handle: \`${collectionHandle}\`.`
+                    }
                 </p>
             </div>
           )}
