@@ -78,11 +78,13 @@ async function checkFirebase() {
     
     await admin.firestore().listCollections();
 
-    return { status: "success", message: `Conectado exitosamente al proyecto de Firebase: ${serviceAccount.project_id}.` };
+    return { status: "success", message: `Conectado exitosamente al proyecto de Firebase: <b>${serviceAccount.project_id}</b>.` };
   } catch (error: any) {
     let errorMessage = `Falló la conexión a Firebase. Error: ${error.message}`;
     if (error.message && error.message.includes('PERMISSION_DENIED')) {
-      errorMessage = `La API de Cloud Firestore no ha sido habilitada en el proyecto <b>${error.message.split('project ')[1]?.split(' ')[0] || 'vm-fitness-hub'}</b>. <a href="https://console.developers.google.com/apis/api/firestore.googleapis.com/overview?project=vm-fitness-hub" target="_blank" rel="noopener noreferrer" class="underline">Haz clic aquí para habilitarla</a>, espera 5 minutos y refresca.`;
+      errorMessage = `La API de Cloud Firestore no ha sido habilitada en el proyecto <b>${error.message.split('project ')[1]?.split(' ')[0] || 'indefinido'}</b>. <a href="https://console.developers.google.com/apis/api/firestore.googleapis.com/overview" target="_blank" rel="noopener noreferrer" class="underline">Haz clic aquí para habilitarla</a>, espera 5 minutos y refresca.`;
+    } else if (error.code === 5 || (error.message && error.message.includes('NOT_FOUND'))) {
+       errorMessage = `Error: <b>5 NOT_FOUND</b>. Esto puede significar que el <b>project_id</b> en tu clave de servicio de Firebase es incorrecto o que la base de datos de Firestore aún no ha sido creada en tu proyecto. Ve a la consola de Firebase, selecciona tu proyecto y haz clic en 'Firestore Database' para crearla.`;
     }
     return { status: "error", message: errorMessage };
   }
@@ -96,14 +98,14 @@ async function checkMongoDB() {
     }
 
     if (!uri.startsWith('mongodb+srv://') && !uri.startsWith('mongodb://')) {
-        return { status: 'error', message: `Formato de MONGODB_URI inválido. Debe empezar con 'mongodb+srv://' o 'mongodb://'. El valor actual es: "${uri.substring(0, 20)}..."` };
+        return { status: 'error', message: `Formato de MONGODB_URI inválido. Debe empezar con 'mongodb+srv://' o 'mongodb://'.` };
     }
 
     try {
         if (mongoose.connection.readyState !== 1) {
             await mongoose.connect(uri, { serverSelectionTimeoutMS: 5000 });
         }
-        return { status: 'success', message: `Conectado exitosamente a la base de datos: ${mongoose.connection.name}.` };
+        return { status: 'success', message: `Conectado exitosamente a MongoDB.` };
     } catch (error: any) {
         return { status: 'error', message: `Falló la conexión a MongoDB. Error: ${error.message}` };
     }
@@ -118,7 +120,7 @@ async function checkShopify() {
         let missingVars = [];
         if (!domain) missingVars.push("SHOPIFY_STORE_DOMAIN");
         if (!token) missingVars.push("SHOPIFY_STOREFRONT_ACCESS_TOKEN");
-        return { status: 'error', message: `Configuración incompleta. Faltan las siguientes variables de entorno: ${missingVars.join(', ')}.` };
+        return { status: 'error', message: `Configuración incompleta. Faltan las siguientes variables de entorno: <b>${missingVars.join(', ')}</b>.` };
     }
     
     const endpoint = `https://${domain}/api/2024-04/graphql.json`;
@@ -133,22 +135,22 @@ async function checkShopify() {
 
         if (!response.ok) {
             if (response.status === 404) {
-                 throw new Error(`La URL de la API de Shopify no fue encontrada. Revisa que el SHOPIFY_STORE_DOMAIN ('${domain}') sea correcto y no tu dominio personalizado.`);
+                 throw new Error(`La URL de la API de Shopify no fue encontrada. Revisa que el SHOPIFY_STORE_DOMAIN (<b>'${domain}'</b>) sea correcto.`);
             }
             if (response.status === 401) {
-                 throw new Error(`Error de autenticación (Unauthorized). El Storefront Access Token es inválido o no tiene los permisos necesarios.`);
+                 throw new Error(`Error de autenticación (Unauthorized). El <b>Storefront Access Token</b> es inválido o no tiene los permisos necesarios.`);
             }
-            throw new Error(`La API de Shopify devolvió un estado ${response.status}.`);
+            throw new Error(`La API de Shopify devolvió un estado <b>${response.status}</b>.`);
         }
         
         const json = await response.json();
         
         if (json.errors) {
-             throw new Error(`Errores de GraphQL: ${json.errors.map((e: any) => e.message).join(', ')}. Esto casi siempre significa que al token le faltan permisos. Ve a la configuración de tu app en Shopify > Storefront API Scopes y asegúrate de haber marcado permisos para leer productos, colecciones, etc.`);
+             throw new Error(`Errores de GraphQL: ${json.errors.map((e: any) => e.message).join(', ')}. Esto casi siempre significa que al token le faltan permisos de lectura de productos (<b>unauthenticated_read_products</b>). Ve a tu App en Shopify > Configuration > Storefront API integration y asegúrate de que los permisos de lectura de productos estén marcados.`);
         }
 
         const shopName = json.data?.shop?.name;
-        return { status: 'success', message: `Conectado exitosamente a la tienda de Shopify: ${shopName}.` };
+        return { status: 'success', message: `Conectado exitosamente a la tienda de Shopify: <b>${shopName}</b>.` };
 
     } catch (error: any) {
         return { status: 'error', message: `Falló la conexión a Shopify. Error: ${error.message}` };
