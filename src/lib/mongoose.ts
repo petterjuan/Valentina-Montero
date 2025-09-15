@@ -20,8 +20,12 @@ let cachedConnection: typeof mongoose | null = null;
 
 async function connectToDb() {
   if (cachedConnection) {
-    // console.log("✅ Using cached MongoDB connection.");
     return cachedConnection;
+  }
+
+  // If in development, clear the model cache to prevent model re-registration errors on hot reloads.
+  if (process.env.NODE_ENV === 'development') {
+    mongoose.models = {};
   }
 
   try {

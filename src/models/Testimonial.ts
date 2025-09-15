@@ -1,6 +1,6 @@
 
 import { TestimonialDocument } from '@/types';
-import mongoose, { Schema, models } from 'mongoose';
+import mongoose, { Schema, model } from 'mongoose';
 
 const TestimonialSchema = new Schema<TestimonialDocument>({
   name: { type: String, required: true },
@@ -10,6 +10,7 @@ const TestimonialSchema = new Schema<TestimonialDocument>({
   order: { type: Number, default: 0 },
 });
 
-const TestimonialModel = models.Testimonial || mongoose.model<TestimonialDocument>('Testimonial', TestimonialSchema);
+// Use mongoose.model to ensure the model is not re-registered.
+const TestimonialModel = mongoose.models.Testimonial || model<TestimonialDocument>('Testimonial', TestimonialSchema);
 
 export default TestimonialModel;

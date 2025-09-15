@@ -1,6 +1,6 @@
 
 import { PostDocument } from '@/types';
-import mongoose, { Schema, models } from 'mongoose';
+import mongoose, { Schema, model } from 'mongoose';
 
 const PostSchema = new Schema<PostDocument>({
   title: { type: String, required: true },
@@ -12,6 +12,7 @@ const PostSchema = new Schema<PostDocument>({
   createdAt: { type: Date, default: Date.now },
 });
 
-const PostModel = models.Post || mongoose.model<PostDocument>('Post', PostSchema);
+// Use mongoose.model to ensure the model is not re-registered.
+const PostModel = mongoose.models.Post || model<PostDocument>('Post', PostSchema);
 
 export default PostModel;
