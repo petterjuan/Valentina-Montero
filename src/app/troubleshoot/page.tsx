@@ -80,14 +80,15 @@ async function checkFirebase() {
 
     return { status: "success", message: `Conectado exitosamente al proyecto de Firebase: <b>${serviceAccount.project_id}</b>.` };
   } catch (error: any) {
+    const projectId = serviceAccount?.project_id || 'tu-proyecto';
     let errorMessage = `Falló la conexión a Firebase. Error: ${error.message}`;
-    const projectId = serviceAccount?.project_id || process.env.GCLOUD_PROJECT || 'vm-fitness-hub';
-    
-    if (error.message && error.message.includes('PERMISSION_DENIED')) {
-      errorMessage = `La API de Cloud Firestore no ha sido habilitada en el proyecto <b>${projectId}</b>. <a href="https://console.developers.google.com/apis/api/firestore.googleapis.com/overview?project=${projectId}" target="_blank" rel="noopener noreferrer" class="underline font-bold">Haz clic aquí para habilitarla</a>, espera 5 minutos y refresca.`;
+
+    if (error.code === 7 || (error.message && error.message.includes('PERMISSION_DENIED'))) {
+       errorMessage = `La API de Cloud Firestore no ha sido habilitada en el proyecto <b>${projectId}</b>. <a href="https://console.developers.google.com/apis/api/firestore.googleapis.com/overview?project=${projectId}" target="_blank" rel="noopener noreferrer" class="underline font-bold">Haz clic aquí para habilitarla</a>, espera 5 minutos y refresca.`;
     } else if (error.code === 5 || (error.message && error.message.includes('NOT_FOUND'))) {
        errorMessage = `Error: <b>5 NOT_FOUND</b>. Esto casi siempre significa que la base de datos de Firestore aún no ha sido creada en tu proyecto. <br><b>Solución:</b> Ve a la <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" class="underline font-bold">Consola de Firebase</a>, selecciona el proyecto <b>${projectId}</b>, haz clic en <b>Build > Firestore Database</b> y luego en <b>'Crear base de datos'</b>.`;
     }
+    
     return { status: "error", message: errorMessage };
   }
 }
@@ -108,15 +109,33 @@ async function checkMongoDB() {
         return { status: 'error', message: `Formato de MONGODB_URI inválido. Debe empezar con 'mongodb+srv://' o 'mongodb://'.` };
     }
 
+    let client;
     try {
-        // Use a new connection for testing to avoid issues with global cache
-        const client = await mongoose.connect(uri, { serverSelectionTimeoutMS: 5000 });
-        await client.connection.db.command({ ping: 1 });
-        await mongoose.disconnect();
+        client = await mongoose.connect(uri, { 
+            dbName: dbName,
+            serverSelectionTimeoutMS: 5000 
+        });
         
-        return { status: 'success', message: `Conectado exitosamente a la base de datos: <b>${dbName}</b>.` };
+        if (!client.connection.db) {
+           throw new Error("La conexión a Mongoose se estableció, pero `client.connection.db` es undefined. Esto usualmente significa que el nombre de la base de datos no fue especificado correctamente en la URI de conexión o en la configuración.");
+        }
+        
+        await client.connection.db.command({ ping: 1 });
+        
+        return { status: 'success', message: `Conectado exitosamente a la base de datos: <b>${client.connection.db.databaseName}</b>.` };
     } catch (error: any) {
-        return { status: 'error', message: `Falló la conexión a MongoDB. Error: ${error.message}` };
+        let errorMessage = `Falló la conexión a MongoDB. Error: ${error.message}`;
+        if (error.message && (error.message.includes('bad auth') || error.message.includes('Authentication failed'))) {
+            errorMessage = "Falló la autenticación con MongoDB. Revisa que el usuario y la contraseña en la <b>MONGODB_URI</b> sean correctos."
+        }
+        if (error.message && error.message.includes('command')) {
+             errorMessage = `El comando de prueba falló. Esto puede pasar si la URI de conexión no incluye un nombre de base de datos y la variable <b>MONGODB_DB_NAME</b> no está configurada. Error: ${error.message}`;
+        }
+        return { status: 'error', message: errorMessage };
+    } finally {
+        if (client) {
+            await mongoose.disconnect();
+        }
     }
 }
 
@@ -125,13 +144,9 @@ async function checkShopify() {
     const domain = process.env.SHOPIFY_STORE_DOMAIN;
     const token = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN;
 
-    if (!domain || !token) {
-        let missingVars = [];
-        if (!domain) missingVars.push("<b>SHOPIFY_STORE_DOMAIN</b>");
-        if (!token) missingVars.push("<b>SHOPIFY_STOREFRONT_ACCESS_TOKEN</b>");
-        return { status: 'error', message: `Configuración incompleta. Faltan las siguientes variables de entorno: ${missingVars.join(', ')}.` };
-    }
-    
+    if (!domain) return { status: 'error', message: `Configuración incompleta. Falta la variable de entorno: <b>SHOPIFY_STORE_DOMAIN</b>.` };
+    if (!token) return { status: 'error', message: `Configuración incompleta. Falta la variable de entorno: <b>SHOPIFY_STOREFRONT_ACCESS_TOKEN</b>.` };
+
     const endpoint = `https://${domain}/api/2024-04/graphql.json`;
     const query = `{ shop { name } }`;
 
@@ -144,10 +159,10 @@ async function checkShopify() {
 
         if (!response.ok) {
             if (response.status === 401) {
-                 throw new Error(`Error de autenticación (Unauthorized). El <b>Storefront Access Token</b> es inválido o no tiene los permisos necesarios. Revisa la pestaña de 'Configuration' en tu app de Shopify y asegúrate de que todos los permisos de lectura de productos estén marcados.`);
+                 throw new Error(`Error de autenticación (Unauthorized). El <b>Storefront Access Token</b> es inválido o no tiene los permisos necesarios. Revisa que el token en Vercel sea correcto.`);
             }
             if (response.status === 404) {
-                 throw new Error(`La URL de la API de Shopify no fue encontrada (404 Not Found). Revisa que el SHOPIFY_STORE_DOMAIN (<b>'${domain}'</b>) sea correcto. Debe ser del tipo 'tu-tienda.myshopify.com', sin 'https://' ni '/'.`);
+                 throw new Error(`La URL de la API de Shopify no fue encontrada (404 Not Found). Revisa que el SHOPIFY_STORE_DOMAIN (<b>'${domain}'</b>) sea correcto. Debe ser del tipo 'tu-tienda.myshopify.com', sin 'https://'.`);
             }
             const errorText = await response.text();
             throw new Error(`La API de Shopify devolvió un estado <b>${response.status}</b>. Respuesta: ${errorText}`);
@@ -156,7 +171,7 @@ async function checkShopify() {
         const json = await response.json();
         
         if (json.errors) {
-             throw new Error(`Errores de GraphQL: ${json.errors.map((e: any) => e.message).join(', ')}. Esto casi siempre significa que al token le faltan permisos de lectura de productos (<b>unauthenticated_read_products</b>). Ve a tu App en Shopify > Configuration > Storefront API integration y asegúrate de que todos los permisos de lectura de productos estén marcados.`);
+             throw new Error(`Errores de GraphQL: ${json.errors.map((e: any) => e.message).join(', ')}. Esto casi siempre significa que al token le faltan permisos. En Shopify, ve a tu App > Configuration > Storefront API integration y asegúrate de que todos los permisos de lectura de productos estén marcados (ej. 'unauthenticated_read_products').`);
         }
 
         const shopName = json.data?.shop?.name;
