@@ -98,15 +98,11 @@ async function checkFirebase() {
 // --- CHECK 2: MongoDB ---
 async function checkMongoDB() {
     const uri = process.env.MONGODB_URI;
-    const dbName = process.env.MONGODB_DB_NAME;
 
     if (!uri) {
         return { status: 'error', message: 'La variable de entorno <b>MONGODB_URI</b> no está configurada.' };
     }
-     if (!dbName) {
-        return { status: 'error', message: 'La variable de entorno <b>MONGODB_DB_NAME</b> no está configurada. Debe ser el nombre de tu base de datos en MongoDB Atlas.' };
-    }
-
+    
     if (!uri.startsWith('mongodb+srv://') && !uri.startsWith('mongodb://')) {
         return { status: 'error', message: `Formato de MONGODB_URI inválido. Debe empezar con 'mongodb+srv://' o 'mongodb://'.` };
     }
@@ -114,10 +110,10 @@ async function checkMongoDB() {
     let client;
     try {
         client = await mongoose.connect(uri, { 
-            dbName: dbName,
             serverSelectionTimeoutMS: 5000 
         });
         
+        const dbName = client.connection.db.databaseName;
         await client.connection.db.command({ ping: 1 });
         
         return { status: 'success', message: `Conectado exitosamente a la base de datos: <b>${dbName}</b>.` };
@@ -127,7 +123,7 @@ async function checkMongoDB() {
             errorMessage = "Falló la autenticación con MongoDB. Revisa que el usuario y la contraseña en la <b>MONGODB_URI</b> sean correctos."
         }
         if (error.message && error.message.includes('command')) {
-             errorMessage = `El comando de prueba falló. Esto puede pasar si la URI de conexión no incluye un nombre de base de datos y la variable <b>MONGODB_DB_NAME</b> no está configurada. Error: ${error.message}`;
+             errorMessage = `El comando de prueba falló. Esto puede pasar si la URI de conexión no incluye un nombre de base de datos. Error: ${error.message}`;
         }
         return { status: 'error', message: errorMessage };
     } finally {
@@ -183,18 +179,18 @@ async function checkShopify() {
 // --- CHECK 4: MongoDB Data Fetch ---
 async function checkMongoData() {
     const uri = process.env.MONGODB_URI;
-    const dbName = process.env.MONGODB_DB_NAME;
 
-    if (!uri || !dbName) {
-        return { status: 'error', message: 'Variables MONGODB_URI o MONGODB_DB_NAME no configuradas.' };
+    if (!uri) {
+        return { status: 'error', message: 'Variable MONGODB_URI no configurada.' };
     }
 
     let client;
     try {
-        client = await mongoose.connect(uri, { dbName: dbName, serverSelectionTimeoutMS: 5000 });
+        client = await mongoose.connect(uri, { serverSelectionTimeoutMS: 5000 });
 
         const postCount = await PostModel.countDocuments();
         const testimonialCount = await TestimonialModel.countDocuments();
+        const dbName = client.connection.db.databaseName;
 
         return { 
             status: 'success', 
@@ -262,5 +258,3 @@ export default async function TroubleshootPage() {
     </div>
   );
 }
-
-    
