@@ -116,13 +116,9 @@ async function checkMongoDB() {
             serverSelectionTimeoutMS: 5000 
         });
         
-        if (!client.connection.db) {
-           throw new Error("La conexión a Mongoose se estableció, pero `client.connection.db` es undefined. Esto usualmente significa que el nombre de la base de datos no fue especificado correctamente en la URI de conexión o en la configuración.");
-        }
-        
         await client.connection.db.command({ ping: 1 });
         
-        return { status: 'success', message: `Conectado exitosamente a la base de datos: <b>${client.connection.db.databaseName}</b>.` };
+        return { status: 'success', message: `Conectado exitosamente a la base de datos: <b>${dbName}</b>.` };
     } catch (error: any) {
         let errorMessage = `Falló la conexión a MongoDB. Error: ${error.message}`;
         if (error.message && (error.message.includes('bad auth') || error.message.includes('Authentication failed'))) {
@@ -159,7 +155,7 @@ async function checkShopify() {
 
         if (!response.ok) {
             if (response.status === 401) {
-                 throw new Error(`Error de autenticación (Unauthorized). El <b>Storefront Access Token</b> es inválido o no tiene los permisos necesarios. Revisa que el token en Vercel sea correcto.`);
+                 throw new Error(`Error de autenticación (Unauthorized). El <b>Storefront Access Token</b> es inválido o no tiene los permisos necesarios. Revisa que el token en Vercel sea correcto y que los permisos de Storefront API en tu app de Shopify estén habilitados (ej. 'unauthenticated_read_products').`);
             }
             if (response.status === 404) {
                  throw new Error(`La URL de la API de Shopify no fue encontrada (404 Not Found). Revisa que el SHOPIFY_STORE_DOMAIN (<b>'${domain}'</b>) sea correcto. Debe ser del tipo 'tu-tienda.myshopify.com', sin 'https://'.`);
