@@ -250,7 +250,7 @@ export async function getBlogPosts(limit?: number): Promise<Post[]> {
             .lean()
             .exec();
         
-        if (!posts || posts.length === 0) return [];
+        if (!posts) return [];
         
         return posts.map(post => {
             const { _id, ...rest } = post;
@@ -258,35 +258,31 @@ export async function getBlogPosts(limit?: number): Promise<Post[]> {
         });
 
     } catch (error) {
-        console.error("Error fetching blog posts:", error instanceof Error ? error.stack : String(error));
+        console.error("Error fetching blog posts:", error);
         return [];
     }
 }
 
 export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
-    console.log(`[ACTION LOG] Attempting to get post by slug: "${slug}"`);
     try {
-        if (!slug || typeof slug !== 'string') {
-            console.warn(`[ACTION LOG] Invalid or empty slug provided: ${slug}`);
+        if (!slug) {
+            console.warn("getBlogPostBySlug called with an empty slug.");
             return null;
         }
-        
+
         await connectToDb();
-        console.log(`[ACTION LOG] DB connected. Searching for post with slug: "${slug}" in DB: ${process.env.MONGODB_DB_NAME}`);
-        
         const post = await PostModel.findOne({ slug }).lean().exec();
 
         if (!post) {
-            console.error(`[ACTION LOG] MONGO_FIND_ONE_FAILED: No post found for slug: "${slug}".`);
+            console.warn(`No post found for slug: "${slug}"`);
             return null;
         }
         
-        console.log(`[ACTION LOG] Post found: "${post.title}"`);
         const { _id, ...rest } = post;
         return { id: _id.toString(), ...rest } as Post;
 
     } catch (error) {
-        console.error(`[ACTION LOG] MONGO_QUERY_ERROR: Error fetching post by slug "${slug}":`, error instanceof Error ? error.stack : String(error));
+        console.error(`Error fetching post by slug "${slug}":`, error);
         return null;
     }
 }
@@ -300,16 +296,15 @@ export async function getTestimonials(): Promise<Testimonial[]> {
             .lean()
             .exec();
         
-        if (!testimonials || testimonials.length === 0) return [];
+        if (!testimonials) return [];
         
         return testimonials.map(doc => {
-            const leanDoc = doc;
-            const { _id, ...rest } = leanDoc;
+            const { _id, ...rest } = doc;
             return { id: _id.toString(), ...rest } as Testimonial;
         });
 
     } catch (error) {
-        console.error("Error fetching testimonials:", error instanceof Error ? error.stack : String(error));
+        console.error("Error fetching testimonials:", error);
         return [];
     }
 }

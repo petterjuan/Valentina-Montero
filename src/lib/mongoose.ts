@@ -24,7 +24,6 @@ if (!cached) {
 
 async function connectToDb() {
   if (cached.conn) {
-    console.log("🟢 Using cached MongoDB connection.");
     return cached.conn;
   }
 
@@ -34,15 +33,8 @@ async function connectToDb() {
       dbName: MONGODB_DB_NAME,
     };
 
-    console.log(`🟡 Attempting to establish a new MongoDB connection to DB: ${MONGODB_DB_NAME}`);
     cached.promise = mongoose.connect(MONGODB_URI!, opts).then((mongoose) => {
-      console.log(`✅ New MongoDB connection established successfully to database: ${mongoose.connection.db.databaseName}`);
       return mongoose;
-    }).catch(err => {
-        console.error("🔥 FAILED TO CONNECT TO MONGODB. This is likely an issue with your MONGODB_URI credentials, network access, or DB_NAME.");
-        console.error("🔥 Detailed Error:", err);
-        cached.promise = null; // Reset promise on error
-        throw err; // Rethrow to be caught by caller
     });
   }
   
@@ -50,7 +42,6 @@ async function connectToDb() {
     cached.conn = await cached.promise;
   } catch (e) {
     cached.promise = null;
-    cached.conn = null;
     throw e;
   }
   
