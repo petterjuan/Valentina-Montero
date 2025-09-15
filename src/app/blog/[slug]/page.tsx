@@ -1,5 +1,5 @@
 
-import { getBlogPostBySlug, getBlogPosts } from "@/app/actions";
+import { getBlogPostBySlug } from "@/app/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -11,21 +11,12 @@ import { notFound } from "next/navigation";
 import DOMPurify from 'isomorphic-dompurify';
 import { Post } from "@/types";
 
-export const dynamic = 'force-static';
+export const dynamic = 'force-dynamic';
 
 interface BlogPostPageProps {
   params: {
     slug: string;
   };
-}
-
-export async function generateStaticParams() {
-  const posts = await getBlogPosts();
-  if (!posts) return [];
-
-  return posts.map((post) => ({
-    slug: post.slug,
-  }));
 }
 
 export async function generateMetadata({ params }: BlogPostPageProps): Promise<Metadata> {
