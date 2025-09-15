@@ -142,12 +142,11 @@ const transformShopifyProducts = (products: ShopifyProduct[]): Program[] => {
   });
 };
 
-const normalizeDoc = <T extends { _id: any; createdAt?: any }>(doc: T) => ({
-  ...doc,
-  id: doc._id.toString(),
-  _id: doc._id.toString(),
-  createdAt: doc.createdAt ? new Date(doc.createdAt) : new Date(),
-});
+const normalizeMongoDoc = (doc: any): any => {
+    if (!doc) return null;
+    const { _id, ...rest } = doc;
+    return { id: _id.toString(), ...rest };
+};
 
 
 // Server Actions
@@ -259,7 +258,11 @@ export async function getBlogPosts(limit?: number): Promise<Post[]> {
         
         if (!posts || posts.length === 0) return [];
         
-        return posts.map(normalizeDoc) as Post[];
+        return posts.map(post => {
+            const { _id, ...rest } = post;
+            return { id: _id.toString(), ...rest } as Post;
+        });
+
     } catch (error) {
         console.error("Error fetching blog posts:", error instanceof Error ? error.stack : String(error));
         return [];
@@ -272,15 +275,18 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
             console.warn(`Invalid or empty slug provided: ${slug}`);
             return null;
         }
+        
         await connectToDb();
+        
         const post = await PostModel.findOne({ slug }).lean().exec();
 
         if (!post) {
             console.warn(`No post found for slug: ${slug}`);
             return null;
         }
-
-        return normalizeDoc(post) as Post;
+        
+        const { _id, ...rest } = post;
+        return { id: _id.toString(), ...rest } as Post;
 
     } catch (error) {
         console.error(`Error fetching post by slug "${slug}":`, error instanceof Error ? error.stack : String(error));
@@ -375,3 +381,5 @@ export async function getPrograms(collectionHandle: string, maxProducts: number 
     return null;
   }
 }
+
+    
