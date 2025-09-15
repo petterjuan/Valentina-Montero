@@ -120,32 +120,26 @@ Tu web está construida con una base sólida y escalable. Aquí tienes una guía
 
 ---
 
-## 6. Arquitectura de la Aplicación
+## 6. ¿Qué tecnología hay detrás de tu web? (Explicado de forma sencilla)
 
-Esta sección describe brevemente las tecnologías y la estructura sobre la que está construida tu página web.
+Tu nueva web es mucho más que una simple página. Es una potente herramienta de negocio construida con la mejor tecnología disponible para que sea rápida, segura y fácil de hacer crecer.
 
-### a) Frontend (La parte visible de la web)
+#### **1. Un motor súper rápido (Next.js 14)**
+La web está construida con la tecnología más moderna para que cargue al instante. Esto no solo hace felices a tus visitantes, sino también a Google, lo que ayuda a que te encuentren más fácilmente.
 
-- **Next.js y React**: Es el corazón de la aplicación. Permite que la web sea rápida, interactiva y amigable para los motores de búsqueda como Google. Utilizamos la última versión con el "App Router" para un rendimiento óptimo.
-- **TypeScript**: Es una capa sobre JavaScript que nos ayuda a escribir un código más robusto y con menos errores, facilitando el mantenimiento a largo plazo.
-- **Tailwind CSS y ShadCN UI**: Son los responsables del diseño visual. Nos permiten construir una interfaz moderna, limpia y totalmente adaptable a dispositivos móviles y de escritorio, de manera muy eficiente.
+#### **2. Un cerebro de Inteligencia Artificial (Google AI)**
+El generador de planes de entrenamiento no es un simple formulario. Usa la misma tecnología de inteligencia artificial que Google para crear, en tiempo real, una rutina verdaderamente personalizada para cada visitante. Es como tener una entrenadora asistente trabajando para ti 24/7.
 
-### b) Backend (La lógica detrás de escena)
+#### **3. Dos sistemas de archivo inteligentes (Bases de Datos)**
+- **Para el blog y testimonios (MongoDB):** Usamos una base de datos de alto rendimiento, perfecta para guardar y mostrar los artículos de tu blog y las historias de éxito de tus clientas de forma muy rápida.
+- **Para tus nuevos prospectos y clientas (Firestore):** Cuando alguien se inscribe en un plan o descarga tu guía, sus datos se guardan al instante y de forma segura en otro sistema, listo para que lo consultes.
 
-- **Server Actions de Next.js**: Cuando llenas un formulario (como el de inscripción o el generador de planes), esta tecnología se encarga de enviar los datos de forma segura desde tu navegador al servidor para ser procesados.
-- **Genkit (Google AI)**: Es el cerebro detrás del generador de planes de entrenamiento. Utilizamos Genkit para comunicarnos con los modelos de Inteligencia Artificial de Google (Gemini) y transformar las preferencias de la usuaria en una rutina personalizada. También gestiona la lógica de inscripción a los planes.
-- **Firebase Firestore**: Es nuestra base de datos. Cada vez que una nueva clienta se inscribe o muestra interés en un producto, sus datos se guardan de forma segura y en tiempo real en Firestore, listos para que los gestiones.
+#### **4. Una tienda y caja registradora de primer nivel (Shopify y Stripe)**
+- **Catálogo de productos (Shopify):** Tu web se conecta directamente a tu panel de Shopify. Si cambias un precio o un programa allí, se actualiza automáticamente en la web. Tú gestionas todo desde un lugar que ya conoces.
+- **Pagos seguros (Stripe):** Para vender tus productos digitales, usamos Stripe, el sistema de pagos más seguro y confiable del mundo. Todo el proceso de pago es manejado por ellos, dándote a ti y a tus clientas total tranquilidad.
 
-### c) Flujo de Datos (Ejemplo: Generador de Planes)
+#### **5. Formularios blindados y un diseño adaptable**
+- **Seguridad en los formularios:** Cada vez que una clienta llena un formulario, la información viaja por un canal seguro y directo al servidor, protegiendo sus datos.
+- **Diseño impecable (Tailwind y ShadCN):** El diseño de la web no solo es bonito, sino también inteligente. Se adapta perfectamente a cualquier dispositivo (móvil, tablet, ordenador) para que siempre se vea genial.
 
-Para que te hagas una idea de cómo funciona todo junto:
-
-1.  **Usuario**: Selecciona sus preferencias en el formulario de la página.
-2.  **Frontend (React)**: Captura esos datos.
-3.  **Server Action**: Envía los datos de forma segura al backend.
-4.  **Genkit**: Recibe los datos, crea un prompt (una instrucción) para la IA y se lo envía al modelo Gemini.
-5.  **Gemini**: Procesa la solicitud y devuelve un plan de entrenamiento en formato JSON.
-6.  **Genkit y Server Action**: Reciben la respuesta, la procesan y la envían de vuelta al frontend.
-7.  **Frontend (React)**: Recibe el plan estructurado y lo muestra en un formato visual atractivo (el acordeón que ves).
-
-Esta arquitectura es moderna, segura y altamente escalable, preparada para crecer junto con tu negocio.
+En resumen, tienes una plataforma de negocio digital completa, equipada con la misma tecnología que usan las grandes empresas, pero diseñada a la medida de tus necesidades para ayudarte a crecer.
