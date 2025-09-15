@@ -23,6 +23,14 @@ export interface Testimonial {
     order?: number;
 }
 
+export interface Lead {
+    id: string;
+    email: string;
+    source: string;
+    status: string;
+    createdAt: Date;
+}
+
 // Mongoose document interfaces
 export interface PostDocument extends Omit<Post, '_id' | 'id'>, Document {}
 export interface TestimonialDocument extends Omit<Testimonial, '_id' | 'id'>, Document {}

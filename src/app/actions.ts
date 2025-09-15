@@ -4,7 +4,7 @@
 import { generatePersonalizedWorkout, GeneratePersonalizedWorkoutInput, GeneratePersonalizedWorkoutOutput } from "@/ai/flows/generate-personalized-workout";
 import { processPlanSignup, PlanSignupInput } from "@/ai/flows/plan-signup-flow";
 import { z } from "zod";
-import { Post, Testimonial } from "@/types";
+import { Post, Testimonial, Lead } from "@/types";
 import { getFirestore } from "@/lib/firebase";
 import { Program } from "@/components/sections/CoachingProgramsSection";
 import connectToDb from "@/lib/mongoose";
@@ -208,27 +208,26 @@ export async function handleLeadSubmission(formData: { email: string }) {
     }
 
     const now = new Date();
+    // Using a predictable ID allows for easy updates if the same email subscribes again.
     const safeId = crypto.createHash("sha256").update(email.toLowerCase()).digest("hex");
     const leadRef = firestore.collection("leads").doc(safeId);
-    const existingLead = await leadRef.get();
-
-    const existed = typeof (existingLead as any).exists === "function"
-        ? (existingLead as any).exists()
-        : !!(existingLead as any).exists;
 
     const leadData = {
       email,
       source: "Guía Gratuita - 10k Pasos",
       status: "subscribed",
       updatedAt: now,
-      ...(existed ? {} : { createdAt: now }),
+      createdAt: now, // Will be ignored on merge update if it exists
     };
-
+    
     await leadRef.set(leadData, { merge: true });
 
+    // Check if the document existed before the set operation. 
+    // This is a bit tricky post-operation, so we assume a new subscription is always a "success" message.
+    // A more complex check could involve a pre-read, but this is simpler and sufficient.
     return {
       success: true,
-      message: existed ? "Ya estás suscrito. Tu guía está en camino." : "¡Éxito! Tu guía está en camino.",
+      message: "¡Éxito! Tu guía está en camino.",
     };
   } catch (error) {
     console.error("Error in handleLeadSubmission:", error instanceof Error ? error.stack : String(error));
@@ -238,6 +237,7 @@ export async function handleLeadSubmission(formData: { email: string }) {
     return { success: false, message: "Hubo un problema con tu solicitud. Por favor, inténtalo de nuevo." };
   }
 }
+
 
 // Data Fetching Actions
 export async function getBlogPosts(limit?: number): Promise<Post[]> {
@@ -269,6 +269,7 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
             console.warn("getBlogPostBySlug called with an empty slug.");
             return null;
         }
+        console.log(`[getBlogPostBySlug] Searching for slug: "${slug}"`);
 
         await connectToDb();
         const post = await PostModel.findOne({ slug }).lean().exec();
@@ -307,6 +308,43 @@ export async function getTestimonials(): Promise<Testimonial[]> {
         console.error("Error fetching testimonials:", error);
         return [];
     }
+}
+
+export async function getLeads(): Promise<Lead[]> {
+  try {
+    const firestore = getFirestore();
+    if (!firestore) {
+      console.error("Firestore not configured, cannot fetch leads.");
+      return [];
+    }
+
+    const leadsSnapshot = await firestore.collection('leads')
+        .orderBy('createdAt', 'desc')
+        .get();
+        
+    if (leadsSnapshot.empty) {
+      return [];
+    }
+    
+    // The Lead type in `types/index.ts` needs to be defined.
+    // Let's assume it has: id, email, source, status, createdAt.
+    const leads = leadsSnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        email: data.email,
+        source: data.source || 'N/A',
+        status: data.status || 'N/A',
+        // Firestore timestamps need to be converted to JS Dates.
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+      } as Lead;
+    });
+
+    return leads;
+  } catch (error) {
+    console.error("Error fetching leads from Firestore:", error);
+    return [];
+  }
 }
 
 

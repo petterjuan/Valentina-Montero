@@ -23,13 +23,19 @@ export default function Footer() {
     <footer className="bg-muted/40">
       <div className="container mx-auto px-4 py-8 md:px-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-center md:text-left">
-            <div>
+            <div className="flex flex-col items-center md:items-start gap-2">
                  <p className="text-sm text-muted-foreground">
                     © {new Date().getFullYear()} VM Fitness Hub. Todos los derechos reservados.
                  </p>
-                 <Link href="/troubleshoot" className="text-xs text-muted-foreground hover:text-primary">
-                    System Status
-                 </Link>
+                 <div className="flex items-center gap-x-2">
+                    <Link href="/troubleshoot" className="text-xs text-muted-foreground hover:text-primary">
+                        System Status
+                    </Link>
+                    <span className="text-muted-foreground">·</span>
+                    <Link href="/admin/leads" className="text-xs text-muted-foreground hover:text-primary">
+                        Administración
+                    </Link>
+                 </div>
             </div>
           <div className="flex flex-col items-center md:items-end gap-4">
              <div className="flex items-center gap-4">
