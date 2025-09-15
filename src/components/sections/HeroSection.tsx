@@ -6,7 +6,7 @@ export default function HeroSection() {
   return (
     <section className="relative h-[85vh] min-h-[600px] w-full flex items-center justify-center text-center text-white overflow-hidden">
       <Image
-        src="https://picsum.photos/1920/1080?random=11"
+        src="https://picsum.photos/seed/hero/1920/1080"
         alt="Valentina Montero entrenando a una clienta"
         fill
         className="object-cover object-center"
@@ -25,9 +25,6 @@ export default function HeroSection() {
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up animation-delay-600">
                 <Button asChild size="lg" className="font-bold">
                     <Link href="#programs">Comienza Tu Viaje</Link>
-                </Button>
-                <Button asChild variant="link" size="lg" className="text-white hover:text-accent">
-                    <Link href="#">Visita Mi Tienda</Link>
                 </Button>
             </div>
         </div>
