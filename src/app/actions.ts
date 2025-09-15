@@ -271,20 +271,20 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
         }
         
         await connectToDb();
-        console.log(`Searching for post with slug: "${slug}"`);
+        console.log(`[ACTION LOG] Searching for post with slug: "${slug}" in DB: ${process.env.MONGODB_DB_NAME}`);
         const post = await PostModel.findOne({ slug }).lean().exec();
 
         if (!post) {
-            console.error(`MONGO_FIND_ONE_FAILED: No post found for slug: "${slug}". Check if MONGODB_DB_NAME is correct and IP Access List in Atlas allows Vercel's IPs (try 0.0.0.0/0).`);
+            console.error(`[ACTION LOG] MONGO_FIND_ONE_FAILED: No post found for slug: "${slug}". Check if MONGODB_DB_NAME is correct and IP Access List in Atlas allows Vercel's IPs (try 0.0.0.0/0).`);
             return null;
         }
         
-        console.log(`Post found: "${post.title}"`);
+        console.log(`[ACTION LOG] Post found: "${post.title}"`);
         const { _id, ...rest } = post;
         return { id: _id.toString(), ...rest } as Post;
 
     } catch (error) {
-        console.error(`MONGO_QUERY_ERROR: Error fetching post by slug "${slug}":`, error instanceof Error ? error.stack : String(error));
+        console.error(`[ACTION LOG] MONGO_QUERY_ERROR: Error fetching post by slug "${slug}":`, error instanceof Error ? error.stack : String(error));
         return null;
     }
 }

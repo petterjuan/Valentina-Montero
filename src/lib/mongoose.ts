@@ -27,11 +27,19 @@ async function connectToDb() {
   if (process.env.NODE_ENV === 'development') {
     mongoose.models = {};
   }
+  
+  // Construct the final URI
+  // This ensures the dbName is part of the URI, which is more robust.
+  const uriWithDb = MONGODB_URI.includes('?') 
+    ? MONGODB_URI.replace('?', `${MONGODB_DB_NAME}?`)
+    : `${MONGODB_URI}/${MONGODB_DB_NAME}`;
+    
+  const finalUri = `${uriWithDb}${uriWithDb.includes('?') ? '&' : '?'}authSource=admin`;
+
 
   try {
     console.log("🟡 Attempting to establish a new MongoDB connection...");
-    const connection = await mongoose.connect(MONGODB_URI, {
-      dbName: MONGODB_DB_NAME,
+    const connection = await mongoose.connect(finalUri, {
       bufferCommands: false,
     });
     console.log(`✅ New MongoDB connection established successfully to database: ${connection.connection.db.databaseName}`);
