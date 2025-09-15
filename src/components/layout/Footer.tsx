@@ -39,9 +39,6 @@ export default function Footer() {
             </div>
           <div className="flex flex-col items-center md:items-end gap-4">
              <div className="flex items-center gap-4">
-                <Link href="#" className="text-sm font-medium hover:text-primary">
-                  Mi Tienda
-                </Link>
              </div>
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="icon" asChild>

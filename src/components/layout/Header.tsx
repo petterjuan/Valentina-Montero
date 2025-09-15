@@ -47,9 +47,6 @@ export default function Header() {
               {link.label}
             </Link>
           ))}
-          <Button asChild variant="outline" size="sm">
-            <Link href="#">Mi Tienda</Link>
-          </Button>
         </nav>
         <Sheet>
           <SheetTrigger asChild>
@@ -74,9 +71,6 @@ export default function Header() {
                     {link.label}
                   </Link>
                 ))}
-                <Button asChild variant="default" className="w-full">
-                  <Link href="#">Mi Tienda</Link>
-                </Button>
               </nav>
             </div>
           </SheetContent>
