@@ -4,7 +4,9 @@ import mongoose from 'mongoose';
 const MONGODB_URI = process.env.MONGODB_URI;
 
 if (!MONGODB_URI) {
-  throw new Error('Please define the MONGODB_URI environment variable inside .env. It should include the database name.');
+  throw new Error(
+    'Please define the MONGODB_URI environment variable inside .env. It should include the database name.'
+  );
 }
 
 /**
@@ -28,9 +30,9 @@ async function connectToDb() {
       bufferCommands: false,
     };
 
-    cached.promise = mongoose.connect(MONGODB_URI!, opts).then((mongoose) => {
+    cached.promise = mongoose.connect(MONGODB_URI!, opts).then((mongooseInstance) => {
       console.log("✅ New Mongoose connection established.");
-      return mongoose;
+      return mongooseInstance;
     });
   }
   
@@ -45,3 +47,4 @@ async function connectToDb() {
 }
 
 export default connectToDb;
+export { mongoose };

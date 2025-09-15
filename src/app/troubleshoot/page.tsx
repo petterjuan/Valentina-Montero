@@ -1,7 +1,7 @@
 
 import { CheckCircle, XCircle } from "lucide-react";
 import * as admin from "firebase-admin";
-import mongoose from "mongoose";
+import { mongoose } from "@/lib/mongoose";
 import PostModel from "@/models/Post";
 import TestimonialModel from "@/models/Testimonial";
 
@@ -114,6 +114,15 @@ async function checkMongoDB() {
         });
         
         const dbName = client.connection.db.databaseName;
+        if (!dbName || dbName === 'test') {
+            const url = new URL(uri);
+            const pathDbName = url.pathname.slice(1);
+            if(pathDbName) {
+                 return { status: 'success', message: `Conectado exitosamente a la base de datos: <b>${pathDbName}</b>.` };
+            }
+            return { status: 'error', message: `Conexión exitosa, pero no se especificó una base de datos en la URI. Asegúrate de que tu MONGODB_URI incluya el nombre de la base de datos antes del '?'.` };
+        }
+
         await client.connection.db.command({ ping: 1 });
         
         return { status: 'success', message: `Conectado exitosamente a la base de datos: <b>${dbName}</b>.` };
@@ -122,8 +131,8 @@ async function checkMongoDB() {
         if (error.message && (error.message.includes('bad auth') || error.message.includes('Authentication failed'))) {
             errorMessage = "Falló la autenticación con MongoDB. Revisa que el usuario y la contraseña en la <b>MONGODB_URI</b> sean correctos."
         }
-        if (error.message && error.message.includes('command')) {
-             errorMessage = `El comando de prueba falló. Esto puede pasar si la URI de conexión no incluye un nombre de base de datos. Error: ${error.message}`;
+        if (error.code === 'ENOTFOUND' || (error.message && error.message.includes('ENOTFOUND'))) {
+             errorMessage = `No se pudo encontrar el host del servidor de MongoDB. Revisa que el hostname en tu <b>MONGODB_URI</b> sea correcto. Error: ${error.message}`;
         }
         return { status: 'error', message: errorMessage };
     } finally {
