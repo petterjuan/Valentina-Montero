@@ -50,8 +50,8 @@ async function checkFirebase() {
     };
   }
 
+  let serviceAccount: admin.ServiceAccount | undefined;
   try {
-    let serviceAccount;
     try {
       const decoded = Buffer.from(key, "base64").toString("utf-8");
       serviceAccount = JSON.parse(decoded);
@@ -64,7 +64,7 @@ async function checkFirebase() {
     }
     
     const requiredFields = ["project_id", "private_key", "client_email"];
-    const missing = requiredFields.filter(field => !serviceAccount[field]);
+    const missing = requiredFields.filter(field => !(field in serviceAccount!));
 
     if (missing.length > 0) {
       return { status: "error", message: `La clave está incompleta. Faltan los campos: ${missing.join(', ')}.` };
@@ -81,10 +81,12 @@ async function checkFirebase() {
     return { status: "success", message: `Conectado exitosamente al proyecto de Firebase: <b>${serviceAccount.project_id}</b>.` };
   } catch (error: any) {
     let errorMessage = `Falló la conexión a Firebase. Error: ${error.message}`;
+    const projectId = serviceAccount?.project_id || process.env.GCLOUD_PROJECT || 'vm-fitness-hub';
+    
     if (error.message && error.message.includes('PERMISSION_DENIED')) {
-      errorMessage = `La API de Cloud Firestore no ha sido habilitada en el proyecto <b>${error.message.split('project ')[1]?.split(' ')[0] || 'indefinido'}</b>. <a href="https://console.developers.google.com/apis/api/firestore.googleapis.com/overview?project=${process.env.GCLOUD_PROJECT || 'vm-fitness-hub'}" target="_blank" rel="noopener noreferrer" class="underline">Haz clic aquí para habilitarla</a>, espera 5 minutos y refresca.`;
+      errorMessage = `La API de Cloud Firestore no ha sido habilitada en el proyecto <b>${projectId}</b>. <a href="https://console.developers.google.com/apis/api/firestore.googleapis.com/overview?project=${projectId}" target="_blank" rel="noopener noreferrer" class="underline font-bold">Haz clic aquí para habilitarla</a>, espera 5 minutos y refresca.`;
     } else if (error.code === 5 || (error.message && error.message.includes('NOT_FOUND'))) {
-       errorMessage = `Error: <b>5 NOT_FOUND</b>. Esto puede significar que el <b>project_id</b> ('${error.projectId}') en tu clave de servicio de Firebase es incorrecto o que la base de datos de Firestore aún no ha sido creada en tu proyecto. Ve a la consola de Firebase, selecciona tu proyecto y haz clic en 'Firestore Database' para crearla.`;
+       errorMessage = `Error: <b>5 NOT_FOUND</b>. Esto casi siempre significa que la base de datos de Firestore aún no ha sido creada en tu proyecto. <br><b>Solución:</b> Ve a la <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" class="underline font-bold">Consola de Firebase</a>, selecciona el proyecto <b>${projectId}</b>, haz clic en <b>Build > Firestore Database</b> y luego en <b>'Crear base de datos'</b>.`;
     }
     return { status: "error", message: errorMessage };
   }
@@ -141,11 +143,11 @@ async function checkShopify() {
         });
 
         if (!response.ok) {
-            if (response.status === 404) {
-                 throw new Error(`La URL de la API de Shopify no fue encontrada. Revisa que el SHOPIFY_STORE_DOMAIN (<b>'${domain}'</b>) sea correcto. Debe ser del tipo 'tu-tienda.myshopify.com'.`);
-            }
             if (response.status === 401) {
-                 throw new Error(`Error de autenticación (Unauthorized). El <b>Storefront Access Token</b> es inválido o no tiene los permisos necesarios. Revisa los permisos de la App en Shopify.`);
+                 throw new Error(`Error de autenticación (Unauthorized). El <b>Storefront Access Token</b> es inválido o no tiene los permisos necesarios. Revisa la pestaña de 'Configuration' en tu app de Shopify y asegúrate de que todos los permisos de lectura de productos estén marcados.`);
+            }
+            if (response.status === 404) {
+                 throw new Error(`La URL de la API de Shopify no fue encontrada (404 Not Found). Revisa que el SHOPIFY_STORE_DOMAIN (<b>'${domain}'</b>) sea correcto. Debe ser del tipo 'tu-tienda.myshopify.com', sin 'https://' ni '/'.`);
             }
             const errorText = await response.text();
             throw new Error(`La API de Shopify devolvió un estado <b>${response.status}</b>. Respuesta: ${errorText}`);
