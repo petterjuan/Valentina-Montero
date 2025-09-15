@@ -13,6 +13,7 @@ const PostSchema = new Schema<PostDocument>({
 });
 
 // Use mongoose.model to ensure the model is not re-registered.
-const PostModel = mongoose.models.Post || model<PostDocument>('Post', PostSchema);
+// Using a lowercase name is a robust practice.
+const PostModel = mongoose.models.post || model<PostDocument>('post', PostSchema);
 
 export default PostModel;

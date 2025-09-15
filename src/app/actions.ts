@@ -4,7 +4,7 @@
 import { generatePersonalizedWorkout, GeneratePersonalizedWorkoutInput, GeneratePersonalizedWorkoutOutput } from "@/ai/flows/generate-personalized-workout";
 import { processPlanSignup, PlanSignupInput } from "@/ai/flows/plan-signup-flow";
 import { z } from "zod";
-import { Post, Testimonial, PostDocument, TestimonialDocument } from "@/types";
+import { Post, Testimonial } from "@/types";
 import { getFirestore } from "@/lib/firebase";
 import { Program } from "@/components/sections/CoachingProgramsSection";
 import connectToDb from "@/lib/mongoose";
@@ -292,7 +292,7 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
 export async function getTestimonials(): Promise<Testimonial[]> {
     try {
         await connectToDb();
-        const testimonials: TestimonialDocument[] = await TestimonialModel.find({})
+        const testimonials = await TestimonialModel.find({})
             .sort({ order: 1 })
             .limit(10)
             .lean()
@@ -300,11 +300,11 @@ export async function getTestimonials(): Promise<Testimonial[]> {
         
         if (!testimonials || testimonials.length === 0) return [];
         
-        return testimonials.map(doc => ({
-            ...doc,
-            id: doc._id.toString(),
-            _id: doc._id.toString(),
-        })) as Testimonial[];
+        return testimonials.map(doc => {
+            const leanDoc = doc;
+            const { _id, ...rest } = leanDoc;
+            return { id: _id.toString(), ...rest } as Testimonial;
+        });
 
     } catch (error) {
         console.error("Error fetching testimonials:", error instanceof Error ? error.stack : String(error));

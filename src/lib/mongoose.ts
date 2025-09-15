@@ -24,25 +24,14 @@ async function connectToDb() {
     return cachedConnection;
   }
 
-  // If in development, clear the model cache to prevent model re-registration errors on hot reloads.
-  if (process.env.NODE_ENV === 'development') {
-    mongoose.models = {};
-  }
-  
-  // Construct the final URI
-  const uriWithDb = MONGODB_URI.includes('?') 
-    ? MONGODB_URI.replace('?', `/${MONGODB_DB_NAME}?`)
-    : `${MONGODB_URI}/${MONGODB_DB_NAME}`;
-    
-  const finalUri = `${uriWithDb}${uriWithDb.includes('?') ? '&' : '?'}authSource=admin`;
-
-
   try {
     console.log(`🟡 Attempting to establish a new MongoDB connection to DB: ${MONGODB_DB_NAME}`);
-    console.log(`🟡 With URI: ${finalUri.replace(/:([^:]+)@/, ':*****@')}`);
-    const connection = await mongoose.connect(finalUri, {
+    
+    const connection = await mongoose.connect(MONGODB_URI, {
+      dbName: MONGODB_DB_NAME,
       bufferCommands: false,
     });
+    
     console.log(`✅ New MongoDB connection established successfully to database: ${connection.connection.db.databaseName}`);
     cachedConnection = connection;
     return connection;
