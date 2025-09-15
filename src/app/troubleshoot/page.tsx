@@ -2,6 +2,8 @@
 import { CheckCircle, XCircle } from "lucide-react";
 import * as admin from "firebase-admin";
 import mongoose from "mongoose";
+import PostModel from "@/models/Post";
+import TestimonialModel from "@/models/Testimonial";
 
 // Helper function to create a status component
 const StatusCheck = ({
@@ -178,11 +180,43 @@ async function checkShopify() {
     }
 }
 
+// --- CHECK 4: MongoDB Data Fetch ---
+async function checkMongoData() {
+    const uri = process.env.MONGODB_URI;
+    const dbName = process.env.MONGODB_DB_NAME;
+
+    if (!uri || !dbName) {
+        return { status: 'error', message: 'Variables MONGODB_URI o MONGODB_DB_NAME no configuradas.' };
+    }
+
+    let client;
+    try {
+        client = await mongoose.connect(uri, { dbName: dbName, serverSelectionTimeoutMS: 5000 });
+
+        const postCount = await PostModel.countDocuments();
+        const testimonialCount = await TestimonialModel.countDocuments();
+
+        return { 
+            status: 'success', 
+            message: `Lectura exitosa. Se encontraron <b>${postCount} posts</b> y <b>${testimonialCount} testimonios</b> en la base de datos <b>${dbName}</b>.`
+        };
+
+    } catch (error: any) {
+        return { status: 'error', message: `Falló la lectura de datos de MongoDB. Error: ${error.message}` };
+    } finally {
+        if (client) {
+            await mongoose.disconnect();
+        }
+    }
+}
+
+
 export default async function TroubleshootPage() {
-  const [firebaseStatus, mongoStatus, shopifyStatus] = await Promise.all([
+  const [firebaseStatus, mongoStatus, shopifyStatus, mongoDataStatus] = await Promise.all([
     checkFirebase(),
     checkMongoDB(),
     checkShopify(),
+    checkMongoData(),
   ]);
 
   return (
@@ -210,6 +244,11 @@ export default async function TroubleshootPage() {
               message={mongoStatus.message}
             />
              <StatusCheck
+              title="Lectura de Datos de MongoDB"
+              status={mongoDataStatus.status as "success" | "error"}
+              message={mongoDataStatus.message}
+            />
+             <StatusCheck
               title="Conexión a Shopify Storefront API"
               status={shopifyStatus.status as "success" | "error"}
               message={shopifyStatus.message}
@@ -223,3 +262,5 @@ export default async function TroubleshootPage() {
     </div>
   );
 }
+
+    

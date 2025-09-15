@@ -378,3 +378,5 @@ export async function getPrograms(collectionHandle: string, maxProducts: number 
     return null;
   }
 }
+
+    
