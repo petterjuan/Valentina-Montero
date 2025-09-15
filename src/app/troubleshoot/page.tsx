@@ -1,7 +1,7 @@
 
 import { CheckCircle, XCircle } from "lucide-react";
 import * as admin from "firebase-admin";
-import { mongoose } from "@/lib/mongoose";
+import connectToDb, { mongoose } from "@/lib/mongoose";
 import PostModel from "@/models/Post";
 import TestimonialModel from "@/models/Testimonial";
 
@@ -107,22 +107,10 @@ async function checkMongoDB() {
         return { status: 'error', message: `Formato de MONGODB_URI inválido. Debe empezar con 'mongodb+srv://' o 'mongodb://'.` };
     }
 
-    let client;
     try {
-        client = await mongoose.connect(uri, { 
-            serverSelectionTimeoutMS: 5000 
-        });
-        
+        const client = await connectToDb();
         const dbName = client.connection.db.databaseName;
-        if (!dbName || dbName === 'test') {
-            const url = new URL(uri);
-            const pathDbName = url.pathname.slice(1);
-            if(pathDbName) {
-                 return { status: 'success', message: `Conectado exitosamente a la base de datos: <b>${pathDbName}</b>.` };
-            }
-            return { status: 'error', message: `Conexión exitosa, pero no se especificó una base de datos en la URI. Asegúrate de que tu MONGODB_URI incluya el nombre de la base de datos antes del '?'.` };
-        }
-
+        
         await client.connection.db.command({ ping: 1 });
         
         return { status: 'success', message: `Conectado exitosamente a la base de datos: <b>${dbName}</b>.` };
@@ -135,10 +123,6 @@ async function checkMongoDB() {
              errorMessage = `No se pudo encontrar el host del servidor de MongoDB. Revisa que el hostname en tu <b>MONGODB_URI</b> sea correcto. Error: ${error.message}`;
         }
         return { status: 'error', message: errorMessage };
-    } finally {
-        if (client) {
-            await mongoose.disconnect();
-        }
     }
 }
 
@@ -187,15 +171,8 @@ async function checkShopify() {
 
 // --- CHECK 4: MongoDB Data Fetch ---
 async function checkMongoData() {
-    const uri = process.env.MONGODB_URI;
-
-    if (!uri) {
-        return { status: 'error', message: 'Variable MONGODB_URI no configurada.' };
-    }
-
-    let client;
     try {
-        client = await mongoose.connect(uri, { serverSelectionTimeoutMS: 5000 });
+        const client = await connectToDb();
 
         const postCount = await PostModel.countDocuments();
         const testimonialCount = await TestimonialModel.countDocuments();
@@ -208,10 +185,6 @@ async function checkMongoData() {
 
     } catch (error: any) {
         return { status: 'error', message: `Falló la lectura de datos de MongoDB. Error: ${error.message}` };
-    } finally {
-        if (client) {
-            await mongoose.disconnect();
-        }
     }
 }
 
