@@ -264,18 +264,20 @@ export async function getBlogPosts(limit?: number): Promise<Post[]> {
 }
 
 export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
+    console.log(`[ACTION LOG] Attempting to get post by slug: "${slug}"`);
     try {
         if (!slug || typeof slug !== 'string') {
-            console.warn(`Invalid or empty slug provided: ${slug}`);
+            console.warn(`[ACTION LOG] Invalid or empty slug provided: ${slug}`);
             return null;
         }
         
         await connectToDb();
-        console.log(`[ACTION LOG] Searching for post with slug: "${slug}" in DB: ${process.env.MONGODB_DB_NAME}`);
+        console.log(`[ACTION LOG] DB connected. Searching for post with slug: "${slug}" in DB: ${process.env.MONGODB_DB_NAME}`);
+        
         const post = await PostModel.findOne({ slug }).lean().exec();
 
         if (!post) {
-            console.error(`[ACTION LOG] MONGO_FIND_ONE_FAILED: No post found for slug: "${slug}". Check if MONGODB_DB_NAME is correct and IP Access List in Atlas allows Vercel's IPs (try 0.0.0.0/0).`);
+            console.error(`[ACTION LOG] MONGO_FIND_ONE_FAILED: No post found for slug: "${slug}".`);
             return null;
         }
         

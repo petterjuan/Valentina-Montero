@@ -16,30 +16,45 @@ if (!MONGODB_DB_NAME) {
  * in development. This prevents connections from growing exponentially
  * during API Route usage.
  */
-let cachedConnection: typeof mongoose | null = null;
+let cached = (global as any).mongoose;
+
+if (!cached) {
+  cached = (global as any).mongoose = { conn: null, promise: null };
+}
 
 async function connectToDb() {
-  if (cachedConnection) {
+  if (cached.conn) {
     console.log("🟢 Using cached MongoDB connection.");
-    return cachedConnection;
+    return cached.conn;
   }
 
-  try {
-    console.log(`🟡 Attempting to establish a new MongoDB connection to DB: ${MONGODB_DB_NAME}`);
-    
-    const connection = await mongoose.connect(MONGODB_URI, {
-      dbName: MONGODB_DB_NAME,
+  if (!cached.promise) {
+    const opts = {
       bufferCommands: false,
+      dbName: MONGODB_DB_NAME,
+    };
+
+    console.log(`🟡 Attempting to establish a new MongoDB connection to DB: ${MONGODB_DB_NAME}`);
+    cached.promise = mongoose.connect(MONGODB_URI!, opts).then((mongoose) => {
+      console.log(`✅ New MongoDB connection established successfully to database: ${mongoose.connection.db.databaseName}`);
+      return mongoose;
+    }).catch(err => {
+        console.error("🔥 FAILED TO CONNECT TO MONGODB. This is likely an issue with your MONGODB_URI credentials, network access, or DB_NAME.");
+        console.error("🔥 Detailed Error:", err);
+        cached.promise = null; // Reset promise on error
+        throw err; // Rethrow to be caught by caller
     });
-    
-    console.log(`✅ New MongoDB connection established successfully to database: ${connection.connection.db.databaseName}`);
-    cachedConnection = connection;
-    return connection;
-  } catch (e) {
-    console.error("🔥 FAILED TO CONNECT TO MONGODB. This is likely an issue with your MONGODB_URI credentials, network access, or DB_NAME.");
-    console.error("🔥 Detailed Error:", e);
-    throw new Error('Failed to connect to the database.');
   }
+  
+  try {
+    cached.conn = await cached.promise;
+  } catch (e) {
+    cached.promise = null;
+    cached.conn = null;
+    throw e;
+  }
+  
+  return cached.conn;
 }
 
 export default connectToDb;
