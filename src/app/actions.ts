@@ -142,12 +142,6 @@ const transformShopifyProducts = (products: ShopifyProduct[]): Program[] => {
   });
 };
 
-const normalizeMongoDoc = (doc: any): any => {
-    if (!doc) return null;
-    const { _id, ...rest } = doc;
-    return { id: _id.toString(), ...rest };
-};
-
 
 // Server Actions
 export async function handleAiGeneration(input: GeneratePersonalizedWorkoutInput): Promise<AiGeneratorFormState> {
@@ -277,19 +271,20 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
         }
         
         await connectToDb();
-        
+        console.log(`Searching for post with slug: "${slug}"`);
         const post = await PostModel.findOne({ slug }).lean().exec();
 
         if (!post) {
-            console.warn(`No post found for slug: ${slug}`);
+            console.error(`MONGO_FIND_ONE_FAILED: No post found for slug: "${slug}". Check if MONGODB_DB_NAME is correct and IP Access List in Atlas allows Vercel's IPs (try 0.0.0.0/0).`);
             return null;
         }
         
+        console.log(`Post found: "${post.title}"`);
         const { _id, ...rest } = post;
         return { id: _id.toString(), ...rest } as Post;
 
     } catch (error) {
-        console.error(`Error fetching post by slug "${slug}":`, error instanceof Error ? error.stack : String(error));
+        console.error(`MONGO_QUERY_ERROR: Error fetching post by slug "${slug}":`, error instanceof Error ? error.stack : String(error));
         return null;
     }
 }
@@ -381,5 +376,3 @@ export async function getPrograms(collectionHandle: string, maxProducts: number 
     return null;
   }
 }
-
-    
