@@ -20,6 +20,7 @@ let cachedConnection: typeof mongoose | null = null;
 
 async function connectToDb() {
   if (cachedConnection) {
+    console.log("🟢 Using cached MongoDB connection.");
     return cachedConnection;
   }
 
@@ -29,16 +30,16 @@ async function connectToDb() {
   }
   
   // Construct the final URI
-  // This ensures the dbName is part of the URI, which is more robust.
   const uriWithDb = MONGODB_URI.includes('?') 
-    ? MONGODB_URI.replace('?', `${MONGODB_DB_NAME}?`)
+    ? MONGODB_URI.replace('?', `/${MONGODB_DB_NAME}?`)
     : `${MONGODB_URI}/${MONGODB_DB_NAME}`;
     
   const finalUri = `${uriWithDb}${uriWithDb.includes('?') ? '&' : '?'}authSource=admin`;
 
 
   try {
-    console.log("🟡 Attempting to establish a new MongoDB connection...");
+    console.log(`🟡 Attempting to establish a new MongoDB connection to DB: ${MONGODB_DB_NAME}`);
+    console.log(`🟡 With URI: ${finalUri.replace(/:([^:]+)@/, ':*****@')}`);
     const connection = await mongoose.connect(finalUri, {
       bufferCommands: false,
     });
