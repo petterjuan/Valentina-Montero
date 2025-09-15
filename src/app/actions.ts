@@ -275,7 +275,10 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
         await connectToDb();
         const post = await PostModel.findOne({ slug }).lean().exec();
 
-        if (!post) return null;
+        if (!post) {
+            console.warn(`No post found for slug: ${slug}`);
+            return null;
+        }
 
         return normalizeDoc(post) as Post;
 
@@ -372,6 +375,3 @@ export async function getPrograms(collectionHandle: string, maxProducts: number 
     return null;
   }
 }
-    
-
-    
