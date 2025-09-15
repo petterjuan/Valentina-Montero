@@ -268,8 +268,8 @@ export async function getBlogPosts(limit?: number): Promise<Post[]> {
 
 export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
     try {
-        if (!slug || typeof slug !== 'string' || !/^[a-zA-Z0-9-_]+$/.test(slug)) {
-            console.warn(`Invalid slug provided: ${slug}`);
+        if (!slug || typeof slug !== 'string') {
+            console.warn(`Invalid or empty slug provided: ${slug}`);
             return null;
         }
         await connectToDb();
