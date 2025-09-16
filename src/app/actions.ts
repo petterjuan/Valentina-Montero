@@ -20,8 +20,8 @@ const aiGeneratorSchema = z.object({
   experienceLevel: z.string().min(1, "El nivel de experiencia es requerido"),
   equipment: z.string().min(1, "El equipo disponible es requerido"),
   workoutFocus: z.string().min(1, "El enfoque es requerido"),
-  duration: z.number().min(1, "La duración debe ser mayor a 0"),
-  frequency: z.number().min(1, "La frecuencia debe ser mayor a 0"),
+  duration: z.coerce.number().min(1, "La duración debe ser mayor a 0"),
+  frequency: z.coerce.number().min(1, "La frecuencia debe ser mayor a 0"),
   email: z.string().email({ message: "Por favor, introduce un email válido." }).optional().or(z.literal('')),
 });
 
@@ -155,19 +155,15 @@ export async function handleAiGeneration(
 ): Promise<AiGeneratorFormState> {
   try {
     const rawData = Object.fromEntries(formData.entries());
-    const dataToValidate = {
-        ...rawData,
-        duration: parseInt(rawData.duration as string, 10),
-        frequency: parseInt(rawData.frequency as string, 10),
-    };
-
-    const validatedInput = aiGeneratorSchema.parse(dataToValidate);
+    
+    const validatedInput = aiGeneratorSchema.parse(rawData);
     const { email, ...workoutInput } = validatedInput;
 
     // Use previous data if email is now provided for an existing plan
     const previousData = prevState.data;
     let result = previousData;
 
+    // Rerun generation if there's no previous data OR if an email is being submitted to unlock.
     if (!previousData || email) {
        logEvent('AI Workout Generation Triggered', { fitnessGoal: workoutInput.fitnessGoal, experienceLevel: workoutInput.experienceLevel });
        result = await generatePersonalizedWorkout(workoutInput);
