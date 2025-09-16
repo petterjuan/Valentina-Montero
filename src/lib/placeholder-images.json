@@ -1,0 +1,34 @@
+{
+  "readme": {
+    "src": "https://picsum.photos/seed/readme/1200/630"
+  },
+  "hero": {
+    "src": "https://picsum.photos/seed/hero/1920/1080",
+    "aiHint": "female fitness"
+  },
+  "meetTheCoach": {
+    "src": "https://picsum.photos/seed/coach-portrait/600/700",
+    "aiHint": "female coach"
+  },
+  "blog": {
+    "fallback1": { "src": "https://picsum.photos/seed/post1/600/400", "aiHint": "fitness myth" },
+    "fallback2": { "src": "https://picsum.photos/seed/post2/600/400", "aiHint": "healthy food" },
+    "fallback3": { "src": "https://picsum.photos/seed/post3/600/400", "aiHint": "woman resting" }
+  },
+  "programs": {
+    "fallback1": { "src": "https://picsum.photos/seed/prog1/600/400", "alt": "Mujer levantando pesas" },
+    "fallback2": { "src": "https://picsum.photos/seed/prog2/600/400", "alt": "Mujer haciendo yoga" },
+    "fallback3": { "src": "https://picsum.photos/seed/prog3/600/400", "alt": "Comida saludable" }
+  },
+  "testimonials": {
+    "fallback1": { "src": "https://picsum.photos/seed/test1/100/100", "aiHint": "happy woman" },
+    "fallback2": { "src": "https://picsum.photos/seed/test2/100/100", "aiHint": "smiling person" },
+    "fallback3": { "src": "https://picsum.photos/seed/test3/100/100", "aiHint": "woman portrait" }
+  },
+  "seed": {
+    "testimonial1": { "src": "https://picsum.photos/seed/seed-test1/100/100", "aiHint": "happy woman" },
+    "testimonial2": { "src": "https://picsum.photos/seed/seed-test2/100/100", "aiHint": "woman portrait" },
+    "testimonial3": { "src": "https://picsum.photos/seed/seed-test3/100/100", "aiHint": "woman hiking" },
+    "testimonial4": { "src": "https://picsum.photos/seed/seed-test4/100/100", "aiHint": "smiling woman" }
+  }
+}

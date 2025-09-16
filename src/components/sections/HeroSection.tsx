@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import Link from "next/link";
 import { Award, HeartPulse, Sparkles } from "lucide-react";
+import placeholderImages from "@/lib/placeholder-images.json";
 
 const benefits = [
     {
@@ -22,12 +23,12 @@ export default function HeroSection() {
   return (
     <section className="relative h-[90vh] min-h-[650px] w-full flex items-center justify-center text-center text-white overflow-hidden">
       <Image
-        src="https://picsum.photos/seed/hero/1920/1080"
+        src={placeholderImages.hero.src}
         alt="Valentina Montero entrenando a una clienta"
         fill
         className="object-cover object-center"
         priority
-        data-ai-hint="female fitness"
+        data-ai-hint={placeholderImages.hero.aiHint}
       />
       <div className="absolute inset-0 bg-black/50" />
       <div className="relative z-10 container mx-auto px-4 md:px-6">

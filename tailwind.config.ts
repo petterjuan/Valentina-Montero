@@ -1,4 +1,3 @@
-
 import type {Config} from 'tailwindcss';
 
 export default {
@@ -20,7 +19,7 @@ export default {
       fontFamily: {
         body: ['var(--font-poppins)', 'sans-serif'],
         headline: ['var(--font-poppins)', 'sans-serif'],
-        code: ['monospace'],
+        code: ['var(--font-roboto-mono)', 'monospace'],
       },
       typography: ({ theme }: { theme: any}) => ({
         DEFAULT: {

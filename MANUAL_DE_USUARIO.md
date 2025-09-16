@@ -97,6 +97,9 @@ Tu web es una plataforma de negocio completa construida con tecnología de vangu
     *   **Stripe**: Procesa los pagos de forma segura para tus productos digitales y ofertas "tripwire".
 *   **Automatización (Vercel Cron Jobs)**: El programador que le dice a tu IA cuándo escribir un nuevo artículo, asegurando que tu blog siempre tenga contenido fresco para atraer visitantes.
 *   **Diseño (Tailwind CSS & ShadCN)**: Un diseño moderno y adaptable que se ve perfecto en cualquier dispositivo.
+*   **Herramientas de Administración**:
+    *   **Página de Diagnóstico (`/troubleshoot`)**: Una página oculta para verificar el estado de las conexiones a todos los servicios externos (Firebase, MongoDB, Shopify, etc.).
+    *   **Panel de Prospectos (`/admin/leads`)**: Una vista simple y segura para consultar la lista de todos los correos electrónicos capturados sin tener que entrar a la consola de Firebase.
 
 ---
 ---
@@ -198,3 +201,6 @@ Your website is a complete business platform built with cutting-edge technology.
     *   **Stripe**: Securely processes payments for your digital products and "tripwire" offers.
 *   **Automation (Vercel Cron Jobs)**: The scheduler that tells your AI when to write a new article, ensuring your blog always has fresh content to attract visitors.
 *   **Design (Tailwind CSS & ShadCN)**: A modern, adaptive design that looks perfect on any device.
+*   **Admin Tools**:
+    *   **Diagnostics Page (`/troubleshoot`)**: A hidden page to check the connection status of all external services (Firebase, MongoDB, Shopify, etc.).
+    *   **Leads Panel (`/admin/leads`)**: A simple, secure view to check the list of all captured emails without needing to log into the Firebase console.

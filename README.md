@@ -20,6 +20,9 @@ Welcome to the GitHub repository for the VM Fitness Hub, a modern, feature-rich 
 - **Modern UX**:
     - Fully responsive design built with Tailwind CSS and ShadCN UI.
     - Smooth scrolling, a "back-to-top" button, and instant visual feedback on forms.
+- **Admin Tools**:
+    - **/troubleshoot**: A system status page to quickly diagnose connection issues with external services.
+    - **/admin/leads**: An admin-only page to view captured leads directly from the website.
 
 ---
 

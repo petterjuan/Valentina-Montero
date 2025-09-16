@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import Link from "next/link";
+import placeholderImages from "@/lib/placeholder-images.json";
 
 export default function MeetTheCoachSection() {
   return (
@@ -23,12 +24,12 @@ export default function MeetTheCoachSection() {
           </div>
           <div className="order-1 md:order-2">
             <Image
-              src="https://picsum.photos/600/700?random=12"
+              src={placeholderImages.meetTheCoach.src}
               alt="Coach Valentina Montero"
               width={600}
               height={700}
               className="rounded-lg shadow-lg aspect-[6/7] object-cover w-full"
-              data-ai-hint="female coach"
+              data-ai-hint={placeholderImages.meetTheCoach.aiHint}
             />
           </div>
         </div>

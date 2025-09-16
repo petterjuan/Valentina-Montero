@@ -1,26 +1,29 @@
-
 import { getTestimonials } from "@/app/actions";
 import type { Testimonial } from "@/types";
 import TestimonialsCarousel from "./TestimonialsCarousel";
+import placeholderImages from "@/lib/placeholder-images.json";
 
 const fallbackTestimonials: Omit<Testimonial, "_id" | "id">[] = [
   {
     name: "Clienta Satisfecha",
     story: "Este programa superó mis expectativas. ¡Me siento más fuerte y con más energía que nunca!",
-    image: "https://picsum.photos/seed/test1/100/100",
-    aiHint: "happy woman",
+    image: placeholderImages.testimonials.fallback1.src,
+    aiHint: placeholderImages.testimonials.fallback1.aiHint,
+    rating: 5,
   },
   {
     name: "Participante Feliz",
     story: "La guía y el apoyo de Valentina fueron clave para mi transformación. ¡Totalmente recomendado!",
-    image: "https://picsum.photos/seed/test2/100/100",
-    aiHint: "smiling person",
+    image: placeholderImages.testimonials.fallback2.src,
+    aiHint: placeholderImages.testimonials.fallback2.aiHint,
+    rating: 5,
   },
   {
     name: "Testimonio de Éxito",
     story: "Un enfoque muy profesional y personalizado. Los resultados hablan por sí solos.",
-    image: "https://picsum.photos/seed/test3/100/100",
-    aiHint: "woman portrait",
+    image: placeholderImages.testimonials.fallback3.src,
+    aiHint: placeholderImages.testimonials.fallback3.aiHint,
+    rating: 5,
   },
 ];
 

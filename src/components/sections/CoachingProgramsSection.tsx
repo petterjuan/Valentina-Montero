@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -12,6 +11,7 @@ import { Check, Clock } from "lucide-react";
 import PlanSignupDialog from "@/components/sections/PlanSignupDialog";
 import Image from "next/image";
 import { getPrograms } from "@/app/actions";
+import placeholderImages from "@/lib/placeholder-images.json";
 
 export interface Program {
   title: string;
@@ -37,7 +37,7 @@ const fallbackPrograms: Program[] = [
         "Check-ins por video llamada",
       ],
       isPopular: true,
-      image: { src: "https://picsum.photos/seed/prog1/600/400", alt: "Mujer levantando pesas" },
+      image: { src: placeholderImages.programs.fallback1.src, alt: placeholderImages.programs.fallback1.alt },
     },
     {
       title: "Plan de Coaching de 6 Semanas",
@@ -48,7 +48,7 @@ const fallbackPrograms: Program[] = [
         "Soporte por email",
         "Revisión de progreso quincenal",
       ],
-      image: { src: "https://picsum.photos/seed/prog2/600/400", alt: "Mujer haciendo yoga" },
+      image: { src: placeholderImages.programs.fallback2.src, alt: placeholderImages.programs.fallback2.alt },
     },
     {
       title: 'Guía PDF "Muscle Bites"',
@@ -60,7 +60,7 @@ const fallbackPrograms: Program[] = [
         "Acceso instantáneo de por vida",
       ],
       isDigital: true,
-      image: { src: "https://picsum.photos/seed/prog3/600/400", alt: "Comida saludable" },
+      image: { src: placeholderImages.programs.fallback3.src, alt: placeholderImages.programs.fallback3.alt },
     },
 ];
 
@@ -125,7 +125,7 @@ export default async function CoachingProgramsSection({
                         </div>
                       )}
                       <CardTitle className="text-2xl font-headline text-center">{program.title}</CardTitle>
-                      <div className="flex items-baseline gap-1">
+                      <div className="flex items-baseline gap-1 font-code">
                         <span className="text-4xl font-bold tracking-tight">${program.price}</span>
                         {!program.isDigital && <span className="text-sm font-semibold text-muted-foreground">/ plan</span>}
                       </div>
@@ -179,5 +179,3 @@ export default async function CoachingProgramsSection({
     </section>
   );
 }
-
-    
