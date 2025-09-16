@@ -3,13 +3,14 @@ import { getBlogPostBySlug } from "@/app/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Download, Eye } from "lucide-react";
 import { type Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import DOMPurify from 'isomorphic-dompurify';
 import { Post } from "@/types";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const dynamic = 'force-dynamic';
 
@@ -96,17 +97,51 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
           <Separator className="my-12" />
 
-          <div className="text-center">
-            <h3 className="text-2xl font-bold font-headline">¿Lista para el siguiente paso?</h3>
-            <p className="text-muted-foreground mt-2 max-w-xl mx-auto">
-              La información es poder, pero la acción es la clave. Si estás lista para una guía personalizada y un plan que funcione, explora mis programas.
-            </p>
-            <Button asChild size="lg" className="mt-6">
-              <Link href="/#programs">Ver mis Programas</Link>
-            </Button>
+          <div className="space-y-8">
+            <h3 className="text-2xl font-bold font-headline text-center">¿Lista para el Siguiente Paso?</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card className="flex flex-col">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 font-headline">
+                            <Download className="h-5 w-5 text-primary"/>
+                            Guía Gratuita
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex-1">
+                        <CardDescription>
+                        Consigue mi guía "Estrategias para lograr 10k pasos al día" y empieza a transformar tu rutina.
+                        </CardDescription>
+                    </CardContent>
+                    <div className="p-6 pt-0">
+                         <Button asChild className="w-full">
+                            <Link href="/#lead-magnet">¡La Quiero!</Link>
+                        </Button>
+                    </div>
+                </Card>
+                 <Card className="flex flex-col border-primary">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 font-headline">
+                           <Eye className="h-5 w-5 text-primary"/>
+                            Ver Programas
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex-1">
+                        <CardDescription>
+                            Explora mis planes de coaching personalizados y encontremos el que mejor se adapte a ti.
+                        </CardDescription>
+                    </CardContent>
+                    <div className="p-6 pt-0">
+                         <Button asChild className="w-full">
+                            <Link href="/#programs">Ver Mis Programas</Link>
+                        </Button>
+                    </div>
+                </Card>
+            </div>
           </div>
         </div>
       </div>
     </article>
   );
 }
+
+    

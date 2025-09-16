@@ -3,11 +3,12 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
+  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Check } from "lucide-react";
+import { Check, Clock } from "lucide-react";
 import PlanSignupDialog from "@/components/sections/PlanSignupDialog";
 import Image from "next/image";
 import { getPrograms } from "@/app/actions";
@@ -143,7 +144,13 @@ export default async function CoachingProgramsSection({
                   </ul>
                 </CardContent>
 
-                <CardFooter>
+                <CardFooter className="flex flex-col items-stretch gap-3">
+                   {!program.isDigital && (
+                     <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1.5">
+                       <Clock className="h-3 w-3"/>
+                       ¡Plazas limitadas para asegurar la calidad!
+                     </p>
+                   )}
                    <PlanSignupDialog program={program}>
                       <Button className="w-full font-bold">
                           {program.isDigital ? 'Comprar PDF' : 'Elegir Plan'}
@@ -173,3 +180,5 @@ export default async function CoachingProgramsSection({
     </section>
   );
 }
+
+    

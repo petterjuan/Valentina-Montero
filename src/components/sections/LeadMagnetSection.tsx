@@ -55,7 +55,7 @@ export default function LeadMagnetSection() {
   };
 
   return (
-    <section className="bg-secondary py-16 sm:py-24">
+    <section id="lead-magnet" className="bg-secondary py-16 sm:py-24">
       <div className="container mx-auto px-4 md:px-6">
         <div className="mx-auto max-w-2xl text-center">
           {isSubmitted ? (
@@ -116,3 +116,5 @@ export default function LeadMagnetSection() {
     </section>
   );
 }
+
+    

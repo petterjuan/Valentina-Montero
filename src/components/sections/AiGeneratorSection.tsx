@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { handleAiGeneration, type AiGeneratorFormState } from "@/app/actions";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { Wand2, AlertTriangle, Dumbbell, Zap, Calendar, Clock, CheckCircle, Flame, Shield, Activity, Target } from "lucide-react";
+import { Wand2, AlertTriangle, Dumbbell, Zap, Calendar, Clock, CheckCircle, Flame, Shield, Activity, Target, Mail } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -16,6 +16,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
 
 const aiGeneratorSchema = z.object({
   fitnessGoal: z.string({ required_error: "Por favor, selecciona una meta." }),
@@ -23,6 +24,7 @@ const aiGeneratorSchema = z.object({
   equipment: z.string({ required_error: "Por favor, selecciona tu equipo." }),
   duration: z.number(),
   frequency: z.number(),
+  email: z.string().email({ message: "Por favor, introduce un email válido." }).optional().or(z.literal('')),
 });
 
 type AiGeneratorFormData = z.infer<typeof aiGeneratorSchema>;
@@ -39,6 +41,7 @@ export default function AiGeneratorSection() {
       equipment: "solo-cuerpo",
       duration: 45,
       frequency: 3,
+      email: "",
     },
   });
 
@@ -56,14 +59,19 @@ export default function AiGeneratorSection() {
   }, [state.error, toast]);
   
   const onSubmit = async (data: AiGeneratorFormData) => {
-    setState({});
+    setState({}); // Clear previous results
     const result = await handleAiGeneration(data);
     setState(result);
+
     if(result.data) {
+        let toastDescription = "Tu rutina personalizada te espera más abajo.";
+        if (data.email) {
+            toastDescription += " También te la hemos enviado a tu correo.";
+        }
         toast({
-        title: "¡Plan Generado!",
-        description: "Tu rutina personalizada te espera más abajo.",
-      });
+            title: "¡Plan Generado!",
+            description: toastDescription,
+        });
     }
   };
 
@@ -212,6 +220,28 @@ export default function AiGeneratorSection() {
                         )}
                         />
                   </div>
+                  
+                  <Separator />
+                  
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <Label htmlFor="email" className="flex items-center gap-2">
+                            <Mail className="h-4 w-4" />
+                            Email (Opcional)
+                          </Label>
+                           <p className="text-sm text-muted-foreground -mt-2 mb-2">
+                             Guarda una copia de este plan en tu correo y recibe consejos exclusivos.
+                           </p>
+                          <FormControl>
+                            <Input placeholder="tu.correo@ejemplo.com" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
                   <Button type="submit" disabled={form.formState.isSubmitting} className="w-full font-bold">
                     <Wand2 className="mr-2 h-4 w-4" />
@@ -298,3 +328,5 @@ export default function AiGeneratorSection() {
     </section>
   );
 }
+
+    

@@ -19,6 +19,7 @@ const aiGeneratorSchema = z.object({
   equipment: z.string().min(1, "El equipo disponible es requerido"),
   duration: z.number().min(1, "La duración debe ser mayor a 0"),
   frequency: z.number().min(1, "La frecuencia debe ser mayor a 0"),
+  email: z.string().email({ message: "Por favor, introduce un email válido." }).optional().or(z.literal('')),
 });
 
 const leadSchema = z.object({
@@ -31,6 +32,10 @@ export type AiGeneratorFormState = {
   error?: string;
   inputs?: z.infer<typeof aiGeneratorSchema>;
 };
+
+interface AiGeneratorActionInput extends GeneratePersonalizedWorkoutInput {
+  email?: string;
+}
 
 interface ShopifyProduct {
   id: string;
@@ -144,17 +149,47 @@ const transformShopifyProducts = (products: ShopifyProduct[]): Program[] => {
 
 
 // Server Actions
-export async function handleAiGeneration(input: GeneratePersonalizedWorkoutInput): Promise<AiGeneratorFormState> {
+export async function handleAiGeneration(input: AiGeneratorActionInput): Promise<AiGeneratorFormState> {
   try {
     const validatedInput = aiGeneratorSchema.parse(input);
-    
-    const result = await generatePersonalizedWorkout(validatedInput);
-    
+    const { email, ...workoutInput } = validatedInput;
+
+    // --- Start AI Workout Generation (no changes here) ---
+    const result = await generatePersonalizedWorkout(workoutInput);
     if (!result) {
       return { error: "No se pudo generar el entrenamiento. Por favor, inténtalo de nuevo." };
     }
+    // --- End AI Workout Generation ---
+
+
+    // --- Start Lead Capture Logic (New!) ---
+    if (email) {
+      const firestore = getFirestore();
+      if (firestore) {
+        const now = new Date();
+        const safeId = crypto.createHash("sha256").update(email.toLowerCase()).digest("hex");
+        const leadRef = firestore.collection("leads").doc(safeId);
+
+        const leadData = {
+          email,
+          source: "Generador IA",
+          status: "subscribed",
+          tags: {
+            goal: validatedInput.fitnessGoal,
+            level: validatedInput.experienceLevel,
+          },
+          updatedAt: now,
+          createdAt: now,
+        };
+        
+        await leadRef.set(leadData, { merge: true });
+        console.log(`[handleAiGeneration] Lead captured/updated: ${email}`);
+      }
+    }
+    // --- End Lead Capture Logic ---
     
     return { data: result, inputs: validatedInput };
+
   } catch (error) {
     console.error("Error in handleAiGeneration:", error);
     
@@ -269,8 +304,7 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
             console.warn("getBlogPostBySlug called with an empty slug.");
             return null;
         }
-        console.log(`[getBlogPostBySlug] Searching for slug: "${slug}"`);
-
+        
         await connectToDb();
         const post = await PostModel.findOne({ slug }).lean().exec();
 
