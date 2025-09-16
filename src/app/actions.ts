@@ -207,15 +207,22 @@ export async function handleAiGeneration(
     return { data: result, inputs: validatedInput, isFullPlan: false };
 
   } catch (error) {
+    let errorDetails: Record<string, any> = {
+        message: error instanceof Error ? error.message : String(error),
+    };
+    if (error instanceof Error && error.stack) {
+        errorDetails.stack = error.stack;
+    }
     if (error instanceof z.ZodError) {
+      errorDetails.zodIssues = error.issues;
       const firstError = error.errors[0];
-      logEvent('AI Workout Validation Error', { message: firstError?.message }, 'error');
+      logEvent('AI Workout Validation Error', { ...errorDetails, message: firstError?.message }, 'error');
       return { 
         error: firstError?.message || "Los datos de entrada no son válidos. Por favor, revisa el formulario." 
       };
     }
     
-    logEvent('AI Workout Generation Error', { error: error instanceof Error ? error.message : String(error) }, 'error');
+    logEvent('AI Workout Generation Error', errorDetails, 'error');
     return { 
       error: "No se pudo generar el contenido. Por favor, inténtalo de nuevo más tarde." 
     };
@@ -656,3 +663,5 @@ export async function getSystemStatuses(): Promise<SystemStatus> {
         mongoData: mongoDataStatus,
     };
 }
+
+    
