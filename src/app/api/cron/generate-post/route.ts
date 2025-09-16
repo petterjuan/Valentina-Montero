@@ -8,7 +8,10 @@ import PostModel from '@/models/Post';
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
+  // Vercel Cron Job security:
+  // https://vercel.com/docs/cron-jobs/manage-cron-jobs#securing-cron-jobs
   const authHeader = request.headers.get('authorization');
+  const vercelCronSecret = request.headers.get('x-vercel-cron-secret');
   const cronSecret = process.env.CRON_SECRET;
   
   if (!cronSecret) {
@@ -16,7 +19,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ message: 'Error de configuración del servidor.' }, { status: 500 });
   }
   
-  const providedSecret = authHeader?.split(' ')[1];
+  // Check either the new x-vercel-cron-secret header or the legacy authorization header
+  const providedSecret = vercelCronSecret || authHeader?.split(' ')[1];
 
   if (providedSecret !== cronSecret) {
     return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });

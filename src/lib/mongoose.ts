@@ -4,6 +4,7 @@ import mongoose from 'mongoose';
 const MONGODB_URI = process.env.MONGODB_URI;
 
 if (!MONGODB_URI) {
+  // This check is critical and should happen at boot time.
   throw new Error(
     'Please define the MONGODB_URI environment variable inside .env. It should include the database name.'
   );
@@ -14,14 +15,17 @@ if (!MONGODB_URI) {
  * in development. This prevents connections from growing exponentially
  * during API Route usage.
  */
-let cached = (global as any).mongoose;
+// @ts-ignore
+let cached = global.mongoose;
 
 if (!cached) {
-  cached = (global as any).mongoose = { conn: null, promise: null };
+  // @ts-ignore
+  cached = global.mongoose = { conn: null, promise: null };
 }
 
 async function connectToDb() {
   if (cached.conn) {
+    // console.log("♻️ Using cached Mongoose connection.");
     return cached.conn;
   }
 
@@ -33,13 +37,18 @@ async function connectToDb() {
     cached.promise = mongoose.connect(MONGODB_URI!, opts).then((mongooseInstance) => {
       console.log("✅ New Mongoose connection established.");
       return mongooseInstance;
+    }).catch(err => {
+      console.error("❌ Mongoose connection error:", err.message);
+      cached.promise = null; // Reset promise on error to allow retry
+      throw err;
     });
   }
   
   try {
     cached.conn = await cached.promise;
   } catch (e) {
-    cached.promise = null;
+    // If the promise was already rejected, this will re-throw.
+    // The promise is reset inside the .catch block above.
     throw e;
   }
   

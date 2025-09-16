@@ -1,9 +1,9 @@
 
 import { CheckCircle, XCircle } from "lucide-react";
-import * as admin from "firebase-admin";
-import connectToDb, { mongoose } from "@/lib/mongoose";
+import connectToDb from "@/lib/mongoose";
 import PostModel from "@/models/Post";
 import TestimonialModel from "@/models/Testimonial";
+import { getFirestore } from "@/lib/firebase";
 
 // Helper function to create a status component
 const StatusCheck = ({
@@ -44,58 +44,46 @@ const StatusCheck = ({
 
 // --- CHECK 1: Firebase ---
 async function checkFirebase() {
-  const key = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-  if (!key) {
-    return {
-      status: "error",
-      message: "La variable de entorno <b>FIREBASE_SERVICE_ACCOUNT_KEY</b> no está configurada.",
-    };
-  }
-
-  let serviceAccount: admin.ServiceAccount | undefined;
+  // The check is now much simpler. We just try to get the instance.
+  // The error handling is centralized in getFirestore.
   try {
+    const firestore = getFirestore();
+    if (!firestore) {
+      // The error message from initialization is more descriptive.
+       return {
+            status: "error",
+            message: `La inicialización de Firebase falló. Revisa los logs del servidor para ver el error. Asegúrate de que <b>FIREBASE_SERVICE_ACCOUNT_KEY</b> esté configurada correctamente.`,
+        };
+    }
+    
+    // Attempt a simple read operation.
+    await firestore.listCollections();
+
+    // Use a try-catch on the env var just to get the project_id for the success message.
+    let projectId = 'tu-proyecto';
     try {
-      const decoded = Buffer.from(key, "base64").toString("utf-8");
-      serviceAccount = JSON.parse(decoded);
-    } catch {
-      try {
-        serviceAccount = JSON.parse(key);
-      } catch (jsonError) {
-        return { status: "error", message: `La clave de Firebase no es un JSON válido ni está codificada en Base64.` };
-      }
-    }
-    
-    const requiredFields = ["project_id", "private_key", "client_email"];
-    const missing = requiredFields.filter(field => !(field in serviceAccount!));
+        const key = process.env.FIREBASE_SERVICE_ACCOUNT_KEY!;
+        const decoded = Buffer.from(key, "base64").toString("utf-8");
+        const serviceAccount = JSON.parse(decoded);
+        projectId = serviceAccount.project_id;
+    } catch (e) {}
 
-    if (missing.length > 0) {
-      return { status: "error", message: `La clave está incompleta. Faltan los campos: ${missing.join(', ')}.` };
-    }
-
-    if (admin.apps.length === 0) {
-        admin.initializeApp({
-            credential: admin.credential.cert(serviceAccount),
-        });
-    }
-    
-    await admin.firestore().listCollections();
-
-    return { status: "success", message: `Conectado exitosamente al proyecto de Firebase: <b>${serviceAccount.project_id}</b>.` };
+    return { status: "success", message: `Conectado exitosamente al proyecto de Firebase: <b>${projectId}</b>.` };
   } catch (error: any) {
-    const projectId = serviceAccount?.project_id || 'tu-proyecto';
-    let errorMessage = `Falló la conexión a Firebase. Error: ${error.message}`;
-
-    if (error.code === 7 || (error.message && error.message.includes('PERMISSION_DENIED'))) {
-       errorMessage = `La API de Cloud Firestore no ha sido habilitada en el proyecto <b>${projectId}</b>. <a href="https://console.developers.google.com/apis/api/firestore.googleapis.com/overview?project=${projectId}" target="_blank" rel="noopener noreferrer" class="underline font-bold">Haz clic aquí para habilitarla</a>, espera 5 minutos y refresca.`;
-    } else if (error.code === 5 || (error.message && error.message.includes('NOT_FOUND'))) {
-       errorMessage = `Error: <b>5 NOT_FOUND</b>. Esto casi siempre significa que la base de datos de Firestore aún no ha sido creada en tu proyecto. <br><b>Solución:</b> Ve a la <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" class="underline font-bold">Consola de Firebase</a>, selecciona el proyecto <b>${projectId}</b>, haz clic en <b>Build > Firestore Database</b> y luego en <b>'Crear base de datos'</b>.`;
+    let errorMessage = `Falló la conexión a Firestore. Error: ${error.message}`;
+    if (error.code === 'ENOTFOUND' || (error.message && error.message.includes('ENOTFOUND'))) {
+       errorMessage = `No se pudo conectar al host de Firestore. Revisa tu conexión a internet o la configuración de red.`;
     }
-    
+    if (error.code === 7 || (error.message && error.message.includes('PERMISSION_DENIED'))) {
+       errorMessage = `Permiso denegado. La API de Cloud Firestore no ha sido habilitada en el proyecto o las credenciales no tienen los permisos correctos. <a href="https://console.developers.google.com/apis/api/firestore.googleapis.com/overview" target="_blank" rel="noopener noreferrer" class="underline font-bold">Haz clic aquí para habilitar la API</a>, espera 5 minutos y refresca.`;
+    } else if (error.code === 5 || (error.message && error.message.includes('NOT_FOUND'))) {
+       errorMessage = `Error: <b>5 NOT_FOUND</b>. Esto casi siempre significa que la base de datos de Firestore aún no ha sido creada en tu proyecto. <br><b>Solución:</b> Ve a la <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" class="underline font-bold">Consola de Firebase</a>, selecciona tu proyecto, haz clic en <b>Build > Firestore Database</b> y luego en <b>'Crear base de datos'</b>.`;
+    }
     return { status: "error", message: errorMessage };
   }
 }
 
-// --- CHECK 2: MongoDB ---
+// --- CHECK 2: MongoDB Connection ---
 async function checkMongoDB() {
     const uri = process.env.MONGODB_URI;
 
@@ -173,6 +161,9 @@ async function checkShopify() {
 async function checkMongoData() {
     try {
         const client = await connectToDb();
+        if(!client) {
+             return { status: 'error', message: `No se pudo establecer conexión con MongoDB para la lectura de datos.` };
+        }
 
         const postCount = await PostModel.countDocuments();
         const testimonialCount = await TestimonialModel.countDocuments();
