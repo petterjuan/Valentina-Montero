@@ -16,8 +16,8 @@ const GeneratePersonalizedWorkoutInputSchema = z.object({
   experienceLevel: z.string().describe('El nivel de experiencia del usuario (principiante, intermedio, avanzado).'),
   equipment: z.string().describe('El equipo de ejercicio disponible para el usuario.'),
   workoutFocus: z.string().describe('El área de enfoque principal del entrenamiento (ej. Tren Superior, Full Body).'),
-  duration: z.number().describe('La duración de la sesión de entrenamiento en minutos.'),
-  frequency: z.number().describe('La frecuencia con la que el usuario planea hacer ejercicio por semana.'),
+  duration: z.coerce.number().describe('La duración de la sesión de entrenamiento en minutos.'),
+  frequency: z.coerce.number().describe('La frecuencia con la que el usuario planea hacer ejercicio por semana.'),
 });
 export type GeneratePersonalizedWorkoutInput = z.infer<typeof GeneratePersonalizedWorkoutInputSchema>;
 
