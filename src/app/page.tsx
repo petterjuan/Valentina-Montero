@@ -6,6 +6,7 @@ import LeadMagnetSection from "@/components/sections/LeadMagnetSection";
 import MeetTheCoachSection from "@/components/sections/MeetTheCoachSection";
 import TestimonialsSection from "@/components/sections/TestimonialsSection";
 
+// Force redeploy to reload environment variables
 export const dynamic = 'force-dynamic';
 
 export default function Home() {
