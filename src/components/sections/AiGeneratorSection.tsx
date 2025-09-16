@@ -4,9 +4,9 @@
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { handleAiGeneration, type AiGeneratorFormState } from "@/app/actions";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { Wand2, AlertTriangle, Dumbbell, Zap, Calendar, Clock, CheckCircle, Flame, Shield, Activity, Target, Mail } from "lucide-react";
+import { Wand2, AlertTriangle, Dumbbell, Zap, Calendar, Clock, CheckCircle, Flame, Shield, Activity, Target, Mail, Brain, Utensils, Lock, Sparkles, Loader2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -17,11 +17,13 @@ import { Form, FormControl, FormField, FormItem, FormMessage } from "@/component
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
+import { useFormState } from "react-dom";
 
 const aiGeneratorSchema = z.object({
   fitnessGoal: z.string({ required_error: "Por favor, selecciona una meta." }),
   experienceLevel: z.string({ required_error: "Por favor, selecciona tu nivel." }),
   equipment: z.string({ required_error: "Por favor, selecciona tu equipo." }),
+  workoutFocus: z.string({ required_error: "Por favor, selecciona un enfoque." }),
   duration: z.number(),
   frequency: z.number(),
   email: z.string().email({ message: "Por favor, introduce un email válido." }).optional().or(z.literal('')),
@@ -29,9 +31,18 @@ const aiGeneratorSchema = z.object({
 
 type AiGeneratorFormData = z.infer<typeof aiGeneratorSchema>;
 
+const initialState: AiGeneratorFormState = {
+    data: undefined,
+    error: undefined,
+    inputs: undefined,
+    isFullPlan: false,
+};
+
 export default function AiGeneratorSection() {
-  const [state, setState] = useState<AiGeneratorFormState>({});
   const { toast } = useToast();
+  const [formState, formAction] = useFormState(handleAiGeneration, initialState);
+  const [isPending, startTransition] = useTransition();
+  const [isUnlockPending, startUnlockTransition] = useTransition();
 
   const form = useForm<AiGeneratorFormData>({
     resolver: zodResolver(aiGeneratorSchema),
@@ -39,6 +50,7 @@ export default function AiGeneratorSection() {
       fitnessGoal: "perder-peso",
       experienceLevel: "principiante",
       equipment: "solo-cuerpo",
+      workoutFocus: "full-body",
       duration: 45,
       frequency: 3,
       email: "",
@@ -49,32 +61,55 @@ export default function AiGeneratorSection() {
   const frequencyValue = form.watch("frequency");
 
   useEffect(() => {
-    if (state.error) {
+    if (formState.error) {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: state.error,
+        title: "Error al generar",
+        description: formState.error,
       });
     }
-  }, [state.error, toast]);
-  
-  const onSubmit = async (data: AiGeneratorFormData) => {
-    setState({}); // Clear previous results
-    const result = await handleAiGeneration(data);
-    setState(result);
-
-    if(result.data) {
-        let toastDescription = "Tu rutina personalizada te espera más abajo.";
-        if (data.email) {
-            toastDescription += " También te la hemos enviado a tu correo.";
+    if (formState.data && !formState.error) {
+        let toastDescription = "Tu vista previa te espera más abajo.";
+        if (formState.isFullPlan) {
+            toastDescription = "¡Plan completo desbloqueado! Revisa los detalles a continuación.";
         }
         toast({
             title: "¡Plan Generado!",
             description: toastDescription,
         });
     }
-  };
+  }, [formState, toast]);
+  
+  const handleGeneratePreview = (data: AiGeneratorFormData) => {
+    startTransition(() => {
+        const formData = new FormData();
+        Object.entries(data).forEach(([key, value]) => {
+            formData.append(key, String(value));
+        });
+        formAction(formData);
+    });
+  }
 
+  const handleUnlockFullPlan = () => {
+    const currentValues = form.getValues();
+    const emailValue = form.getValues('email');
+
+    if (!emailValue || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue)) {
+        form.setError("email", { type: "manual", message: "Por favor, introduce un email válido para desbloquear." });
+        return;
+    }
+    form.clearErrors('email');
+    
+    startUnlockTransition(() => {
+        const formData = new FormData();
+        Object.entries(currentValues).forEach(([key, value]) => {
+            formData.append(key, String(value));
+        });
+        formAction(formData);
+    });
+  }
+
+  const firstDay = formState.data?.fullWeekWorkout[0];
 
   return (
     <section className="py-16 sm:py-24 bg-background">
@@ -100,7 +135,7 @@ export default function AiGeneratorSection() {
             </CardHeader>
             <CardContent>
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <form onSubmit={form.handleSubmit(handleGeneratePreview)} className="space-y-6">
                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <FormField
                       control={form.control}
@@ -148,30 +183,53 @@ export default function AiGeneratorSection() {
                       )}
                     />
                   </div>
-
-                   <FormField
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                     <FormField
+                        control={form.control}
+                        name="equipment"
+                        render={({ field }) => (
+                          <FormItem>
+                            <Label>Equipo Disponible</Label>
+                             <Select onValueChange={field.onChange} defaultValue={field.value}>
+                               <FormControl>
+                                 <SelectTrigger>
+                                   <SelectValue placeholder="Selecciona tu equipo" />
+                                 </SelectTrigger>
+                               </FormControl>
+                               <SelectContent>
+                                 <SelectItem value="solo-cuerpo">Solo Peso Corporal</SelectItem>
+                                 <SelectItem value="basico">Básico (Mancuernas, bandas)</SelectItem>
+                                 <SelectItem value="gimnasio">Gimnasio Completo</SelectItem>
+                               </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
                       control={form.control}
-                      name="equipment"
+                      name="workoutFocus"
                       render={({ field }) => (
                         <FormItem>
-                          <Label>Equipo Disponible</Label>
+                          <Label>Enfoque Principal</Label>
                            <Select onValueChange={field.onChange} defaultValue={field.value}>
                              <FormControl>
                                <SelectTrigger>
-                                 <SelectValue placeholder="Selecciona tu equipo" />
+                                 <SelectValue placeholder="Selecciona un enfoque" />
                                </SelectTrigger>
                              </FormControl>
                              <SelectContent>
-                               <SelectItem value="solo-cuerpo">Solo Peso Corporal</SelectItem>
-                               <SelectItem value="basico">Básico (Mancuernas, bandas)</SelectItem>
-                               <SelectItem value="gimnasio">Gimnasio Completo</SelectItem>
+                               <SelectItem value="full-body">Cuerpo Completo (Full Body)</SelectItem>
+                               <SelectItem value="tren-superior">Tren Superior</SelectItem>
+                               <SelectItem value="tren-inferior">Tren Inferior</SelectItem>
+                               <SelectItem value="cardio-resistencia">Cardio y Resistencia</SelectItem>
                              </SelectContent>
                           </Select>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-                  
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <FormField
                         control={form.control}
@@ -221,60 +279,152 @@ export default function AiGeneratorSection() {
                         />
                   </div>
                   
-                  <Separator />
+                  <Button type="submit" disabled={isPending} className="w-full font-bold">
+                    <Wand2 className="mr-2 h-4 w-4" />
+                    {isPending ? "Generando Vista Previa..." : "Generar Mi Plan (Vista Previa)"}
+                  </Button>
                   
-                    <FormField
+                  {/* Email field is separated for the unlock functionality */}
+                  <FormField
                       control={form.control}
                       name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <Label htmlFor="email" className="flex items-center gap-2">
-                            <Mail className="h-4 w-4" />
-                            Email (Opcional)
-                          </Label>
-                           <p className="text-sm text-muted-foreground -mt-2 mb-2">
-                             Guarda una copia de este plan en tu correo y recibe consejos exclusivos.
-                           </p>
-                          <FormControl>
-                            <Input placeholder="tu.correo@ejemplo.com" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
+                      render={({ field }) => <Input type="hidden" {...field} />}
                     />
-
-                  <Button type="submit" disabled={form.formState.isSubmitting} className="w-full font-bold">
-                    <Wand2 className="mr-2 h-4 w-4" />
-                    {form.formState.isSubmitting ? "Generando..." : "Generar Mi Plan"}
-                  </Button>
                 </form>
               </Form>
             </CardContent>
           </Card>
 
-          {state.error && !state.data && (
+          {isPending && (
+             <Card className="mt-8">
+                <CardContent className="p-6 text-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+                    <p className="mt-4 text-muted-foreground">Creando tu plan personalizado...</p>
+                </CardContent>
+            </Card>
+          )}
+
+          {formState.error && !formState.data && (
             <Card className="mt-8 border-destructive bg-destructive/10">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
                   <AlertTriangle className="h-5 w-5 text-destructive" />
-                  <p className="text-sm text-destructive">{state.error}</p>
+                  <p className="text-sm text-destructive">{formState.error}</p>
                 </div>
               </CardContent>
             </Card>
           )}
 
-          {state.data && (
+          {formState.data && !formState.isFullPlan && (
+            <div className="mt-8 space-y-8">
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-3 font-headline">
+                            <Target className="h-6 w-6 text-primary" />
+                            Vista Previa: Tu Primer Día
+                        </CardTitle>
+                        <CardDescription>{formState.data.overview}</CardDescription>
+                    </CardHeader>
+                    {firstDay && (
+                        <CardContent>
+                            <Accordion type="single" collapsible defaultValue={firstDay.day} className="w-full">
+                                <AccordionItem value={firstDay.day}>
+                                <AccordionTrigger className="font-bold text-lg hover:no-underline">
+                                    <div className="flex items-center gap-3">
+                                        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold">1</span>
+                                        {firstDay.day}: <span className="text-muted-foreground font-medium">{firstDay.focus}</span>
+                                    </div>
+                                </AccordionTrigger>
+                                <AccordionContent className="pl-4 border-l-2 border-primary ml-4">
+                                    <div className="space-y-4">
+                                        <div>
+                                            <h4 className="font-semibold flex items-center gap-2"><Flame className="h-5 w-5 text-amber-500" />Calentamiento</h4>
+                                            <p className="text-muted-foreground text-sm pl-7">{firstDay.warmup}</p>
+                                        </div>
+                                        <div>
+                                            <h4 className="font-semibold flex items-center gap-2"><Activity className="h-5 w-5 text-blue-500" />Entrenamiento</h4>
+                                            <ul className="space-y-2 mt-2 pl-7">
+                                                {firstDay.exercises.map((ex, i) => (
+                                                    <li key={i} className="flex justify-between items-center text-sm">
+                                                        <span>{ex.name}</span>
+                                                        <span className="font-medium text-primary bg-primary/10 px-2 py-1 rounded-md">{ex.sets} x {ex.reps}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                        <div>
+                                            <h4 className="font-semibold flex items-center gap-2"><Shield className="h-5 w-5 text-green-500" />Enfriamiento</h4>
+                                            <p className="text-muted-foreground text-sm pl-7">{firstDay.cooldown}</p>
+                                        </div>
+                                    </div>
+                                </AccordionContent>
+                                </AccordionItem>
+                            </Accordion>
+                        </CardContent>
+                    )}
+                </Card>
+                
+                <Card className="bg-secondary border-primary border-dashed">
+                    <CardHeader className="text-center items-center">
+                        <Lock className="h-10 w-10 text-primary mb-2" />
+                        <CardTitle className="font-headline text-2xl">¡Tu Plan Semanal Completo está Listo!</CardTitle>
+                        <CardDescription className="max-w-prose">
+                            Introduce tu correo para desbloquear la rutina completa, junto con consejos exclusivos de nutrición y mentalidad para maximizar tus resultados.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <ul className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center mb-6">
+                            <li className="flex flex-col items-center gap-2 p-3 bg-background/50 rounded-lg">
+                                <Calendar className="h-6 w-6 text-primary"/>
+                                <span className="font-semibold">{formState.data.fullWeekWorkout.length - 1} Días Adicionales</span>
+                            </li>
+                            <li className="flex flex-col items-center gap-2 p-3 bg-background/50 rounded-lg">
+                                <Utensils className="h-6 w-6 text-primary"/>
+                                <span className="font-semibold">Tips de Nutrición</span>
+                            </li>
+                             <li className="flex flex-col items-center gap-2 p-3 bg-background/50 rounded-lg">
+                                <Brain className="h-6 w-6 text-primary"/>
+                                <span className="font-semibold">Tips de Mentalidad</span>
+                            </li>
+                        </ul>
+                        <div className="flex flex-col sm:flex-row gap-2 max-w-lg mx-auto">
+                            <FormField
+                                control={form.control}
+                                name="email"
+                                render={({ field }) => (
+                                <FormItem className="w-full">
+                                    <FormControl>
+                                    <Input placeholder="tu.correo@ejemplo.com" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                            <Button onClick={handleUnlockFullPlan} disabled={isUnlockPending} className="font-bold w-full sm:w-auto flex-shrink-0">
+                                {isUnlockPending 
+                                    ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Desbloqueando...</>
+                                    : <><Sparkles className="mr-2 h-4 w-4" />Desbloquear Plan</>
+                                }
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+          )}
+
+
+          {formState.data && formState.isFullPlan && (
             <Card className="mt-8">
               <CardHeader>
                 <CardTitle className="flex items-center gap-3 font-headline">
                   <Target className="h-6 w-6 text-primary" />
-                  Tu Plan de Entrenamiento Personalizado
+                  Tu Plan de Entrenamiento Completo
                 </CardTitle>
-                <CardDescription>{state.data.overview}</CardDescription>
+                <CardDescription>{formState.data.overview}</CardDescription>
               </CardHeader>
               <CardContent>
-                <Accordion type="single" collapsible defaultValue="Día 1" className="w-full">
-                  {state.data.weeklySchedule?.map((day, index) => (
+                <Accordion type="multiple" defaultValue={[formState.data.fullWeekWorkout[0]?.day]} className="w-full">
+                  {formState.data.fullWeekWorkout?.map((day, index) => (
                     <AccordionItem value={day.day} key={index}>
                       <AccordionTrigger className="font-bold text-lg hover:no-underline">
                         <div className="flex items-center gap-3">
@@ -311,15 +461,36 @@ export default function AiGeneratorSection() {
                 
                 <Separator className="my-6" />
 
-                <h3 className="font-headline text-xl mb-3">Recomendaciones Adicionales</h3>
-                <ul className="space-y-2">
-                    {state.data.recommendations?.map((rec, i) => (
-                        <li key={i} className="flex items-start gap-2 text-sm">
-                            <CheckCircle className="h-4 w-4 mt-0.5 shrink-0 text-primary" />
-                            <span className="text-muted-foreground">{rec}</span>
-                        </li>
-                    ))}
-                </ul>
+                <div className="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <h3 className="font-headline text-xl mb-3 flex items-center gap-2">
+                            <Utensils className="h-5 w-5 text-primary"/>
+                            Consejos de Nutrición
+                        </h3>
+                        <ul className="space-y-2">
+                            {formState.data.nutritionTips?.map((rec, i) => (
+                                <li key={i} className="flex items-start gap-2 text-sm">
+                                    <CheckCircle className="h-4 w-4 mt-0.5 shrink-0 text-primary" />
+                                    <span className="text-muted-foreground">{rec}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                     <div>
+                        <h3 className="font-headline text-xl mb-3 flex items-center gap-2">
+                           <Brain className="h-5 w-5 text-primary"/>
+                            Consejos de Mentalidad
+                        </h3>
+                        <ul className="space-y-2">
+                            {formState.data.mindsetTips?.map((rec, i) => (
+                                <li key={i} className="flex items-start gap-2 text-sm">
+                                    <CheckCircle className="h-4 w-4 mt-0.5 shrink-0 text-primary" />
+                                    <span className="text-muted-foreground">{rec}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                </div>
               </CardContent>
             </Card>
           )}
@@ -328,5 +499,3 @@ export default function AiGeneratorSection() {
     </section>
   );
 }
-
-    

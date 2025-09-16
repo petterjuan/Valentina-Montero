@@ -18,6 +18,7 @@ const aiGeneratorSchema = z.object({
   fitnessGoal: z.string().min(1, "El objetivo de fitness es requerido"),
   experienceLevel: z.string().min(1, "El nivel de experiencia es requerido"),
   equipment: z.string().min(1, "El equipo disponible es requerido"),
+  workoutFocus: z.string().min(1, "El enfoque es requerido"),
   duration: z.number().min(1, "La duración debe ser mayor a 0"),
   frequency: z.number().min(1, "La frecuencia debe ser mayor a 0"),
   email: z.string().email({ message: "Por favor, introduce un email válido." }).optional().or(z.literal('')),
@@ -32,46 +33,8 @@ export type AiGeneratorFormState = {
   data?: GeneratePersonalizedWorkoutOutput;
   error?: string;
   inputs?: z.infer<typeof aiGeneratorSchema>;
+  isFullPlan?: boolean;
 };
-
-interface AiGeneratorActionInput extends GeneratePersonalizedWorkoutInput {
-  email?: string;
-}
-
-interface ShopifyProduct {
-  id: string;
-  title: string;
-  handle: string;
-  description: string;
-  availableForSale: boolean;
-  featuredImage?: {
-    url: string;
-    altText: string;
-  };
-  priceRange: {
-    minVariantPrice: {
-      amount: string;
-      currencyCode: string;
-    };
-  };
-  isPopular?: { value: string };
-  features?: { value: string };
-  isDigital?: { value: string };
-}
-
-interface ShopifyCollectionResponse {
-  data?: {
-    collection?: {
-      id: string;
-      title: string;
-      description: string;
-      products: {
-        nodes: ShopifyProduct[];
-      };
-    };
-  };
-  errors?: Array<{ message: string; [key: string]: any }>;
-}
 
 // GraphQL Query
 const COLLECTION_QUERY = /* GraphQL */`
@@ -112,6 +75,41 @@ const COLLECTION_QUERY = /* GraphQL */`
   }
 `;
 
+interface ShopifyProduct {
+  id: string;
+  title: string;
+  handle: string;
+  description: string;
+  availableForSale: boolean;
+  featuredImage?: {
+    url: string;
+    altText: string;
+  };
+  priceRange: {
+    minVariantPrice: {
+      amount: string;
+      currencyCode: string;
+    };
+  };
+  isPopular?: { value: string };
+  features?: { value: string };
+  isDigital?: { value: string };
+}
+
+interface ShopifyCollectionResponse {
+  data?: {
+    collection?: {
+      id: string;
+      title: string;
+      description: string;
+      products: {
+        nodes: ShopifyProduct[];
+      };
+    };
+  };
+  errors?: Array<{ message: string; [key: string]: any }>;
+}
+
 // Helper functions
 const transformShopifyProducts = (products: ShopifyProduct[]): Program[] => {
   return products.map((product) => {
@@ -150,12 +148,22 @@ const transformShopifyProducts = (products: ShopifyProduct[]): Program[] => {
 
 
 // Server Actions
-export async function handleAiGeneration(input: AiGeneratorActionInput): Promise<AiGeneratorFormState> {
+export async function handleAiGeneration(
+    prevState: AiGeneratorFormState, 
+    formData: FormData
+): Promise<AiGeneratorFormState> {
   try {
-    const validatedInput = aiGeneratorSchema.parse(input);
+    const validatedInput = aiGeneratorSchema.parse(Object.fromEntries(formData.entries()));
     const { email, ...workoutInput } = validatedInput;
 
-    const result = await generatePersonalizedWorkout(workoutInput);
+    // Use previous data if email is now provided for an existing plan
+    const previousData = prevState.data;
+    let result = previousData;
+
+    if (!previousData || email) {
+       result = await generatePersonalizedWorkout(workoutInput);
+    }
+    
     if (!result) {
       return { error: "No se pudo generar el entrenamiento. Por favor, inténtalo de nuevo." };
     }
@@ -169,26 +177,25 @@ export async function handleAiGeneration(input: AiGeneratorActionInput): Promise
 
         const leadData = {
           email,
-          source: "Generador IA",
+          source: "IA Workout - Full Plan",
           status: "subscribed",
           tags: {
             goal: validatedInput.fitnessGoal,
             level: validatedInput.experienceLevel,
+            focus: validatedInput.workoutFocus,
           },
           updatedAt: now,
           createdAt: now,
         };
         
         await leadRef.set(leadData, { merge: true });
-        console.log(`[handleAiGeneration] Lead captured/updated: ${email}`);
       }
+      return { data: result, inputs: validatedInput, isFullPlan: true };
     }
     
-    return { data: result, inputs: validatedInput };
+    return { data: result, inputs: validatedInput, isFullPlan: false };
 
   } catch (error) {
-    console.error("Error in handleAiGeneration:", error);
-    
     if (error instanceof z.ZodError) {
       const firstError = error.errors[0];
       return { 

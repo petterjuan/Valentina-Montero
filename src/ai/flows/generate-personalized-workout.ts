@@ -15,6 +15,7 @@ const GeneratePersonalizedWorkoutInputSchema = z.object({
   fitnessGoal: z.string().describe('El objetivo de fitness especificado por el usuario (p. ej., perder peso, ganar músculo).'),
   experienceLevel: z.string().describe('El nivel de experiencia del usuario (principiante, intermedio, avanzado).'),
   equipment: z.string().describe('El equipo de ejercicio disponible para el usuario.'),
+  workoutFocus: z.string().describe('El área de enfoque principal del entrenamiento (ej. Tren Superior, Full Body).'),
   duration: z.number().describe('La duración de la sesión de entrenamiento en minutos.'),
   frequency: z.number().describe('La frecuencia con la que el usuario planea hacer ejercicio por semana.'),
 });
@@ -36,8 +37,9 @@ const DailyWorkoutSchema = z.object({
 
 const GeneratePersonalizedWorkoutOutputSchema = z.object({
   overview: z.string().describe('Un resumen corto y motivador del plan.'),
-  weeklySchedule: z.array(DailyWorkoutSchema).describe('El plan de entrenamiento semanal, dividido por días.'),
-  recommendations: z.array(z.string()).describe('Recomendaciones adicionales sobre nutrición, descanso, etc.'),
+  fullWeekWorkout: z.array(DailyWorkoutSchema).describe('El plan de entrenamiento semanal completo, dividido por días.'),
+  nutritionTips: z.array(z.string()).describe('Una lista de 3 consejos de nutrición prácticos y alineados con el objetivo del usuario.'),
+  mindsetTips: z.array(z.string()).describe('Una lista de 2 consejos de mentalidad o motivación para ayudar al usuario a mantenerse en el camino.'),
 });
 export type GeneratePersonalizedWorkoutOutput = z.infer<typeof GeneratePersonalizedWorkoutOutputSchema>;
 
@@ -56,16 +58,17 @@ const generatePersonalizedWorkoutPrompt = ai.definePrompt({
 - **Objetivo de Fitness:** {{{fitnessGoal}}}
 - **Nivel de Experiencia:** {{{experienceLevel}}}
 - **Equipo Disponible:** {{{equipment}}}
+- **Enfoque Principal:** {{{workoutFocus}}}
 - **Duración por Sesión:** {{{duration}}} minutos
 - **Frecuencia Semanal:** {{{frequency}}} veces por semana
 
 **Instrucciones de formato de salida (MUY IMPORTANTE):**
 - Debes devolver la respuesta únicamente en el formato JSON especificado.
-- En el campo 'overview', escribe una frase corta y motivadora.
-- Para cada 'day' en 'weeklySchedule', crea un plan de entrenamiento completo.
-- En el campo 'focus' de cada día, especifica el grupo muscular principal (ej. "Tren Inferior", "Full Body", "Cardio y Core").
+- **overview:** Escribe una frase corta y motivadora sobre el plan.
+- **fullWeekWorkout:** Crea un plan de entrenamiento completo para la cantidad de días especificada en 'frequency'. El enfoque de cada día debe variar y estar alineado con el 'workoutFocus' general.
+- **nutritionTips:** Proporciona 3 consejos de nutrición accionables y relevantes para el objetivo.
+- **mindsetTips:** Proporciona 2 consejos de mentalidad o motivación para el éxito a largo plazo.
 - Los ejercicios deben ser una lista de objetos, cada uno con 'name', 'sets' y 'reps'. Sé específica con las series y repeticiones (ej. "3 series", "10-12 reps").
-- En 'recommendations', proporciona 3 o 4 consejos clave y concisos.
 - No incluyas saludos, despedidas ni ningún texto fuera de la estructura JSON.`,
 });
 
