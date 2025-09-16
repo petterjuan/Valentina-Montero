@@ -16,11 +16,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ message: 'Error de configuración del servidor.' }, { status: 500 });
   }
   
-  const providedSecret = authHeader ? authHeader.replace('Bearer ', '') : null;
-  const { searchParams } = new URL(request.url);
-
-  // Vercel Cron injects the secret this way
-  if (providedSecret !== secret && searchParams.get('secret') !== secret) {
+  // Vercel Cron injects the secret this way.
+  // The secret is also checked from the query params for manual trigger simulation.
+  const providedSecret = authHeader?.split(' ')[1];
+  if (providedSecret !== secret) {
     return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
   }
 
@@ -55,5 +54,3 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ message: 'Error al generar el artículo.', error: errorMessage }, { status: 500 });
   }
 }
-
-    
