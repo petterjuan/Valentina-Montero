@@ -153,7 +153,14 @@ export async function handleAiGeneration(
     formData: FormData
 ): Promise<AiGeneratorFormState> {
   try {
-    const validatedInput = aiGeneratorSchema.parse(Object.fromEntries(formData.entries()));
+    const rawData = Object.fromEntries(formData.entries());
+    const dataToValidate = {
+        ...rawData,
+        duration: parseInt(rawData.duration as string, 10),
+        frequency: parseInt(rawData.frequency as string, 10),
+    };
+
+    const validatedInput = aiGeneratorSchema.parse(dataToValidate);
     const { email, ...workoutInput } = validatedInput;
 
     // Use previous data if email is now provided for an existing plan
@@ -441,5 +448,7 @@ export async function getPrograms(collectionHandle: string, maxProducts: number 
     return null;
   }
 }
+
+    
 
     
