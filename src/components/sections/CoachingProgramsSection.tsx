@@ -78,18 +78,17 @@ export default async function CoachingProgramsSection({
   maxProducts = 10,
 }: CoachingProgramsSectionProps) {
   
-  let programs: Program[] | null = null;
+  let fetchedPrograms: Program[] | null = null;
   
   try {
-    programs = await getPrograms(collectionHandle, maxProducts);
+    fetchedPrograms = await getPrograms(collectionHandle, maxProducts);
   } catch (e) {
-    console.error(`[CoachingProgramsSection] Error fetching programs: ${e instanceof Error ? e.message : String(e)}`);
-    // En caso de error, programs permanecerá como null.
+    console.error(`[CoachingProgramsSection] Error fetching programs, using fallback. Error: ${e instanceof Error ? e.message : String(e)}`);
   }
   
-  // Si 'programs' es null, la conexión falló.
-  // Si 'programs' es un array vacío, la conexión fue exitosa pero no hay productos.
-  const displayPrograms = programs;
+  const displayPrograms = (fetchedPrograms && fetchedPrograms.length > 0) ? fetchedPrograms : fallbackPrograms;
+  const connectionFailed = fetchedPrograms === null;
+
 
   return (
     <section id="programs" className="py-16 sm:py-24 bg-background">
@@ -162,13 +161,13 @@ export default async function CoachingProgramsSection({
           ) : (
              <div className="col-span-1 md:col-span-3 text-center py-12 bg-muted/50 rounded-lg">
                 <h3 className="text-xl font-semibold text-foreground">
-                  {programs === null 
+                  {connectionFailed 
                     ? "No se pudieron cargar los programas."
                     : "No hay programas disponibles en esta colección."
                   }
                 </h3>
                 <p className="text-muted-foreground mt-2 max-w-md mx-auto">
-                    {programs === null
+                    {connectionFailed
                       ? "Si eres el administrador, verifica que las credenciales de la API de Shopify (token y dominio) sean correctas en las variables de entorno."
                       : `Si eres el administrador, asegúrate de que haya productos activos en la colección de Shopify con el handle: \`${collectionHandle}\`.`
                     }

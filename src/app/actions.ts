@@ -154,15 +154,11 @@ export async function handleAiGeneration(input: AiGeneratorActionInput): Promise
     const validatedInput = aiGeneratorSchema.parse(input);
     const { email, ...workoutInput } = validatedInput;
 
-    // --- Start AI Workout Generation (no changes here) ---
     const result = await generatePersonalizedWorkout(workoutInput);
     if (!result) {
       return { error: "No se pudo generar el entrenamiento. Por favor, inténtalo de nuevo." };
     }
-    // --- End AI Workout Generation ---
-
-
-    // --- Start Lead Capture Logic (New!) ---
+    
     if (email) {
       const firestore = getFirestore();
       if (firestore) {
@@ -186,7 +182,6 @@ export async function handleAiGeneration(input: AiGeneratorActionInput): Promise
         console.log(`[handleAiGeneration] Lead captured/updated: ${email}`);
       }
     }
-    // --- End Lead Capture Logic ---
     
     return { data: result, inputs: validatedInput };
 
@@ -243,7 +238,6 @@ export async function handleLeadSubmission(formData: { email: string }) {
     }
 
     const now = new Date();
-    // Using a predictable ID allows for easy updates if the same email subscribes again.
     const safeId = crypto.createHash("sha256").update(email.toLowerCase()).digest("hex");
     const leadRef = firestore.collection("leads").doc(safeId);
 
@@ -252,14 +246,11 @@ export async function handleLeadSubmission(formData: { email: string }) {
       source: "Guía Gratuita - 10k Pasos",
       status: "subscribed",
       updatedAt: now,
-      createdAt: now, // Will be ignored on merge update if it exists
+      createdAt: now,
     };
     
     await leadRef.set(leadData, { merge: true });
 
-    // Check if the document existed before the set operation. 
-    // This is a bit tricky post-operation, so we assume a new subscription is always a "success" message.
-    // A more complex check could involve a pre-read, but this is simpler and sufficient.
     return {
       success: true,
       message: "¡Éxito! Tu guía está en camino.",
@@ -360,8 +351,6 @@ export async function getLeads(): Promise<Lead[]> {
       return [];
     }
     
-    // The Lead type in `types/index.ts` needs to be defined.
-    // Let's assume it has: id, email, source, status, createdAt.
     const leads = leadsSnapshot.docs.map(doc => {
       const data = doc.data();
       return {
@@ -369,7 +358,6 @@ export async function getLeads(): Promise<Lead[]> {
         email: data.email,
         source: data.source || 'N/A',
         status: data.status || 'N/A',
-        // Firestore timestamps need to be converted to JS Dates.
         createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
       } as Lead;
     });
@@ -445,5 +433,7 @@ export async function getPrograms(collectionHandle: string, maxProducts: number 
     return null;
   }
 }
+
+    
 
     
