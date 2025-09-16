@@ -1,5 +1,7 @@
 
-import { getLeads } from "@/app/actions";
+'use client';
+
+import { getLeads, runGeneratePostCron } from "@/app/actions";
 import {
   Table,
   TableBody,
@@ -10,18 +12,50 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Users } from "lucide-react";
-import { type Metadata } from "next";
+import { Users, PlusCircle, Loader2 } from "lucide-react";
+import { type Lead } from "@/types";
+import { useEffect, useState, useTransition } from "react";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { useRouter } from "next/navigation";
 
-export const dynamic = 'force-dynamic';
 
-export const metadata: Metadata = {
-  title: "Administración de Prospectos | VM Fitness Hub",
-  description: "Visualiza y gestiona los prospectos (leads) registrados.",
-};
+export default function AdminLeadsPage() {
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isPending, startTransition] = useTransition();
+  const { toast } = useToast();
+  const router = useRouter();
 
-export default async function AdminLeadsPage() {
-  const leads = await getLeads();
+  useEffect(() => {
+    async function fetchLeads() {
+      setIsLoading(true);
+      const fetchedLeads = await getLeads();
+      setLeads(fetchedLeads);
+      setIsLoading(false);
+    }
+    fetchLeads();
+  }, []);
+
+  const handleGeneratePost = () => {
+    startTransition(async () => {
+      const result = await runGeneratePostCron();
+      if (result.success && result.title) {
+        toast({
+          title: "¡Artículo Generado!",
+          description: `El nuevo post "${result.title}" ha sido creado y publicado.`,
+        });
+        // Refresh the data on the blog page by navigating
+        router.refresh();
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error al generar el artículo",
+          description: result.error || "Ocurrió un error desconocido.",
+        });
+      }
+    });
+  };
 
   return (
     <section className="py-12 sm:py-16 bg-gray-50/50 min-h-screen">
@@ -29,12 +63,34 @@ export default async function AdminLeadsPage() {
         <div className="max-w-4xl mx-auto">
           <header className="mb-8">
             <h1 className="text-4xl font-bold font-headline text-gray-800">
-              Administración de Prospectos
+              Administración
             </h1>
             <p className="mt-2 text-lg text-gray-500">
-              Aquí puedes ver todos los correos electrónicos capturados a través del formulario de la guía gratuita.
+              Gestiona los prospectos y las tareas automáticas del sitio.
             </p>
           </header>
+
+          <Card className="mb-8">
+            <CardHeader>
+                <CardTitle>Generación de Contenido</CardTitle>
+                <CardDescription>Usa este botón para generar manualmente un nuevo artículo para el blog usando IA. Esto es útil para pruebas.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Button onClick={handleGeneratePost} disabled={isPending}>
+                  {isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Generando...
+                    </>
+                  ) : (
+                    <>
+                      <PlusCircle className="mr-2 h-4 w-4" />
+                      Generar Nuevo Post (Test)
+                    </>
+                  )}
+                </Button>
+            </CardContent>
+          </Card>
 
           <Card>
             <CardHeader>
@@ -43,7 +99,7 @@ export default async function AdminLeadsPage() {
                 Lista de Suscriptores
               </CardTitle>
               <CardDescription>
-                {leads.length > 0 
+                { !isLoading && leads.length > 0 
                   ? `Mostrando ${leads.length} prospecto(s) ordenados por fecha de registro.`
                   : "Aún no hay prospectos registrados."
                 }
@@ -60,7 +116,13 @@ export default async function AdminLeadsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {leads && leads.length > 0 ? (
+                  {isLoading ? (
+                    <TableRow>
+                        <TableCell colSpan={4} className="h-24 text-center">
+                            <Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground" />
+                        </TableCell>
+                    </TableRow>
+                  ) : leads.length > 0 ? (
                     leads.map((lead) => (
                       <TableRow key={lead.id}>
                         <TableCell className="font-medium">{lead.email}</TableCell>

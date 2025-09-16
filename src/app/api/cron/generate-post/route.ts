@@ -10,13 +10,19 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
   const secret = process.env.CRON_SECRET;
+  
+  // Also check for secret in query params for manual trigger from server action
+  const { searchParams } = new URL(request.url);
+  const querySecret = searchParams.get('secret');
 
   if (!secret) {
       console.error('CRON_SECRET no está configurado en las variables de entorno.');
       return NextResponse.json({ message: 'Error de configuración del servidor.' }, { status: 500 });
   }
   
-  if (authHeader !== `Bearer ${secret}`) {
+  const providedSecret = authHeader ? authHeader.replace('Bearer ', '') : querySecret;
+
+  if (providedSecret !== secret) {
     return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
   }
 
