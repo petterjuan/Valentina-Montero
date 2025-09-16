@@ -1,7 +1,7 @@
 
 'use client';
 
-import { getLeads, runGeneratePostCron } from "@/app/actions";
+import { getLeads } from "@/app/actions";
 import {
   Table,
   TableBody,
@@ -12,20 +12,14 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Users, PlusCircle, Loader2 } from "lucide-react";
+import { Users, Loader2 } from "lucide-react";
 import { type Lead } from "@/types";
-import { useEffect, useState, useTransition } from "react";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 
 export default function AdminLeadsPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isPending, startTransition] = useTransition();
-  const { toast } = useToast();
-  const router = useRouter();
 
   useEffect(() => {
     async function fetchLeads() {
@@ -36,26 +30,6 @@ export default function AdminLeadsPage() {
     }
     fetchLeads();
   }, []);
-
-  const handleGeneratePost = () => {
-    startTransition(async () => {
-      const result = await runGeneratePostCron();
-      if (result.success && result.title) {
-        toast({
-          title: "¡Artículo Generado!",
-          description: `El nuevo post "${result.title}" ha sido creado y publicado.`,
-        });
-        // Refresh the data on the blog page by navigating
-        router.refresh();
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Error al generar el artículo",
-          description: result.error || "Ocurrió un error desconocido.",
-        });
-      }
-    });
-  };
 
   return (
     <section className="py-12 sm:py-16 bg-gray-50/50 min-h-screen">
@@ -69,28 +43,6 @@ export default function AdminLeadsPage() {
               Gestiona los prospectos y las tareas automáticas del sitio.
             </p>
           </header>
-
-          <Card className="mb-8">
-            <CardHeader>
-                <CardTitle>Generación de Contenido</CardTitle>
-                <CardDescription>Usa este botón para generar manualmente un nuevo artículo para el blog usando IA. Esto es útil para pruebas.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <Button onClick={handleGeneratePost} disabled={isPending}>
-                  {isPending ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Generando...
-                    </>
-                  ) : (
-                    <>
-                      <PlusCircle className="mr-2 h-4 w-4" />
-                      Generar Nuevo Post (Test)
-                    </>
-                  )}
-                </Button>
-            </CardContent>
-          </Card>
 
           <Card>
             <CardHeader>
@@ -153,3 +105,5 @@ export default function AdminLeadsPage() {
     </section>
   );
 }
+
+    

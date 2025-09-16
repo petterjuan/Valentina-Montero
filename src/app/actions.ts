@@ -435,33 +435,4 @@ export async function getPrograms(collectionHandle: string, maxProducts: number 
   }
 }
 
-export async function runGeneratePostCron(): Promise<{ success: boolean; title?: string; error?: string }> {
-  try {
-    const secret = process.env.CRON_SECRET;
-    if (!secret) {
-      throw new Error('CRON_SECRET no está configurado.');
-    }
     
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002';
-    const endpoint = `${appUrl}/api/cron/generate-post`;
-    
-    const response = await fetch(endpoint, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${secret}`,
-      },
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || `El servidor respondió con un estado ${response.status}`);
-    }
-
-    const data = await response.json();
-    return { success: true, title: data.title };
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Un error desconocido ocurrió.';
-    console.error('Error in runGeneratePostCron:', errorMessage);
-    return { success: false, error: errorMessage };
-  }
-}
