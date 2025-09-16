@@ -1,12 +1,8 @@
 
 'use client';
 
-import { CheckCircle, XCircle, FileText, Loader2, ServerCrash } from "lucide-react";
-import connectToDb from "@/lib/mongoose";
-import PostModel from "@/models/Post";
-import TestimonialModel from "@/models/Testimonial";
-import { getFirestore } from "@/lib/firebase";
-import { getLogs } from "@/app/actions";
+import { CheckCircle, XCircle, FileText, Loader2 } from "lucide-react";
+import { getLogs, getSystemStatuses, SystemStatus } from "@/app/actions";
 import { type LogEntry } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -50,149 +46,9 @@ const StatusCheck = ({
   );
 };
 
-// --- CHECK 1: Firebase ---
-async function checkFirebase() {
-  // The check is now much simpler. We just try to get the instance.
-  // The error handling is centralized in getFirestore.
-  try {
-    const firestore = getFirestore();
-    if (!firestore) {
-      // The error message from initialization is more descriptive.
-       return {
-            status: "error" as const,
-            message: `La inicialización de Firebase falló. Revisa los logs del servidor para ver el error. Asegúrate de que <b>FIREBASE_SERVICE_ACCOUNT_KEY</b> esté configurada correctamente.`,
-        };
-    }
-    
-    // Attempt a simple read operation.
-    await firestore.listCollections();
-
-    // Use a try-catch on the env var just to get the project_id for the success message.
-    let projectId = 'tu-proyecto';
-    try {
-        const key = process.env.NEXT_PUBLIC_FIREBASE_CONFIG!;
-        const config = JSON.parse(key);
-        projectId = config.projectId;
-    } catch (e) {}
-
-    return { status: "success" as const, message: `Conectado exitosamente al proyecto de Firebase: <b>${projectId}</b>.` };
-  } catch (error: any) {
-    let errorMessage = `Falló la conexión a Firestore. Error: ${error.message}`;
-    if (error.code === 'ENOTFOUND' || (error.message && error.message.includes('ENOTFOUND'))) {
-       errorMessage = `No se pudo conectar al host de Firestore. Revisa tu conexión a internet o la configuración de red.`;
-    }
-    if (error.code === 7 || (error.message && error.message.includes('PERMISSION_DENIED'))) {
-       errorMessage = `Permiso denegado. La API de Cloud Firestore no ha sido habilitada en el proyecto o las credenciales no tienen los permisos correctos. <a href="https://console.developers.google.com/apis/api/firestore.googleapis.com/overview" target="_blank" rel="noopener noreferrer" class="underline font-bold">Haz clic aquí para habilitar la API</a>, espera 5 minutos y refresca.`;
-    } else if (error.code === 5 || (error.message && error.message.includes('NOT_FOUND'))) {
-       errorMessage = `Error: <b>5 NOT_FOUND</b>. Esto casi siempre significa que la base de datos de Firestore aún no ha sido creada en tu proyecto. <br><b>Solución:</b> Ve a la <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" class="underline font-bold">Consola de Firebase</a>, selecciona tu proyecto, haz clic en <b>Build > Firestore Database</b> y luego en <b>'Crear base de datos'</b>.`;
-    }
-    return { status: "error" as const, message: errorMessage };
-  }
-}
-
-// --- CHECK 2: MongoDB Connection ---
-async function checkMongoDB() {
-    const uri = process.env.MONGODB_URI;
-
-    if (!uri) {
-        return { status: 'error' as const, message: 'La variable de entorno <b>MONGODB_URI</b> no está configurada.' };
-    }
-    
-    if (!uri.startsWith('mongodb+srv://') && !uri.startsWith('mongodb://')) {
-        return { status: 'error' as const, message: `Formato de MONGODB_URI inválido. Debe empezar con 'mongodb+srv://' o 'mongodb://'.` };
-    }
-
-    try {
-        const client = await connectToDb();
-        const dbName = client.connection.db.databaseName;
-        
-        await client.connection.db.command({ ping: 1 });
-        
-        return { status: 'success' as const, message: `Conectado exitosamente a la base de datos: <b>${dbName}</b>.` };
-    } catch (error: any) {
-        let errorMessage = `Falló la conexión a MongoDB. Error: ${error.message}`;
-        if (error.message && (error.message.includes('bad auth') || error.message.includes('Authentication failed'))) {
-            errorMessage = "Falló la autenticación con MongoDB. Revisa que el usuario y la contraseña en la <b>MONGODB_URI</b> sean correctos."
-        }
-        if (error.code === 'ENOTFOUND' || (error.message && error.message.includes('ENOTFOUND'))) {
-             errorMessage = `No se pudo encontrar el host del servidor de MongoDB. Revisa que el hostname en tu <b>MONGODB_URI</b> sea correcto. Error: ${error.message}`;
-        }
-        return { status: 'error' as const, message: errorMessage };
-    }
-}
-
-// --- CHECK 3: Shopify ---
-async function checkShopify() {
-    const domain = process.env.SHOPIFY_STORE_DOMAIN;
-    const token = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN;
-
-    if (!domain) return { status: 'error' as const, message: `Configuración incompleta. Falta la variable de entorno: <b>SHOPIFY_STORE_DOMAIN</b>.` };
-    if (!token) return { status: 'error' as const, message: `Configuración incompleta. Falta la variable de entorno: <b>SHOPIFY_STOREFRONT_ACCESS_TOKEN</b>.` };
-
-    const endpoint = `https://${domain}/api/2024-04/graphql.json`;
-    const query = `{ shop { name } }`;
-
-    try {
-        const response = await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'X-Shopify-Storefront-Access-Token': token, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query }),
-        });
-
-        if (!response.ok) {
-            if (response.status === 401) {
-                 throw new Error(`Error de autenticación (Unauthorized). El <b>Storefront Access Token</b> es inválido o no tiene los permisos necesarios. Revisa que el token en Vercel sea correcto y que los permisos de Storefront API en tu app de Shopify estén habilitados (ej. 'unauthenticated_read_products').`);
-            }
-            if (response.status === 404) {
-                 throw new Error(`La URL de la API de Shopify no fue encontrada (404 Not Found). Revisa que el SHOPIFY_STORE_DOMAIN (<b>'${domain}'</b>) sea correcto. Debe ser del tipo 'tu-tienda.myshopify.com', sin 'https://'.`);
-            }
-            const errorText = await response.text();
-            throw new Error(`La API de Shopify devolvió un estado <b>${response.status}</b>. Respuesta: ${errorText}`);
-        }
-        
-        const json = await response.json();
-        
-        if (json.errors) {
-             throw new Error(`Errores de GraphQL: ${json.errors.map((e: any) => e.message).join(', ')}. Esto casi siempre significa que al token le faltan permisos. En Shopify, ve a tu App > Configuration > Storefront API integration y asegúrate de que todos los permisos de lectura de productos estén marcados (ej. 'unauthenticated_read_products').`);
-        }
-
-        const shopName = json.data?.shop?.name;
-        return { status: 'success' as const, message: `Conectado exitosamente a la tienda de Shopify: <b>${shopName}</b>.` };
-
-    } catch (error: any) {
-        return { status: 'error' as const, message: `Falló la conexión a Shopify. Error: ${error.message}` };
-    }
-}
-
-// --- CHECK 4: MongoDB Data Fetch ---
-async function checkMongoData() {
-    try {
-        const client = await connectToDb();
-        if(!client) {
-             return { status: 'error' as const, message: `No se pudo establecer conexión con MongoDB para la lectura de datos.` };
-        }
-
-        const postCount = await PostModel.countDocuments();
-        const testimonialCount = await TestimonialModel.countDocuments();
-        const dbName = client.connection.db.databaseName;
-
-        return { 
-            status: 'success' as const, 
-            message: `Lectura exitosa. Se encontraron <b>${postCount} posts</b> y <b>${testimonialCount} testimonios</b> en la base de datos <b>${dbName}</b>.`
-        };
-
-    } catch (error: any) {
-        return { status: 'error' as const, message: `Falló la lectura de datos de MongoDB. Error: ${error.message}` };
-    }
-}
-
-type Status = {
-    status: 'success' | 'error';
-    message: string;
-};
 
 export default function TroubleshootPage() {
-    const [statuses, setStatuses] = useState<{ [key: string]: Status | null }>({});
+    const [statuses, setStatuses] = useState<SystemStatus>({});
     const [logs, setLogs] = useState<LogEntry[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -200,25 +56,14 @@ export default function TroubleshootPage() {
         async function runChecks() {
             setIsLoading(true);
             const [
-                firebaseStatus, 
-                mongoStatus, 
-                shopifyStatus, 
-                mongoDataStatus,
+                fetchedStatuses,
                 fetchedLogs
             ] = await Promise.all([
-                checkFirebase(),
-                checkMongoDB(),
-                checkShopify(),
-                checkMongoData(),
+                getSystemStatuses(),
                 getLogs(15),
             ]);
             
-            setStatuses({
-                firebase: firebaseStatus,
-                mongo: mongoStatus,
-                shopify: shopifyStatus,
-                mongoData: mongoDataStatus,
-            });
+            setStatuses(fetchedStatuses);
             setLogs(fetchedLogs);
             setIsLoading(false);
         }
@@ -310,5 +155,3 @@ export default function TroubleshootPage() {
         </div>
     );
 }
-
-    
