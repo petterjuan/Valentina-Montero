@@ -1,15 +1,12 @@
 
 import * as admin from 'firebase-admin';
 
-let firestore: admin.firestore.Firestore | null = null;
-let initializationError: Error | null = null;
-let initialized = false;
+// This is a simplified singleton pattern to ensure Firebase is initialized only once.
+let firestoreInstance: admin.firestore.Firestore | null = null;
+let initError: Error | null = null;
 
-function initializeFirebase() {
-    if (initialized) {
-        return;
-    }
-    initialized = true; // Attempt initialization only once
+function initializeFirebaseAdmin() {
+    if (firestoreInstance) return;
 
     try {
         const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
@@ -19,9 +16,11 @@ function initializeFirebase() {
 
         let serviceAccount: admin.ServiceAccount;
         try {
+            // Prefer Base64 decoding, as it's common for environment variables.
             const decodedKey = Buffer.from(serviceAccountKey, 'base64').toString('utf-8');
             serviceAccount = JSON.parse(decodedKey);
         } catch (e) {
+            // Fallback to direct JSON parsing if Base64 fails.
             try {
                 serviceAccount = JSON.parse(serviceAccountKey);
             } catch (jsonError) {
@@ -36,32 +35,29 @@ function initializeFirebase() {
             console.log("✅ Firebase Admin SDK initialized successfully.");
         }
 
-        firestore = admin.firestore();
+        firestoreInstance = admin.firestore();
 
     } catch (error) {
         if (error instanceof Error) {
-            initializationError = error;
+            initError = error;
         } else {
-            initializationError = new Error(String(error));
+            initError = new Error(String(error));
         }
-        console.error("❌ Error initializing Firebase Admin SDK:", initializationError.message);
-        firestore = null;
+        console.error("❌ Error initializing Firebase Admin SDK:", initError.message);
+        firestoreInstance = null; // Ensure instance is null on failure
     }
 }
 
+// Call initialization on module load.
+initializeFirebaseAdmin();
 
 export const getFirestore = (): admin.firestore.Firestore | null => {
-    // Initialize on first call
-    if (!initialized) {
-        initializeFirebase();
-    }
-
-    if (initializationError) {
-        // Log the error each time access is attempted if initialization failed.
-        // This makes debugging easier if the app continues to run.
-        console.warn(`Firestore access blocked due to initialization error: ${initializationError.message}`);
+    if (initError) {
+        // Log the persistent error if anyone tries to get the instance after a failed init.
+        console.warn(`Firestore access blocked due to initialization error: ${initError.message}`);
         return null;
     }
-    
-    return firestore;
+    return firestoreInstance;
 }
+
+    

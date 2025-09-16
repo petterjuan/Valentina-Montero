@@ -4,6 +4,7 @@ import { getBlogPosts } from '@/app/actions';
 import { generateBlogPost } from '@/ai/flows/generate-blog-post';
 import connectToDb from '@/lib/mongoose';
 import PostModel from '@/models/Post';
+import { logEvent } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,10 +24,12 @@ export async function GET(request: NextRequest) {
   const providedSecret = vercelCronSecret || authHeader?.split(' ')[1];
 
   if (providedSecret !== cronSecret) {
+    logEvent('Cron Job Failed - Unauthorized', {}, 'error');
     return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
   }
 
   try {
+    logEvent('Cron Job Started: Generate Blog Post', {});
     console.log('Iniciando tarea CRON: Generación de artículo de blog.');
 
     // 1. Conectar a la base de datos
@@ -49,11 +52,15 @@ export async function GET(request: NextRequest) {
     await postToSave.save();
 
     console.log('Tarea CRON completada: Nuevo artículo guardado en la base de datos.');
+    logEvent('Cron Job Success: Blog Post Generated', { title: newPostData.title });
     return NextResponse.json({ success: true, title: newPostData.title });
     
   } catch (error) {
     console.error('Error durante la ejecución de la tarea CRON:', error);
     const errorMessage = error instanceof Error ? error.message : 'Un error desconocido ocurrió.';
+    logEvent('Cron Job Failed', { error: errorMessage }, 'error');
     return NextResponse.json({ message: 'Error al generar el artículo.', error: errorMessage }, { status: 500 });
   }
 }
+
+    

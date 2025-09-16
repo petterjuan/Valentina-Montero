@@ -4,7 +4,7 @@
 import { generatePersonalizedWorkout, GeneratePersonalizedWorkoutInput, GeneratePersonalizedWorkoutOutput } from "@/ai/flows/generate-personalized-workout";
 import { processPlanSignup, PlanSignupInput } from "@/ai/flows/plan-signup-flow";
 import { z } from "zod";
-import { Post, Testimonial, Lead } from "@/types";
+import { Post, Testimonial, Lead, LogEntry } from "@/types";
 import { getFirestore } from "@/lib/firebase";
 import { Program } from "@/components/sections/CoachingProgramsSection";
 import connectToDb from "@/lib/mongoose";
@@ -12,6 +12,7 @@ import PostModel from "@/models/Post";
 import TestimonialModel from "@/models/Testimonial";
 import crypto from 'crypto';
 import { generateBlogPost } from "@/ai/flows/generate-blog-post";
+import { logEvent } from "@/lib/logger";
 
 // Schemas
 const aiGeneratorSchema = z.object({
@@ -168,10 +169,12 @@ export async function handleAiGeneration(
     let result = previousData;
 
     if (!previousData || email) {
+       logEvent('AI Workout Generation Triggered', { fitnessGoal: workoutInput.fitnessGoal, experienceLevel: workoutInput.experienceLevel });
        result = await generatePersonalizedWorkout(workoutInput);
     }
     
     if (!result) {
+      logEvent('AI Workout Generation Failed', { error: 'No content from AI' }, 'error');
       return { error: "No se pudo generar el entrenamiento. Por favor, inténtalo de nuevo." };
     }
     
@@ -196,6 +199,7 @@ export async function handleAiGeneration(
         };
         
         await leadRef.set(leadData, { merge: true });
+        logEvent('New Lead from AI Workout', { email });
       }
       return { data: result, inputs: validatedInput, isFullPlan: true };
     }
@@ -205,11 +209,13 @@ export async function handleAiGeneration(
   } catch (error) {
     if (error instanceof z.ZodError) {
       const firstError = error.errors[0];
+      logEvent('AI Workout Validation Error', { message: firstError?.message }, 'error');
       return { 
         error: firstError?.message || "Los datos de entrada no son válidos. Por favor, revisa el formulario." 
       };
     }
     
+    logEvent('AI Workout Generation Error', { error: error instanceof Error ? error.message : String(error) }, 'error');
     return { 
       error: "No se pudo generar el contenido. Por favor, inténtalo de nuevo más tarde." 
     };
@@ -221,7 +227,7 @@ export async function handlePlanSignup(input: PlanSignupInput) {
     if (!input) {
       return { data: null, error: "Los datos de entrada son requeridos." };
     }
-    
+    logEvent(input.isDigital ? 'Digital Product Purchase Started' : 'Coaching Plan Signup Started', { planName: input.planName, email: input.email });
     const result = await processPlanSignup(input);
     return { data: result, error: null };
   } catch (error) {
@@ -229,12 +235,14 @@ export async function handlePlanSignup(input: PlanSignupInput) {
     
     const isStripeError = error instanceof Error && error.message.includes("STRIPE_NOT_CONFIGURED");
     if (isStripeError) {
+      logEvent('Stripe Signup Failed - Not Configured', { planName: input.planName }, 'error');
       return { 
         data: null, 
         error: "El sistema de pagos aún no está configurado. Por favor, inténtalo más tarde." 
       };
     }
     
+    logEvent('Plan Signup Failed', { planName: input.planName, error: error instanceof Error ? error.message : String(error) }, 'error');
     return { 
       data: null, 
       error: "Ocurrió un error al procesar tu solicitud. Por favor, inténtalo de nuevo." 
@@ -249,6 +257,7 @@ export async function handleLeadSubmission(formData: { email: string }) {
     const firestore = getFirestore();
     if (!firestore) {
       console.error("Firestore not configured");
+      logEvent('Lead Submission Failed - Firestore Not Configured', { email }, 'error');
       return { success: false, message: "Servicio temporalmente no disponible. Por favor, inténtalo más tarde." };
     }
 
@@ -265,6 +274,7 @@ export async function handleLeadSubmission(formData: { email: string }) {
     };
     
     await leadRef.set(leadData, { merge: true });
+    logEvent('New Lead from Free Guide', { email });
 
     return {
       success: true,
@@ -275,6 +285,7 @@ export async function handleLeadSubmission(formData: { email: string }) {
     if (error instanceof z.ZodError) {
       return { success: false, message: error.errors[0]?.message || "Email inválido." };
     }
+    logEvent('Lead Submission Failed', { error: error instanceof Error ? error.message : String(error) }, 'error');
     return { success: false, message: "Hubo un problema con tu solicitud. Por favor, inténtalo de nuevo." };
   }
 }
@@ -300,6 +311,7 @@ export async function getBlogPosts(limit?: number): Promise<Post[]> {
 
     } catch (error) {
         console.error("Error fetching blog posts:", error);
+        logEvent('Fetch Blog Posts Failed', { error: error instanceof Error ? error.message : String(error) }, 'error');
         return [];
     }
 }
@@ -324,6 +336,7 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
 
     } catch (error) {
         console.error(`Error fetching post by slug "${slug}":`, error);
+        logEvent('Fetch Blog Post By Slug Failed', { slug, error: error instanceof Error ? error.message : String(error) }, 'error');
         return null;
     }
 }
@@ -346,6 +359,7 @@ export async function getTestimonials(): Promise<Testimonial[]> {
 
     } catch (error) {
         console.error("Error fetching testimonials:", error);
+        logEvent('Fetch Testimonials Failed', { error: error instanceof Error ? error.message : String(error) }, 'error');
         return [];
     }
 }
@@ -445,9 +459,47 @@ export async function getPrograms(collectionHandle: string, maxProducts: number 
       domain,
       hasToken: !!token
     });
+    logEvent('Fetch Shopify Programs Failed', { collectionHandle, error: error instanceof Error ? error.message : String(error) }, 'error');
     return null;
   }
 }
+
+export async function getLogs(limit: number = 15): Promise<LogEntry[]> {
+    try {
+        const firestore = getFirestore();
+        if (!firestore) {
+            console.error("Firestore not configured, cannot fetch logs.");
+            return [];
+        }
+
+        const logsSnapshot = await firestore.collection('logs')
+            .orderBy('timestamp', 'desc')
+            .limit(limit)
+            .get();
+        
+        if (logsSnapshot.empty) {
+            return [];
+        }
+
+        const logs = logsSnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                message: data.message,
+                level: data.level,
+                timestamp: data.timestamp.toDate(),
+                metadata: data.metadata || null,
+            } as LogEntry;
+        });
+
+        return logs;
+
+    } catch (error) {
+        console.error("Error fetching logs from Firestore:", error);
+        return [];
+    }
+}
+    
 
     
 

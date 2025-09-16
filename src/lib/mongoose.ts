@@ -16,7 +16,10 @@ if (!MONGODB_URI) {
  * during API Route usage.
  */
 // @ts-ignore
-let cached = global.mongoose;
+let cached: {
+  conn: typeof mongoose | null;
+  promise: Promise<typeof mongoose> | null;
+} = global.mongoose;
 
 if (!cached) {
   // @ts-ignore
@@ -49,6 +52,7 @@ async function connectToDb() {
   } catch (e) {
     // If the promise was already rejected, this will re-throw.
     // The promise is reset inside the .catch block above.
+    cached.promise = null;
     throw e;
   }
   
@@ -56,4 +60,5 @@ async function connectToDb() {
 }
 
 export default connectToDb;
-export { mongoose };
+
+    

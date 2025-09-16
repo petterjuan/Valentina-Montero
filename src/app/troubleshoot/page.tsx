@@ -1,9 +1,17 @@
 
-import { CheckCircle, XCircle } from "lucide-react";
+'use client';
+
+import { CheckCircle, XCircle, FileText, Loader2, ServerCrash } from "lucide-react";
 import connectToDb from "@/lib/mongoose";
 import PostModel from "@/models/Post";
 import TestimonialModel from "@/models/Testimonial";
 import { getFirestore } from "@/lib/firebase";
+import { getLogs } from "@/app/actions";
+import { type LogEntry } from "@/types";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { useEffect, useState } from "react";
 
 // Helper function to create a status component
 const StatusCheck = ({
@@ -51,7 +59,7 @@ async function checkFirebase() {
     if (!firestore) {
       // The error message from initialization is more descriptive.
        return {
-            status: "error",
+            status: "error" as const,
             message: `La inicialización de Firebase falló. Revisa los logs del servidor para ver el error. Asegúrate de que <b>FIREBASE_SERVICE_ACCOUNT_KEY</b> esté configurada correctamente.`,
         };
     }
@@ -62,13 +70,12 @@ async function checkFirebase() {
     // Use a try-catch on the env var just to get the project_id for the success message.
     let projectId = 'tu-proyecto';
     try {
-        const key = process.env.FIREBASE_SERVICE_ACCOUNT_KEY!;
-        const decoded = Buffer.from(key, "base64").toString("utf-8");
-        const serviceAccount = JSON.parse(decoded);
-        projectId = serviceAccount.project_id;
+        const key = process.env.NEXT_PUBLIC_FIREBASE_CONFIG!;
+        const config = JSON.parse(key);
+        projectId = config.projectId;
     } catch (e) {}
 
-    return { status: "success", message: `Conectado exitosamente al proyecto de Firebase: <b>${projectId}</b>.` };
+    return { status: "success" as const, message: `Conectado exitosamente al proyecto de Firebase: <b>${projectId}</b>.` };
   } catch (error: any) {
     let errorMessage = `Falló la conexión a Firestore. Error: ${error.message}`;
     if (error.code === 'ENOTFOUND' || (error.message && error.message.includes('ENOTFOUND'))) {
@@ -79,7 +86,7 @@ async function checkFirebase() {
     } else if (error.code === 5 || (error.message && error.message.includes('NOT_FOUND'))) {
        errorMessage = `Error: <b>5 NOT_FOUND</b>. Esto casi siempre significa que la base de datos de Firestore aún no ha sido creada en tu proyecto. <br><b>Solución:</b> Ve a la <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" class="underline font-bold">Consola de Firebase</a>, selecciona tu proyecto, haz clic en <b>Build > Firestore Database</b> y luego en <b>'Crear base de datos'</b>.`;
     }
-    return { status: "error", message: errorMessage };
+    return { status: "error" as const, message: errorMessage };
   }
 }
 
@@ -88,11 +95,11 @@ async function checkMongoDB() {
     const uri = process.env.MONGODB_URI;
 
     if (!uri) {
-        return { status: 'error', message: 'La variable de entorno <b>MONGODB_URI</b> no está configurada.' };
+        return { status: 'error' as const, message: 'La variable de entorno <b>MONGODB_URI</b> no está configurada.' };
     }
     
     if (!uri.startsWith('mongodb+srv://') && !uri.startsWith('mongodb://')) {
-        return { status: 'error', message: `Formato de MONGODB_URI inválido. Debe empezar con 'mongodb+srv://' o 'mongodb://'.` };
+        return { status: 'error' as const, message: `Formato de MONGODB_URI inválido. Debe empezar con 'mongodb+srv://' o 'mongodb://'.` };
     }
 
     try {
@@ -101,7 +108,7 @@ async function checkMongoDB() {
         
         await client.connection.db.command({ ping: 1 });
         
-        return { status: 'success', message: `Conectado exitosamente a la base de datos: <b>${dbName}</b>.` };
+        return { status: 'success' as const, message: `Conectado exitosamente a la base de datos: <b>${dbName}</b>.` };
     } catch (error: any) {
         let errorMessage = `Falló la conexión a MongoDB. Error: ${error.message}`;
         if (error.message && (error.message.includes('bad auth') || error.message.includes('Authentication failed'))) {
@@ -110,7 +117,7 @@ async function checkMongoDB() {
         if (error.code === 'ENOTFOUND' || (error.message && error.message.includes('ENOTFOUND'))) {
              errorMessage = `No se pudo encontrar el host del servidor de MongoDB. Revisa que el hostname en tu <b>MONGODB_URI</b> sea correcto. Error: ${error.message}`;
         }
-        return { status: 'error', message: errorMessage };
+        return { status: 'error' as const, message: errorMessage };
     }
 }
 
@@ -119,8 +126,8 @@ async function checkShopify() {
     const domain = process.env.SHOPIFY_STORE_DOMAIN;
     const token = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN;
 
-    if (!domain) return { status: 'error', message: `Configuración incompleta. Falta la variable de entorno: <b>SHOPIFY_STORE_DOMAIN</b>.` };
-    if (!token) return { status: 'error', message: `Configuración incompleta. Falta la variable de entorno: <b>SHOPIFY_STOREFRONT_ACCESS_TOKEN</b>.` };
+    if (!domain) return { status: 'error' as const, message: `Configuración incompleta. Falta la variable de entorno: <b>SHOPIFY_STORE_DOMAIN</b>.` };
+    if (!token) return { status: 'error' as const, message: `Configuración incompleta. Falta la variable de entorno: <b>SHOPIFY_STOREFRONT_ACCESS_TOKEN</b>.` };
 
     const endpoint = `https://${domain}/api/2024-04/graphql.json`;
     const query = `{ shop { name } }`;
@@ -150,10 +157,10 @@ async function checkShopify() {
         }
 
         const shopName = json.data?.shop?.name;
-        return { status: 'success', message: `Conectado exitosamente a la tienda de Shopify: <b>${shopName}</b>.` };
+        return { status: 'success' as const, message: `Conectado exitosamente a la tienda de Shopify: <b>${shopName}</b>.` };
 
     } catch (error: any) {
-        return { status: 'error', message: `Falló la conexión a Shopify. Error: ${error.message}` };
+        return { status: 'error' as const, message: `Falló la conexión a Shopify. Error: ${error.message}` };
     }
 }
 
@@ -162,7 +169,7 @@ async function checkMongoData() {
     try {
         const client = await connectToDb();
         if(!client) {
-             return { status: 'error', message: `No se pudo establecer conexión con MongoDB para la lectura de datos.` };
+             return { status: 'error' as const, message: `No se pudo establecer conexión con MongoDB para la lectura de datos.` };
         }
 
         const postCount = await PostModel.countDocuments();
@@ -170,64 +177,138 @@ async function checkMongoData() {
         const dbName = client.connection.db.databaseName;
 
         return { 
-            status: 'success', 
+            status: 'success' as const, 
             message: `Lectura exitosa. Se encontraron <b>${postCount} posts</b> y <b>${testimonialCount} testimonios</b> en la base de datos <b>${dbName}</b>.`
         };
 
     } catch (error: any) {
-        return { status: 'error', message: `Falló la lectura de datos de MongoDB. Error: ${error.message}` };
+        return { status: 'error' as const, message: `Falló la lectura de datos de MongoDB. Error: ${error.message}` };
     }
 }
 
+type Status = {
+    status: 'success' | 'error';
+    message: string;
+};
 
-export default async function TroubleshootPage() {
-  const [firebaseStatus, mongoStatus, shopifyStatus, mongoDataStatus] = await Promise.all([
-    checkFirebase(),
-    checkMongoDB(),
-    checkShopify(),
-    checkMongoData(),
-  ]);
+export default function TroubleshootPage() {
+    const [statuses, setStatuses] = useState<{ [key: string]: Status | null }>({});
+    const [logs, setLogs] = useState<LogEntry[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
-  return (
-    <div className="bg-gray-50 min-h-screen py-12">
-      <div className="container mx-auto px-4 md:px-6">
-        <div className="max-w-3xl mx-auto">
-          <header className="text-center mb-10">
-            <h1 className="text-4xl font-bold font-headline text-gray-800">
-              Página de Diagnóstico del Sistema
-            </h1>
-            <p className="mt-2 text-lg text-gray-500">
-              Este es un resumen del estado de las conexiones externas de tu
-              aplicación.
-            </p>
-          </header>
-          <div className="space-y-6">
-            <StatusCheck
-              title="Conexión a Firebase (Firestore)"
-              status={firebaseStatus.status as "success" | "error"}
-              message={firebaseStatus.message}
-            />
-            <StatusCheck
-              title="Conexión a MongoDB"
-              status={mongoStatus.status as "success" | "error"}
-              message={mongoStatus.message}
-            />
-             <StatusCheck
-              title="Lectura de Datos de MongoDB"
-              status={mongoDataStatus.status as "success" | "error"}
-              message={mongoDataStatus.message}
-            />
-             <StatusCheck
-              title="Conexión a Shopify Storefront API"
-              status={shopifyStatus.status as "success" | "error"}
-              message={shopifyStatus.message}
-            />
-          </div>
-          <footer className="mt-12 text-center text-sm text-gray-400">
-             <p>Esta página es solo para fines de diagnóstico y no es visible para los usuarios habituales.</p>
-          </footer>
+    useEffect(() => {
+        async function runChecks() {
+            setIsLoading(true);
+            const [
+                firebaseStatus, 
+                mongoStatus, 
+                shopifyStatus, 
+                mongoDataStatus,
+                fetchedLogs
+            ] = await Promise.all([
+                checkFirebase(),
+                checkMongoDB(),
+                checkShopify(),
+                checkMongoData(),
+                getLogs(15),
+            ]);
+            
+            setStatuses({
+                firebase: firebaseStatus,
+                mongo: mongoStatus,
+                shopify: shopifyStatus,
+                mongoData: mongoDataStatus,
+            });
+            setLogs(fetchedLogs);
+            setIsLoading(false);
+        }
+        runChecks();
+    }, []);
+
+    return (
+        <div className="bg-gray-50 min-h-screen py-12">
+            <div className="container mx-auto px-4 md:px-6">
+                <div className="max-w-4xl mx-auto">
+                    <header className="text-center mb-10">
+                        <h1 className="text-4xl font-bold font-headline text-gray-800">
+                            Página de Diagnóstico del Sistema
+                        </h1>
+                        <p className="mt-2 text-lg text-gray-500">
+                            Resumen del estado de las conexiones y registro de eventos recientes.
+                        </p>
+                    </header>
+                    
+                    {isLoading ? (
+                        <div className="flex justify-center items-center h-64">
+                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        </div>
+                    ) : (
+                        <div className="space-y-8">
+                            <div className="space-y-4">
+                                {statuses.firebase && <StatusCheck title="Conexión a Firebase (Firestore)" {...statuses.firebase} />}
+                                {statuses.mongo && <StatusCheck title="Conexión a MongoDB" {...statuses.mongo} />}
+                                {statuses.mongoData && <StatusCheck title="Lectura de Datos de MongoDB" {...statuses.mongoData} />}
+                                {statuses.shopify && <StatusCheck title="Conexión a Shopify Storefront API" {...statuses.shopify} />}
+                            </div>
+                            
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <FileText className="h-5 w-5" />
+                                        Registro de Eventos Recientes
+                                    </CardTitle>
+                                    <CardDescription>
+                                        Mostrando los últimos 15 eventos registrados en el sistema.
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Evento</TableHead>
+                                                <TableHead>Nivel</TableHead>
+                                                <TableHead className="text-right">Fecha</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {logs.length > 0 ? (
+                                                logs.map(log => (
+                                                    <TableRow key={log.id}>
+                                                        <TableCell className="font-medium">{log.message}</TableCell>
+                                                        <TableCell>
+                                                            <Badge variant={log.level === 'error' ? 'destructive' : 'secondary'}>
+                                                                {log.level}
+                                                            </Badge>
+                                                        </TableCell>
+                                                        <TableCell className="text-right text-xs">
+                                                            {new Date(log.timestamp).toLocaleString('es-ES', {
+                                                                year: 'numeric', month: 'short', day: 'numeric', 
+                                                                hour: '2-digit', minute: '2-digit', second: '2-digit'
+                                                            })}
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))
+                                            ) : (
+                                                <TableRow>
+                                                    <TableCell colSpan={3} className="h-24 text-center">
+                                                        No hay registros de eventos para mostrar.
+                                                    </TableCell>
+                                                </TableRow>
+                                            )}
+                                        </TableBody>
+                                    </Table>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    )}
+
+                    <footer className="mt-12 text-center text-sm text-gray-400">
+                        <p>Esta página es solo para fines de diagnóstico y no es visible para los usuarios habituales.</p>
+                    </footer>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  );
+    );
 }
+
+    

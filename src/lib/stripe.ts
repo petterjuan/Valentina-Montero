@@ -1,15 +1,11 @@
 
 import Stripe from 'stripe';
 
-let stripe: Stripe | null = null;
-let initializationError: Error | null = null;
-let initialized = false;
+let stripeInstance: Stripe | null = null;
+let initError: Error | null = null;
 
 function initializeStripe() {
-    if (initialized) {
-        return;
-    }
-    initialized = true;
+    if (stripeInstance) return;
 
     try {
         const stripeKey = process.env.STRIPE_SECRET_KEY;
@@ -17,7 +13,7 @@ function initializeStripe() {
             throw new Error("Stripe secret key (STRIPE_SECRET_KEY) not found in environment variables.");
         }
         
-        stripe = new Stripe(stripeKey, {
+        stripeInstance = new Stripe(stripeKey, {
             apiVersion: '2024-06-20',
             typescript: true,
         });
@@ -25,24 +21,23 @@ function initializeStripe() {
 
     } catch (error) {
         if (error instanceof Error) {
-            initializationError = error;
+            initError = error;
         } else {
-            initializationError = new Error(String(error));
+            initError = new Error(String(error));
         }
-        console.error("❌ Error initializing Stripe:", initializationError.message);
-        stripe = null;
+        console.error("❌ Error initializing Stripe:", initError.message);
+        stripeInstance = null;
     }
 }
+
+initializeStripe();
 
 export const getStripe = (): Stripe | null => {
-    if (!initialized) {
-        initializeStripe();
-    }
-
-    if (initializationError) {
-        console.warn(`Stripe access blocked due to initialization error: ${initializationError.message}`);
+    if (initError) {
+        console.warn(`Stripe access blocked due to initialization error: ${initError.message}`);
         return null;
     }
-    
-    return stripe;
+    return stripeInstance;
 }
+
+    
