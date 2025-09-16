@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/generate-post?secret=M9!rF2z#Q7k@pX1vL8d%J6n^H4s&W3y*",
+      "schedule": "0 10 * * 1"
+    }
+  ]
+}
