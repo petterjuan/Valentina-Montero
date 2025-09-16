@@ -1,20 +1,25 @@
 # VM Fitness Hub - Coaching & E-commerce Website
 
-Welcome to the GitHub repository for the VM Fitness Hub, a modern, feature-rich website for a fitness coach. This application is built with a powerful stack including Next.js, Firebase, MongoDB, and Stripe, and features an AI-powered workout generator using Google's Genkit.
+Welcome to the GitHub repository for the VM Fitness Hub, a modern, feature-rich website for a fitness coach. This application is built with a powerful stack including Next.js, Firebase, MongoDB, and Stripe, and features an advanced AI content generation engine using Google's Genkit.
 
 ![VM Fitness Hub Screenshot](https://picsum.photos/seed/readme/1200/630)
 
 ## ✨ Features
 
-- **Coaching Programs**: Display and manage multi-week coaching plans.
-- **Digital Product Sales**: Sell digital goods like PDF guides with a streamlined checkout process.
-- **Shopify Integration**: Pulls product information directly from a Shopify collection to display programs and products.
-- **Stripe Integration**: Secure payment processing for digital products via Stripe Checkout.
-- **AI Workout Generator**: A custom tool built with Google's Genkit (and Gemini) that creates personalized workout plans based on user input (goals, experience, equipment).
-- **Blog Platform**: A fully functional blog with posts managed in a MongoDB database.
-- **Lead Generation**: Forms for capturing user interest and signing up for free guides.
-- **Firestore Integration**: Captures signups for coaching plans in a Firebase Firestore database for manual follow-up.
-- **Responsive Design**: Modern and mobile-first interface built with Tailwind CSS and ShadCN UI.
+- **Coaching Programs & Digital Products**: Displays and manages coaching plans and digital goods (like PDFs) pulled directly from a **Shopify** store.
+- **Advanced Sales Funnel**:
+    - **Lead Magnet**: Captures leads by offering a free guide.
+    - **Tripwire Offer**: Presents a low-cost, high-value offer immediately after a lead subscribes, converting free leads into paying customers instantly.
+- **Stripe Integration**: Secure payment processing for digital products and tripwire offers via Stripe Checkout.
+- **AI-Powered Content Engine (Google Genkit & Gemini)**:
+    - **Personalized Workout Generator**: Creates custom workout plans based on user input and optionally captures their email.
+    - **Automatic Blog Post Generation**: A fully autonomous system that uses a **Vercel Cron Job** to trigger an AI agent once a week. The agent writes a new, full-length, SEO-friendly blog post and saves it to the database, ensuring the blog always has fresh content.
+- **Dual Database Strategy**:
+    - **MongoDB**: Manages persistent content like blog posts (including AI-generated ones) and testimonials.
+    - **Firebase Firestore**: Acts as a real-time CRM to capture leads and coaching plan signups for manual follow-up.
+- **Modern UX**:
+    - Fully responsive design built with Tailwind CSS and ShadCN UI.
+    - Smooth scrolling, a "back-to-top" button, and instant visual feedback on forms.
 
 ---
 
@@ -23,11 +28,13 @@ Welcome to the GitHub repository for the VM Fitness Hub, a modern, feature-rich 
 - **Framework**: [Next.js](https://nextjs.org/) (App Router)
 - **Language**: [TypeScript](https://www.typescriptlang.org/)
 - **Styling**: [Tailwind CSS](https://tailwindcss.com/) & [ShadCN UI](https://ui.shadcn.com/)
-- **AI**: [Google Genkit](https://firebase.google.com/docs/genkit) (with Gemini)
-- **Database**: [MongoDB](https://www.mongodb.com/) (for blog posts and testimonials) & [Firebase Firestore](https://firebase.google.com/docs/firestore) (for signups/leads)
+- **AI Engine**: [Google Genkit](https://firebase.google.com/docs/genkit) (with Gemini)
+- **Databases**: 
+    - [MongoDB](https://www.mongodb.com/) (for blog posts, testimonials)
+    - [Firebase Firestore](https://firebase.google.com/docs/firestore) (for leads/signups)
 - **Payments**: [Stripe](https://stripe.com/)
 - **E-commerce Source**: [Shopify Storefront API](https://shopify.dev/docs/api/storefront)
-- **Deployment**: [Vercel](https://vercel.com/)
+- **Deployment & Automation**: [Vercel](https://vercel.com/) (including Vercel Cron Jobs)
 
 ---
 
@@ -76,6 +83,10 @@ SHOPIFY_STORE_DOMAIN=
 # Your public Storefront API access token
 SHOPIFY_STOREFRONT_ACCESS_TOKEN=
 
+# Cron Job Security
+# A long, random, secure string to protect your cron job endpoint
+CRON_SECRET=
+
 # Application URL (for Stripe Checkout redirects)
 NEXT_PUBLIC_APP_URL=http://localhost:9002
 ```
@@ -111,4 +122,23 @@ The application should now be running on [http://localhost:9002](http://localhos
 
 ## ☁️ Deployment
 
-This application is ready for deployment on **Vercel**. Connect your GitHub repository to a Vercel project and configure the environment variables as listed in the `.env` section. Vercel will automatically build and deploy the application on every push to the `main` branch.
+This application is optimized for deployment on **Vercel**. 
+
+1.  Connect your GitHub repository to a Vercel project.
+2.  Configure the environment variables as listed in the `.env` section in the Vercel project settings.
+3.  Vercel will automatically build and deploy the application on every push to the `main` branch.
+
+### **Important: Enabling Automatic Blog Posts**
+To enable the weekly automatic blog post generation, you must create a file named `vercel.json` in the root of your project with the following content:
+
+```json
+{
+  "crons": [
+    {
+      "path": "/api/cron/generate-post?secret=YOUR_CRON_SECRET_HERE",
+      "schedule": "0 10 * * 1"
+    }
+  ]
+}
+```
+**Remember to replace `YOUR_CRON_SECRET_HERE` with the same value you used in your environment variables.**
