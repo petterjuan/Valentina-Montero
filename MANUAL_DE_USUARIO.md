@@ -2,12 +2,13 @@
 
 ¡Felicitaciones por tu nueva página web de coaching! Este manual está diseñado para ayudarte a entender y gestionar todas las funcionalidades clave de tu sitio.
 
-## 1. Gestión de Clientas en Firestore
+**English version follows below.**
 
-Tu base de datos en tiempo real para gestionar nuevas clientas y compras.
+---
 
-### ¿Qué es Firestore?
-Firestore es la base de datos donde se guarda automáticamente la información cada vez que una clienta se inscribe en un plan o inicia la compra de un producto digital.
+## 1. Gestión de Prospectos y Clientas (Firestore)
+
+Tu base de datos en tiempo real para gestionar todos los contactos generados por la web.
 
 ### ¿Cómo acceder?
 1.  Ve a tu proyecto en la [Consola de Firebase](https://console.firebase.google.com/).
@@ -15,131 +16,185 @@ Firestore es la base de datos donde se guarda automáticamente la información c
 
 ### Colecciones Principales
 
-#### a) `signups` (Inscripciones a Planes de Coaching)
-Aquí encontrarás la información de cada clienta que se inscribe en tus planes de 6 o 12 semanas.
+#### a) `leads` (Prospectos Interesados)
+Aquí se registran **todos** los correos electrónicos capturados en el sitio, provenientes de diferentes fuentes.
 
 - **Campos guardados:**
-  - `fullName`: Nombre completo de la clienta.
-  - `email`: Correo electrónico.
-  - `phone`: Teléfono (opcional).
+  - `email`: Correo del prospecto.
+  - `fullName`: Nombre completo (si se proporciona).
+  - `source`: De dónde vino el prospecto (Ej: "Guía Gratuita - 10k Pasos", "Generador IA", "Muscle Bites").
+  - `status`: El estado del prospecto (`subscribed` para un suscriptor, `initiated` para alguien que empezó una compra).
+  - `createdAt`: La fecha y hora del primer registro.
+  - `updatedAt`: La fecha de la última interacción.
+
+#### b) `signups` (Inscripciones a Planes de Coaching)
+Aquí encontrarás la información de cada clienta que se inscribe en tus planes de 6 o 12 semanas para un seguimiento manual.
+
+- **Campos guardados:**
+  - `fullName`, `email`, `phone` (opcional).
   - `planName`: El plan que eligió (ej. "Plan de Coaching de 12 Semanas").
   - `planPrice`: El precio del plan.
   - `meetLink`: El enlace **simulado** de Google Meet.
-  - `registrationDate`: La fecha y hora exactas de la inscripción.
-
-#### b) `leads` (Interesadas en Productos Digitales)
-Aquí se registran las usuarias que inician el proceso de compra de tu PDF "Muscle Bites".
-
-- **Campos guardados:**
-  - `email`: Correo de la interesada.
-  - `fullName`: Nombre completo.
-  - `productName`: "Muscle Bites".
-  - `status`: Por defecto se guarda como `"initiated"`.
-  - `createdAt`: La fecha y hora del registro.
+  - `registrationDate`: La fecha y hora de la inscripción.
 
 ---
 
-## 2. Flujo de Coaching (Planes de 6 y 12 semanas)
+## 2. Flujos de Captación de Clientes
 
-Este es el flujo que sigue una clienta para inscribirse en un plan de coaching.
+Tu web tiene múltiples estrategias para convertir visitantes en clientes.
 
-1.  **Selección del Plan**: En la sección "Programas", la clienta hace clic en "Elegir Plan". El plan de 12 semanas se muestra destacado como "MÁS POPULAR".
-2.  **Formulario de Inscripción**: Se abre una ventana emergente (modal) con un formulario que pide:
-    - Nombre Completo (obligatorio).
-    - Email (obligatorio).
-    - Teléfono (opcional).
-    - **Consentimiento**: Una casilla obligatoria para aceptar ser contactada.
-3.  **Confirmación y Guardado**: Al enviar el formulario:
-    - Los datos se guardan en la colección `signups` de Firestore.
-    - Se genera un enlace **simulado** de Google Meet.
-    - La clienta ve un mensaje de éxito indicando que revise su correo para los siguientes pasos.
+### a) Flujo de Guía Gratuita + Oferta "Tripwire" (Alto Impacto)
+Este es tu embudo de ventas más potente.
+1.  **Captación**: Una usuaria introduce su email para descargar la guía "Estrategias para lograr 10k pasos al día".
+2.  **Registro en `leads`**: Su correo se guarda en Firestore con la fuente "Guía Gratuita - 10k Pasos".
+3.  **Oferta Inmediata (Tripwire)**: Inmediatamente después de suscribirse, la página le muestra una oferta única y por tiempo limitado: la guía "Muscle Bites" a un precio muy reducido (ej. $9 en lugar de $29).
+4.  **Compra (Opcional)**: Si acepta la oferta, es dirigida a Stripe para el pago. Esto convierte a un prospecto gratuito en un cliente de pago al instante.
 
-**Acción Requerida de tu parte:**
-- **Agendamiento Real**: Revisa la colección `signups` para ver las nuevas inscripciones. Contacta a la clienta por email o teléfono para coordinar la primera reunión y enviarle el enlace real de Google Meet.
-- **Proceso de Pago**: Contacta a la clienta para gestionar el pago del plan a través del método que prefieras (transferencia, link de pago manual, etc.).
+### b) Flujo de Coaching (Planes de 6 y 12 semanas)
+1.  **Selección del Plan**: La clienta elige un plan de coaching y llena el formulario.
+2.  **Registro en `signups`**: Sus datos se guardan en la colección `signups` de Firestore.
+3.  **Confirmación**: Ve un mensaje de éxito y recibe un email (simulado) con los próximos pasos.
+4.  **Acción Requerida de tu parte**: Contacta a la clienta para agendar la reunión real y coordinar el pago.
 
----
-
-## 3. Flujo de Producto Digital ("Muscle Bites")
-
-Este es el flujo para la venta de tu PDF.
-
-1.  **Selección del Producto**: La clienta hace clic en "Comprar PDF" en la tarjeta del producto "Muscle Bites".
-2.  **Formulario de Compra**: Se abre la misma ventana emergente, pero adaptada para el producto digital.
-3.  **Inicio del Proceso**: Al enviar el formulario:
-    - Los datos se guardan en la colección `leads` de Firestore con el estado `"initiated"`.
-    - La clienta ve un mensaje indicando que será redirigida para el pago.
-
-**Acción Requerida de tu parte (Próximos Pasos):**
-- **Integrar una Pasarela de Pago (Stripe)**: Para automatizar el cobro, necesitarás conectar Stripe. El flujo está preparado para esto. Un desarrollador puede ayudarte a:
-    1.  Crear una sesión de pago de Stripe cuando se envía el formulario.
-    2.  Configurar un *webhook* que escuche la confirmación del pago.
-    3.  Una vez confirmado el pago, cambiar el estado en Firestore a `"paid"`.
-- **Automatizar Envío del PDF**:
-    1.  Sube el PDF a **Firebase Storage**.
-    2.  Configura una función que, tras el pago confirmado, genere un enlace de descarga seguro y temporal.
-    3.  Integra un servicio de envío de correos (como SendGrid o Mailgun) para enviar automáticamente el email con el enlace de descarga.
+### c) Flujo de Producto Digital ("Muscle Bites" - Compra Directa)
+1.  **Selección del Producto**: La clienta hace clic en "Comprar PDF" en la tarjeta del producto.
+2.  **Inicio del Proceso**: Llena el formulario. Sus datos se guardan en `leads` con el estado `"initiated"`.
+3.  **Redirección al Pago**: Es redirigida automáticamente a la pasarela de pago de Stripe para completar la compra.
 
 ---
 
-## 4. Generador de Planes de Entrenamiento con IA
+## 3. Generación Automática de Contenido con IA
 
-Esta herramienta gratuita ofrece valor a tus visitantes y funciona como un imán de prospectos.
+Tu web utiliza Inteligencia Artificial para crear contenido valioso y mantener el sitio actualizado sin esfuerzo manual.
 
-- **Cómo funciona**:
-    1. La usuaria selecciona sus preferencias (objetivo, nivel, equipo, etc.).
-    2. Hace clic en "Generar Mi Plan".
-    3. El sistema utiliza IA (Genkit) para crear una rutina de entrenamiento personalizada en texto.
-    4. El resultado se muestra directamente en la página.
+### a) Generador de Planes de Entrenamiento
+- **Cómo funciona**: Las usuarias seleccionan sus preferencias y la IA crea una rutina personalizada al instante.
+- **Captación de Prospectos**: Si la usuaria introduce su email (opcional), se guarda en la colección `leads` con la fuente "Generador IA".
 
-- **Objetivo Estratégico**: Después de recibir su plan gratuito, se le anima a considerar tus planes de coaching personalizados para un seguimiento más detallado.
-
----
-
-## 5. Próximos Pasos y Escalabilidad
-
-Tu web está construida con una base sólida y escalable. Aquí tienes una guía para llevarla al siguiente nivel:
-
-1.  **Activa los Pagos Reales con Stripe**:
-    - Obtén tus claves de API de Stripe.
-    - Implementa la lógica para crear sesiones de `Stripe Checkout` en el flujo `plan-signup-flow.ts`.
-    - Crea el *webhook* para recibir y procesar las notificaciones de pago.
-
-2.  **Automatiza el Emailing**:
-    - Elige un proveedor (SendGrid, Mailgun, Resend).
-    - Configura plantillas de correo para la bienvenida a los planes y la entrega de productos digitales.
-    - Intégralo en el flujo para que los correos se envíen automáticamente tras una acción (inscripción, pago).
-
-3.  **Configura un Dominio Personalizado**:
-    - En Firebase Hosting, sigue los pasos para conectar tu propio dominio (ej. `www.valentinamontero.com`).
-
-4.  **Monitorea el Rendimiento**:
-    - Utiliza Google Analytics para ver qué secciones de tu página son las más visitadas y cómo se comportan las usuarias.
-
-¡Listo! Con este manual, tienes el control total de tu nueva plataforma de coaching. ¡Mucho éxito!
+### b) Generación Automática de Artículos de Blog (¡NUEVO!)
+Esta es una de las funciones más avanzadas de tu sitio.
+1.  **¿Qué hace?**: Cada semana, la IA escribe y publica automáticamente un artículo de blog nuevo, completo y optimizado para SEO en tu sitio.
+2.  **¿Cómo funciona?**:
+    - Un **Cron Job** (tarea programada) en Vercel se activa una vez por semana (actualmente configurado para los lunes a las 10:00 AM).
+    - Esta tarea llama a una ruta segura en tu API (`/api/cron/generate-post`).
+    - La ruta de API le pide a la IA (Google Genkit) que escriba un artículo sobre un tema nuevo, asegurándose de no repetir los últimos 10 títulos.
+    - El nuevo artículo se guarda automáticamente en tu base de datos de MongoDB y aparece en tu blog.
+3.  **Tu única tarea**: ¡Ninguna! El sistema es 100% autónomo.
 
 ---
 
-## 6. ¿Qué tecnología hay detrás de tu web? (Explicado de forma sencilla)
+## 4. ¿Qué tecnología hay detrás de tu web? (Explicado de forma sencilla)
 
-Tu nueva web es mucho más que una simple página. Es una potente herramienta de negocio construida con la mejor tecnología disponible para que sea rápida, segura y fácil de hacer crecer.
+Tu web es una plataforma de negocio completa construida con tecnología de vanguardia.
 
-#### **1. Un motor súper rápido (Next.js 14)**
-La web está construida con la tecnología más moderna para que cargue al instante. Esto no solo hace felices a tus visitantes, sino también a Google, lo que ayuda a que te encuentren más fácilmente.
+*   **Motor (Next.js 14)**: Para una velocidad de carga instantánea y una experiencia de usuario fluida.
+*   **Cerebro de IA (Google AI & Genkit)**: Es el corazón de las funciones inteligentes. No solo crea planes de entrenamiento, sino que también actúa como tu "escritora fantasma", generando artículos de blog completos y de alta calidad cada semana.
+*   **Bases de Datos Inteligentes**:
+    *   **MongoDB**: Almacena el contenido duradero como los artículos del blog (incluidos los generados por IA) y los testimonios.
+    *   **Firestore**: Funciona como tu CRM en tiempo real, capturando cada prospecto y cada inscripción al instante para que puedas actuar sobre ellos.
+*   **E-commerce y Pagos**:
+    *   **Shopify**: Sincroniza tus programas y productos directamente desde tu panel de Shopify.
+    *   **Stripe**: Procesa los pagos de forma segura para tus productos digitales y ofertas "tripwire".
+*   **Automatización (Vercel Cron Jobs)**: El programador que le dice a tu IA cuándo escribir un nuevo artículo, asegurando que tu blog siempre tenga contenido fresco para atraer visitantes.
+*   **Diseño (Tailwind CSS & ShadCN)**: Un diseño moderno y adaptable que se ve perfecto en cualquier dispositivo.
 
-#### **2. Un cerebro de Inteligencia Artificial (Google AI)**
-El generador de planes de entrenamiento no es un simple formulario. Usa la misma tecnología de inteligencia artificial que Google para crear, en tiempo real, una rutina verdaderamente personalizada para cada visitante. Es como tener una entrenadora asistente trabajando para ti 24/7.
+---
+---
 
-#### **3. Dos sistemas de archivo inteligentes (Bases de Datos)**
-- **Para el blog y testimonios (MongoDB):** Usamos una base de datos de alto rendimiento, perfecta para guardar y mostrar los artículos de tu blog y las historias de éxito de tus clientas de forma muy rápida.
-- **Para tus nuevos prospectos y clientas (Firestore):** Cuando alguien se inscribe en un plan o descarga tu guía, sus datos se guardan al instante y de forma segura en otro sistema, listo para que lo consultes.
+# User Manual: VM Fitness Hub
 
-#### **4. Una tienda y caja registradora de primer nivel (Shopify y Stripe)**
-- **Catálogo de productos (Shopify):** Tu web se conecta directamente a tu panel de Shopify. Si cambias un precio o un programa allí, se actualiza automáticamente en la web. Tú gestionas todo desde un lugar que ya conoces.
-- **Pagos seguros (Stripe):** Para vender tus productos digitales, usamos Stripe, el sistema de pagos más seguro y confiable del mundo. Todo el proceso de pago es manejado por ellos, dándote a ti y a tus clientas total tranquilidad.
+Congratulations on your new coaching website! This manual is designed to help you understand and manage all the key features of your site.
 
-#### **5. Formularios blindados y un diseño adaptable**
-- **Seguridad en los formularios:** Cada vez que una clienta llena un formulario, la información viaja por un canal seguro y directo al servidor, protegiendo sus datos.
-- **Diseño impecable (Tailwind y ShadCN):** El diseño de la web no solo es bonito, sino también inteligente. Se adapta perfectamente a cualquier dispositivo (móvil, tablet, ordenador) para que siempre se vea genial.
+---
 
-En resumen, tienes una plataforma de negocio digital completa, equipada con la misma tecnología que usan las grandes empresas, pero diseñada a la medida de tus necesidades para ayudarte a crecer.
+## 1. Lead and Client Management (Firestore)
+
+Your real-time database for managing all contacts generated by the website.
+
+### How to Access?
+1.  Go to your project in the [Firebase Console](https://console.firebase.google.com/).
+2.  In the left-hand menu, click **Build > Firestore Database**.
+
+### Main Collections
+
+#### a) `leads` (Interested Prospects)
+This is where **all** email addresses captured on the site are stored, coming from various sources.
+
+- **Saved fields:**
+  - `email`: Prospect's email.
+  - `fullName`: Full name (if provided).
+  - `source`: Where the lead came from (e.g., "Guía Gratuita - 10k Pasos", "Generador IA", "Muscle Bites").
+  - `status`: The lead's status (`subscribed` for a newsletter subscriber, `initiated` for someone who started a purchase).
+  - `createdAt`: The date and time of the first registration.
+  - `updatedAt`: The date of the last interaction.
+
+#### b) `signups` (Coaching Plan Enrollments)
+Here you will find the information for each client who signs up for your 6 or 12-week plans, intended for manual follow-up.
+
+- **Saved fields:**
+  - `fullName`, `email`, `phone` (optional).
+  - `planName`: The chosen plan (e.g., "Plan de Coaching de 12 Semanas").
+  - `planPrice`: The price of the plan.
+  - `meetLink`: The **simulated** Google Meet link.
+  - `registrationDate`: The exact date and time of the enrollment.
+
+---
+
+## 2. Customer Acquisition Flows
+
+Your website has multiple strategies to convert visitors into customers.
+
+### a) Free Guide + "Tripwire" Offer Flow (High Impact)
+This is your most powerful sales funnel.
+1.  **Acquisition**: A user enters their email to download the "Estrategias para lograr 10k pasos al día" guide.
+2.  **Registration in `leads`**: Their email is saved in Firestore with the source "Guía Gratuita - 10k Pasos".
+3.  **Immediate Offer (Tripwire)**: Immediately after subscribing, the page shows them a unique, limited-time offer: the "Muscle Bites" guide at a steep discount (e.g., $9 instead of $29).
+4.  **Purchase (Optional)**: If they accept the offer, they are redirected to Stripe for payment. This instantly converts a free lead into a paying customer.
+
+### b) Coaching Flow (6 and 12-week plans)
+1.  **Plan Selection**: The client chooses a coaching plan and fills out the form.
+2.  **Registration in `signups`**: Their data is saved in the `signups` collection in Firestore.
+3.  **Confirmation**: They see a success message and receive a (simulated) email with the next steps.
+4.  **Action Required from You**: Contact the client to schedule the actual meeting and coordinate payment.
+
+### c) Digital Product Flow ("Muscle Bites" - Direct Purchase)
+1.  **Product Selection**: The client clicks "Comprar PDF" on the product card.
+2.  **Process Initiation**: They fill out the form. Their data is saved in `leads` with the status `"initiated"`.
+3.  **Redirect to Payment**: They are automatically redirected to the Stripe payment gateway to complete the purchase.
+
+---
+
+## 3. AI-Powered Content Generation
+
+Your website uses Artificial Intelligence to create valuable content and keep the site updated without manual effort.
+
+### a) Workout Plan Generator
+- **How it works**: Users select their preferences, and the AI instantly creates a personalized routine.
+- **Lead Capture**: If the user enters their email (optional), it is saved in the `leads` collection with the source "Generador IA".
+
+### b) Automatic Blog Post Generation (NEW!)
+This is one of the most advanced features of your site.
+1.  **What it does**: Every week, the AI automatically writes and publishes a new, complete, and SEO-optimized blog post on your site.
+2.  **How it works**:
+    - A **Cron Job** (scheduled task) in Vercel runs once a week (currently set for Mondays at 10:00 AM).
+    - This task calls a secure API route on your site (`/api/cron/generate-post`).
+    - The API route asks the AI (Google Genkit) to write an article on a new topic, ensuring it doesn't repeat the last 10 titles.
+    - The new article is automatically saved to your MongoDB database and appears on your blog.
+3.  **Your only task**: None! The system is 100% autonomous.
+
+---
+
+## 4. What technology is behind your website? (Explained Simply)
+
+Your website is a complete business platform built with cutting-edge technology.
+
+*   **Engine (Next.js 14)**: For instant loading speeds and a fluid user experience.
+*   **AI Brain (Google AI & Genkit)**: This is the heart of the smart features. It not only creates workout plans but also acts as your "ghostwriter," generating complete, high-quality blog posts every week.
+*   **Intelligent Databases**:
+    *   **MongoDB**: Stores long-term content like blog articles (including those generated by AI) and testimonials.
+    *   **Firestore**: Functions as your real-time CRM, instantly capturing every lead and enrollment so you can act on them.
+*   **E-commerce and Payments**:
+    *   **Shopify**: Syncs your programs and products directly from your Shopify dashboard.
+    *   **Stripe**: Securely processes payments for your digital products and "tripwire" offers.
+*   **Automation (Vercel Cron Jobs)**: The scheduler that tells your AI when to write a new article, ensuring your blog always has fresh content to attract visitors.
+*   **Design (Tailwind CSS & ShadCN)**: A modern, adaptive design that looks perfect on any device.
