@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useForm, type SubmitHandler } from "react-hook-form";
@@ -15,7 +14,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useState } from "react";
-import { Gift, Sparkles } from "lucide-react";
+import { Check, Gift, Loader2, Sparkles } from "lucide-react";
 import { handleLeadSubmission } from "@/app/actions";
 import PlanSignupDialog from "./PlanSignupDialog";
 import type { Program } from "./CoachingProgramsSection";
@@ -39,9 +38,12 @@ const tripwireProduct: Program = {
   handle: "muscle-bites-pdf-guide"
 };
 
+type SubmissionStatus = 'idle' | 'submitting' | 'success';
+
 export default function LeadMagnetSection() {
   const { toast } = useToast();
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [status, setStatus] = useState<SubmissionStatus>('idle');
   
   const form = useForm<FormData>({
     resolver: zodResolver(FormSchema),
@@ -51,21 +53,39 @@ export default function LeadMagnetSection() {
   });
 
   const onSubmit: SubmitHandler<FormData> = async (data) => {
+    setStatus('submitting');
     const result = await handleLeadSubmission(data);
     
     if (result.success) {
-      setIsSubmitted(true);
-      toast({
-        title: "¡Guía en camino!",
-        description: "Revisa tu bandeja de entrada y aprovecha la oferta especial.",
-      });
-      form.reset();
+        setStatus('success');
+        toast({
+            title: "¡Guía en camino!",
+            description: "Revisa tu bandeja de entrada y aprovecha la oferta especial.",
+        });
+        form.reset();
+
+        setTimeout(() => {
+            setIsSubmitted(true);
+            setStatus('idle');
+        }, 1500); // Wait 1.5 seconds to show success state before showing tripwire
     } else {
-      toast({
-        variant: "destructive",
-        title: "¡Uy! Algo salió mal.",
-        description: result.message,
-      });
+        setStatus('idle');
+        toast({
+            variant: "destructive",
+            title: "¡Uy! Algo salió mal.",
+            description: result.message,
+        });
+    }
+  };
+
+  const getButtonContent = () => {
+    switch (status) {
+        case 'submitting':
+            return <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Enviando...</>;
+        case 'success':
+            return <><Check className="mr-2 h-4 w-4" /> ¡Enviado!</>;
+        default:
+            return '¡La Quiero!';
     }
   };
 
@@ -125,14 +145,15 @@ export default function LeadMagnetSection() {
                             placeholder="tu.correo@ejemplo.com"
                             {...field}
                             className="text-center sm:text-left"
+                            disabled={status !== 'idle'}
                           />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  <Button type="submit" disabled={form.formState.isSubmitting} className="w-full sm:w-auto">
-                    {form.formState.isSubmitting ? "Enviando..." : "¡La Quiero!"}
+                  <Button type="submit" disabled={status !== 'idle'} className="w-full sm:w-auto">
+                    {getButtonContent()}
                   </Button>
                 </form>
               </Form>
