@@ -9,17 +9,16 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
-  const secret = process.env.CRON_SECRET;
+  const cronSecret = process.env.CRON_SECRET;
   
-  if (!secret) {
+  if (!cronSecret) {
       console.error('CRON_SECRET no está configurado en las variables de entorno.');
       return NextResponse.json({ message: 'Error de configuración del servidor.' }, { status: 500 });
   }
   
-  // Vercel Cron injects the secret this way.
-  // The secret is also checked from the query params for manual trigger simulation.
   const providedSecret = authHeader?.split(' ')[1];
-  if (providedSecret !== secret) {
+
+  if (providedSecret !== cronSecret) {
     return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
   }
 
