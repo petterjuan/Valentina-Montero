@@ -8,7 +8,7 @@ import { handlePlanSignup } from "@/app/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { DialogHeader, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import { CheckCircle, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -104,7 +104,9 @@ export default function PlanSignupForm({ plan, onSubmitted }: PlanSignupFormProp
                   : `Hemos recibido tus datos y te hemos enviado un correo de confirmación con el enlace para nuestra primera sesión. ¡Estoy muy emocionada de empezar a trabajar contigo!`
                 }
             </p>
-            <Button onClick={onSubmitted} className="mt-4">Cerrar</Button>
+            <DialogClose asChild>
+                <Button onClick={onSubmitted} className="mt-4">Cerrar</Button>
+            </DialogClose>
         </div>
     )
   }
