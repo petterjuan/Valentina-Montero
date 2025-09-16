@@ -21,6 +21,7 @@ export interface Testimonial {
     image: string;
     aiHint?: string;
     order?: number;
+    rating?: number;
 }
 
 export interface Lead {

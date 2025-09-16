@@ -14,6 +14,7 @@ const fallbackTestimonials = [
     image: "https://picsum.photos/100/100?random=13",
     aiHint: "happy woman",
     order: 1,
+    rating: 5,
   },
   {
     name: "Ana P.",
@@ -21,6 +22,7 @@ const fallbackTestimonials = [
     image: "https://picsum.photos/100/100?random=14",
     aiHint: "woman portrait",
     order: 2,
+    rating: 5,
   },
   {
     name: "Laura M.",
@@ -28,6 +30,7 @@ const fallbackTestimonials = [
     image: "https://picsum.photos/100/100?random=15",
     aiHint: "woman hiking",
     order: 3,
+    rating: 5,
   },
   {
     name: "Sofia R.",
@@ -35,6 +38,7 @@ const fallbackTestimonials = [
     image: "https://picsum.photos/100/100?random=16",
     aiHint: "smiling woman",
     order: 4,
+    rating: 5,
   },
 ];
 

@@ -1,10 +1,26 @@
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import Link from "next/link";
+import { Award, HeartPulse, Sparkles } from "lucide-react";
+
+const benefits = [
+    {
+        icon: <Sparkles className="h-6 w-6 text-accent" />,
+        text: "Planes 100% Personalizados",
+    },
+    {
+        icon: <HeartPulse className="h-6 w-6 text-accent" />,
+        text: "Enfoque en Salud Sostenible",
+    },
+    {
+        icon: <Award className="h-6 w-6 text-accent" />,
+        text: "Resultados que Inspiran",
+    },
+]
 
 export default function HeroSection() {
   return (
-    <section className="relative h-[85vh] min-h-[600px] w-full flex items-center justify-center text-center text-white overflow-hidden">
+    <section className="relative h-[90vh] min-h-[650px] w-full flex items-center justify-center text-center text-white overflow-hidden">
       <Image
         src="https://picsum.photos/seed/hero/1920/1080"
         alt="Valentina Montero entrenando a una clienta"
@@ -27,6 +43,18 @@ export default function HeroSection() {
                     <Link href="#programs">Comienza Tu Viaje</Link>
                 </Button>
             </div>
+            
+            <div className="mt-12 w-full max-w-3xl animate-fade-in-up animation-delay-600">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-center">
+                    {benefits.map((benefit) => (
+                        <div key={benefit.text} className="flex flex-col items-center gap-2">
+                           {benefit.icon}
+                           <span className="font-semibold text-base">{benefit.text}</span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
         </div>
       </div>
     </section>

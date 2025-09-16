@@ -15,14 +15,29 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useState } from "react";
-import { CheckCircle } from "lucide-react";
+import { CheckCircle, Gift, Sparkles } from "lucide-react";
 import { handleLeadSubmission } from "@/app/actions";
+import PlanSignupDialog from "./PlanSignupDialog";
+import type { Program } from "./CoachingProgramsSection";
 
 const FormSchema = z.object({
   email: z.string().email({ message: "Por favor, introduce un email válido." }),
 });
 
 type FormData = z.infer<typeof FormSchema>;
+
+const tripwireProduct: Program = {
+  title: 'Guía PDF "Muscle Bites"',
+  price: 9, // Special offer price
+  features: [
+    "Más de 50 recetas altas en proteína",
+    "Tips para meal prep y batch cooking",
+    "Guía de suplementación básica",
+    "Acceso instantáneo de por vida",
+  ],
+  isDigital: true,
+  handle: "muscle-bites-pdf-guide"
+};
 
 export default function LeadMagnetSection() {
   const { toast } = useToast();
@@ -41,8 +56,8 @@ export default function LeadMagnetSection() {
     if (result.success) {
       setIsSubmitted(true);
       toast({
-        title: "¡Éxito!",
-        description: "Tu guía está en camino a tu bandeja de entrada.",
+        title: "¡Guía en camino!",
+        description: "Revisa tu bandeja de entrada y aprovecha la oferta especial.",
       });
       form.reset();
     } else {
@@ -59,15 +74,27 @@ export default function LeadMagnetSection() {
       <div className="container mx-auto px-4 md:px-6">
         <div className="mx-auto max-w-2xl text-center">
           {isSubmitted ? (
-            <div className="flex flex-col items-center gap-4 rounded-lg border bg-card p-8 text-card-foreground">
-                <CheckCircle className="h-16 w-16 text-green-500" />
-                <h2 className="text-3xl font-bold tracking-tight">¡Gracias!</h2>
-                <p className="text-muted-foreground">
-                    Tu guía está en camino. Revisa tu bandeja de entrada y prepárate para transformar tu rutina.
+            <div className="flex flex-col items-center gap-4 rounded-lg border bg-card p-8 text-card-foreground shadow-lg">
+                <Gift className="h-16 w-16 text-primary" />
+                <h2 className="text-3xl font-bold tracking-tight">¡Gracias! Tu guía está en camino.</h2>
+                <p className="text-muted-foreground max-w-md">
+                    Como agradecimiento, aquí tienes una oferta única: llévate mi guía de recetas <b className="text-foreground">"Muscle Bites"</b> con un descuento exclusivo.
                 </p>
-                <Button onClick={() => setIsSubmitted(false)} variant="outline" className="mt-4">
-                    Suscribir otro correo
-                </Button>
+                <div className="my-4 flex items-baseline gap-2">
+                    <span className="text-5xl font-bold text-primary">$9</span>
+                    <span className="text-xl text-muted-foreground line-through">$29</span>
+                </div>
+                <PlanSignupDialog program={tripwireProduct}>
+                    <Button size="lg" className="font-bold w-full sm:w-auto">
+                        <Sparkles className="mr-2 h-4 w-4" />
+                        Sí, ¡Quiero la Oferta!
+                    </Button>
+                </PlanSignupDialog>
+                <button 
+                  onClick={() => setIsSubmitted(false)} 
+                  className="mt-4 text-sm text-muted-foreground underline underline-offset-2 hover:text-foreground">
+                    No gracias, llévame de vuelta.
+                </button>
             </div>
           ) : (
             <>
@@ -116,5 +143,3 @@ export default function LeadMagnetSection() {
     </section>
   );
 }
-
-    

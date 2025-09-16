@@ -12,10 +12,24 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import Autoplay from "embla-carousel-autoplay";
 import type { Testimonial } from "@/types";
+import { Star } from "lucide-react";
 
 interface TestimonialsCarouselProps {
     testimonials: (Testimonial | Omit<Testimonial, "id" | "_id">)[];
 }
+
+const StarRating = ({ rating }: { rating: number }) => (
+  <div className="flex items-center gap-0.5">
+    {Array.from({ length: 5 }, (_, i) => (
+      <Star
+        key={i}
+        className={`h-5 w-5 ${
+          i < rating ? "text-amber-400 fill-amber-400" : "text-muted-foreground/50"
+        }`}
+      />
+    ))}
+  </div>
+);
 
 export default function TestimonialsCarousel({ testimonials }: TestimonialsCarouselProps) {
   return (
@@ -51,6 +65,9 @@ export default function TestimonialsCarousel({ testimonials }: TestimonialsCarou
                   <p className="mt-4 font-bold font-headline text-lg text-foreground">
                     - {testimonial.name}
                   </p>
+                  <div className="mt-2">
+                    <StarRating rating={testimonial.rating || 5} />
+                  </div>
                 </CardContent>
               </Card>
             </div>

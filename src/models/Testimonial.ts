@@ -8,6 +8,7 @@ const TestimonialSchema = new Schema<TestimonialDocument>({
   image: { type: String, required: true },
   aiHint: { type: String },
   order: { type: Number, default: 0 },
+  rating: { type: Number, default: 5, min: 1, max: 5 },
 });
 
 // Use mongoose.model to ensure the model is not re-registered.
