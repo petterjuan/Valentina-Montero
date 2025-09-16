@@ -15,7 +15,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useState } from "react";
-import { CheckCircle, Gift, Sparkles } from "lucide-react";
+import { Gift, Sparkles } from "lucide-react";
 import { handleLeadSubmission } from "@/app/actions";
 import PlanSignupDialog from "./PlanSignupDialog";
 import type { Program } from "./CoachingProgramsSection";

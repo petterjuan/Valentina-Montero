@@ -7,13 +7,13 @@ import { z } from "zod";
 import { handlePlanSignup } from "@/app/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { CheckCircle, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import type { Program } from "./CoachingProgramsSection";
 
 
 const signupSchema = z.object({
@@ -26,11 +26,7 @@ const signupSchema = z.object({
 type SignupFormData = z.infer<typeof signupSchema>;
 
 interface PlanSignupFormProps {
-  plan: {
-    title: string;
-    price: number;
-    isDigital?: boolean;
-  };
+  plan: Program;
   onSubmitted: () => void;
 }
 
@@ -90,7 +86,7 @@ export default function PlanSignupForm({ plan, onSubmitted }: PlanSignupFormProp
     : `Estás a un paso de comenzar tu transformación con el ${plan.title}.`;
     
   const buttonText = plan.isDigital
-    ? "Proceder al Pago"
+    ? `Proceder al Pago ($${plan.price})`
     : "Confirmar y Agendar";
 
   const consentText = plan.isDigital
@@ -104,7 +100,7 @@ export default function PlanSignupForm({ plan, onSubmitted }: PlanSignupFormProp
             <h3 className="text-xl font-bold font-headline">¡Todo Listo!</h3>
             <p className="text-muted-foreground">
                 {plan.isDigital 
-                  ? `¡Gracias por tu interés! En breve, recibirás un correo con las instrucciones para completar el pago y descargar tu PDF.`
+                  ? `¡Gracias por tu interés! En breve, serás redirigido para completar el pago de forma segura.`
                   : `Hemos recibido tus datos y te hemos enviado un correo de confirmación con el enlace para nuestra primera sesión. ¡Estoy muy emocionada de empezar a trabajar contigo!`
                 }
             </p>
