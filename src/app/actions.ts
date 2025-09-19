@@ -10,7 +10,6 @@ import { Program } from "@/components/sections/CoachingProgramsSection";
 import connectToDb from "@/lib/mongoose";
 import TestimonialModel from "@/models/Testimonial";
 import crypto from 'crypto';
-import { generateBlogPost } from "@/ai/flows/generate-blog-post";
 import { logEvent } from "@/lib/logger";
 
 // Schemas
@@ -242,7 +241,6 @@ export async function handleAiGeneration(
 ): Promise<AiGeneratorFormState> {
   const rawData = Object.fromEntries(formData.entries());
   
-  // Use a schema with coercion for validation within the action
   const safeParseResult = aiGeneratorClientSchema.safeParse(rawData);
   
   if (!safeParseResult.success) {
@@ -258,13 +256,9 @@ export async function handleAiGeneration(
 
   try {
     const previousData = prevState.data;
-
     let result = previousData;
-
-    // We must generate a plan if:
-    // 1. We don't have one in the state yet (first run).
-    // 2. An email has been submitted, which means we are unlocking the full plan.
-    const shouldGenerate = !previousData || email;
+    
+    const shouldGenerate = !previousData || (!!email && !prevState.isFullPlan);
 
     if (shouldGenerate) {
       logEvent('AI Workout Generation Triggered', { fitnessGoal: workoutInput.fitnessGoal, experienceLevel: workoutInput.experienceLevel });
@@ -438,7 +432,7 @@ async function fetchShopify(query: string, variables: Record<string, any> = {}) 
 }
 
 // Data Fetching Actions
-export async function getBlogPosts(limit: number = 10): Promise<Post[]> {
+export async function getBlogPosts(limit: number = 20): Promise<Post[]> {
     try {
         const response: ShopifyArticleResponse = await fetchShopify(ARTICLES_QUERY, { first: limit });
         const articles = response.data.articles.nodes;
@@ -796,4 +790,6 @@ export async function getSystemStatuses(): Promise<SystemStatus> {
         mongoData: mongoDataStatus,
     };
 }
+    
+
     

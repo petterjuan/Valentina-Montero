@@ -8,8 +8,8 @@ import { Post } from '@/types';
 export const dynamic = 'force-dynamic';
 
 const CREATE_ARTICLE_MUTATION = /* GraphQL */`
-  mutation createArticle($input: ArticleInput!) {
-    articleCreate(input: $input) {
+  mutation articleCreate($input: ArticleInput!) {
+    articleCreate(blogHandle: $blogHandle, input: $input) {
       article {
         id
         handle
@@ -28,7 +28,8 @@ async function publishArticleToShopify(articleData: {
     content: string;
     slug: string;
     excerpt: string;
-    tags: string;
+    imageUrl: string;
+    aiHint: string;
 }) {
     const { SHOPIFY_STORE_DOMAIN, SHOPIFY_ADMIN_ACCESS_TOKEN, SHOPIFY_BLOG_HANDLE } = process.env;
 
@@ -43,9 +44,12 @@ async function publishArticleToShopify(articleData: {
         contentHtml: articleData.content,
         handle: articleData.slug,
         excerpt: articleData.excerpt,
-        blogHandle: SHOPIFY_BLOG_HANDLE,
-        published: true,
-        tags: articleData.tags,
+        tags: "AI Generated, Fitness, Nutrición",
+        publishedAt: new Date().toISOString(),
+        image: {
+            src: articleData.imageUrl,
+            altText: articleData.aiHint,
+        }
     };
 
     const response = await fetch(adminEndpoint, {
@@ -56,7 +60,10 @@ async function publishArticleToShopify(articleData: {
         },
         body: JSON.stringify({
             query: CREATE_ARTICLE_MUTATION,
-            variables: { input },
+            variables: { 
+                input: input,
+                blogHandle: SHOPIFY_BLOG_HANDLE 
+            },
         }),
     });
 
@@ -86,10 +93,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ message: 'Error de configuración del servidor.' }, { status: 500 });
   }
   
-  const providedSecret = vercelCronSecret || authHeader?.split(' ')[1];
+  const providedSecret = vercelCronSecret || (authHeader ? authHeader.replace('Bearer ', '') : undefined);
 
   if (providedSecret !== cronSecret) {
-    logEvent('Cron Job Failed - Unauthorized', {}, 'error');
+    logEvent('Cron Job Failed - Unauthorized', { reason: 'Secret mismatch or not provided' }, 'error');
     return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
   }
 
@@ -107,10 +114,7 @@ export async function GET(request: NextRequest) {
     console.log(`IA generó un nuevo artículo con título: "${newPostData.title}"`);
 
     // 3. Publicar el nuevo artículo en Shopify
-    const shopifyArticle = await publishArticleToShopify({
-        ...newPostData,
-        tags: "AI Generated"
-    });
+    const shopifyArticle = await publishArticleToShopify(newPostData);
 
     console.log(`Tarea CRON completada: Nuevo artículo publicado en Shopify con ID: ${shopifyArticle.id}`);
     logEvent('Cron Job Success: Blog Post Generated and Published to Shopify', { title: newPostData.title, shopifyId: shopifyArticle.id });
@@ -124,3 +128,5 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ message: 'Error al generar el artículo.', error: errorMessage }, { status: 500 });
   }
 }
+
+    
