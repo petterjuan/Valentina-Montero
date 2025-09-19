@@ -4,10 +4,10 @@
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { handleAiGeneration, type AiGeneratorFormState } from "@/app/actions";
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useTransition } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { Wand2, AlertTriangle, Dumbbell, Zap, Calendar, Clock, CheckCircle, Flame, Shield, Activity, Target, Mail, Brain, Utensils, Lock, Sparkles, Loader2 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Wand2, AlertTriangle, Dumbbell, Calendar, Brain, Utensils, Lock, Sparkles, Loader2, Target, Flame, Activity, Shield, CheckCircle } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
@@ -19,17 +19,17 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { useFormState } from "react-dom";
 
-const aiGeneratorSchema = z.object({
-  fitnessGoal: z.string({ required_error: "Por favor, selecciona una meta." }).min(1),
-  experienceLevel: z.string({ required_error: "Por favor, selecciona tu nivel." }).min(1),
-  equipment: z.string({ required_error: "Por favor, selecciona tu equipo." }).min(1),
-  workoutFocus: z.string({ required_error: "Por favor, selecciona un enfoque." }).min(1),
-  duration: z.number(),
-  frequency: z.number(),
+const aiGeneratorClientSchema = z.object({
+  fitnessGoal: z.string().min(1, "El objetivo de fitness es requerido"),
+  experienceLevel: z.string().min(1, "El nivel de experiencia es requerido"),
+  equipment: z.string().min(1, "El equipo disponible es requerido"),
+  workoutFocus: z.string().min(1, "El enfoque es requerido"),
+  duration: z.coerce.number().min(1, "La duración debe ser mayor a 0"),
+  frequency: z.coerce.number().min(1, "La frecuencia debe ser mayor a 0"),
   email: z.string().email({ message: "Por favor, introduce un email válido." }).optional().or(z.literal('')),
 });
 
-type AiGeneratorFormData = z.infer<typeof aiGeneratorSchema>;
+type AiGeneratorFormData = z.infer<typeof aiGeneratorClientSchema>;
 
 const initialState: AiGeneratorFormState = {
     data: undefined,
@@ -45,7 +45,7 @@ export default function AiGeneratorSection() {
   const [isUnlockPending, startUnlockTransition] = useTransition();
 
   const form = useForm<AiGeneratorFormData>({
-    resolver: zodResolver(aiGeneratorSchema),
+    resolver: zodResolver(aiGeneratorClientSchema),
     defaultValues: {
       fitnessGoal: "perder-peso",
       experienceLevel: "principiante",
@@ -284,7 +284,7 @@ export default function AiGeneratorSection() {
                     {isPending ? "Generando Vista Previa..." : "Generar Mi Plan (Vista Previa)"}
                   </Button>
                   
-                  {/* Email field is separated for the unlock functionality */}
+                  {/* Email field is separated for the unlock functionality but needs to be part of the form */}
                   <FormField
                       control={form.control}
                       name="email"
@@ -387,26 +387,28 @@ export default function AiGeneratorSection() {
                                 <span className="font-semibold">Tips de Mentalidad</span>
                             </li>
                         </ul>
-                        <div className="flex flex-col sm:flex-row gap-2 max-w-lg mx-auto">
-                            <FormField
-                                control={form.control}
-                                name="email"
-                                render={({ field }) => (
-                                <FormItem className="w-full">
-                                    <FormControl>
-                                    <Input placeholder="tu.correo@ejemplo.com" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                                )}
-                            />
-                            <Button onClick={handleUnlockFullPlan} disabled={isUnlockPending || isPending} className="font-bold w-full sm:w-auto flex-shrink-0">
-                                {isUnlockPending 
-                                    ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Desbloqueando...</>
-                                    : <><Sparkles className="mr-2 h-4 w-4" />Desbloquear Plan</>
-                                }
-                            </Button>
-                        </div>
+                         <Form {...form}>
+                            <div className="flex flex-col sm:flex-row gap-2 max-w-lg mx-auto">
+                                <FormField
+                                    control={form.control}
+                                    name="email"
+                                    render={({ field }) => (
+                                    <FormItem className="w-full">
+                                        <FormControl>
+                                        <Input placeholder="tu.correo@ejemplo.com" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                    )}
+                                />
+                                <Button onClick={handleUnlockFullPlan} disabled={isUnlockPending || isPending} className="font-bold w-full sm:w-auto flex-shrink-0">
+                                    {isUnlockPending 
+                                        ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Desbloqueando...</>
+                                        : <><Sparkles className="mr-2 h-4 w-4" />Desbloquear Plan</>
+                                    }
+                                </Button>
+                            </div>
+                        </Form>
                     </CardContent>
                 </Card>
             </div>
@@ -499,6 +501,5 @@ export default function AiGeneratorSection() {
     </section>
   );
 }
-
 
     

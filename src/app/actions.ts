@@ -1,7 +1,7 @@
 
 "use server";
 
-import { generatePersonalizedWorkout, GeneratePersonalizedWorkoutInput, GeneratePersonalizedWorkoutOutput } from "@/ai/flows/generate-personalized-workout";
+import { generatePersonalizedWorkout, GeneratePersonalizedWorkoutOutput } from "@/ai/flows/generate-personalized-workout";
 import { processPlanSignup, PlanSignupInput } from "@/ai/flows/plan-signup-flow";
 import { z } from "zod";
 import { Post, Testimonial, Lead, LogEntry } from "@/types";
@@ -532,7 +532,7 @@ async function checkFirebase(): Promise<Status> {
         if (process.env.NEXT_PUBLIC_FIREBASE_CONFIG) {
             const config = JSON.parse(process.env.NEXT_PUBLIC_FIREBASE_CONFIG);
             projectId = config.projectId || projectId;
-        } else {
+        } else if (admin.apps.length > 0) {
              // Fallback for getting project ID if public config isn't there
              const app = admin.app();
              projectId = app.options.projectId || projectId;
