@@ -504,7 +504,7 @@ export async function getBlogPosts(limit: number = 20): Promise<Post[]> {
 export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
     const blogHandle = process.env.SHOPIFY_BLOG_HANDLE;
 
-    // 1. Try to fetch from Shopify first, but only if the blog handle is configured.
+    // 1. Try to fetch from Shopify first
     if (blogHandle) {
         try {
             const response: ShopifySingleArticleResponse = await fetchShopify(ARTICLE_BY_HANDLE_QUERY, {
@@ -534,7 +534,7 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
         console.warn('SHOPIFY_BLOG_HANDLE is not set. Skipping Shopify post check.');
     }
 
-    // 2. If not found in Shopify (or if Shopify check failed/was skipped), try MongoDB
+    // 2. If not found in Shopify, try MongoDB
     try {
         await connectToDb();
         const post = await PostModel.findOne({ slug: slug }).lean().exec() as PostDocument | null;
@@ -553,11 +553,12 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
         }
     } catch (error) {
         console.error(`Error fetching post by slug "${slug}" from MongoDB:`, error);
+        logEvent('MongoDB Slug Fetch Error', { slug, error: error instanceof Error ? error.message : String(error) }, 'error');
         return null;
     }
 
     // 3. If not found in either, return null
-    console.warn(`No post found for slug: "${slug}" in either Shopify or MongoDB.`);
+    logEvent('Post Not Found', { slug }, 'warn');
     return null;
 }
 

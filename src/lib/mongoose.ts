@@ -18,19 +18,18 @@ if (!cached) {
 }
 
 async function connectToDb() {
-  const MONGODB_URI = process.env.MONGODB_URI;
-
-  if (!MONGODB_URI) {
-    throw new Error(
-      'Please define the MONGODB_URI environment variable. This is required for fetching testimonials and AI-generated blog posts.'
-    );
-  }
-
   if (cached.conn) {
     return cached.conn;
   }
 
   if (!cached.promise) {
+    const MONGODB_URI = process.env.MONGODB_URI;
+    if (!MONGODB_URI) {
+      throw new Error(
+        'Please define the MONGODB_URI environment variable. This is required for fetching testimonials and AI-generated blog posts.'
+      );
+    }
+    
     const opts = {
       bufferCommands: false,
     };
