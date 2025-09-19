@@ -63,23 +63,25 @@ Este es tu embudo de ventas más potente.
 
 ---
 
-## 3. Generación Automática de Contenido con IA
+## 3. Contenido del Blog: Manual y Automático
 
-Tu web utiliza Inteligencia Artificial para crear contenido valioso y mantener el sitio actualizado sin esfuerzo manual.
+Tu web combina artículos escritos por ti con contenido generado automáticamente por IA para mantener tu blog siempre fresco.
 
-### a) Generador de Planes de Entrenamiento
+### a) Posts Manuales (Tus Artículos)
+- **Cómo funciona**: Inicia sesión en tu panel de **Shopify**, ve a la sección "Blog Posts" y crea nuevos artículos. Estos aparecerán automáticamente en tu web, priorizados en la parte superior de la lista del blog.
+- **Tu Tarea**: Escribir cuando la inspiración llegue. Tienes control total sobre este contenido.
+
+### b) Posts Automáticos con IA
+- **Qué hace**: Cada semana, la IA escribe y publica automáticamente un nuevo artículo de blog en tu sitio.
+- **Cómo funciona**:
+    - Un **Cron Job** (tarea programada) en Vercel se activa una vez por semana (lunes a las 10:00 AM).
+    - Esta tarea le pide a la IA que escriba un artículo sobre un tema de fitness o bienestar.
+    - El nuevo artículo se guarda en una base de datos (MongoDB) y aparece en tu blog, debajo de tus artículos manuales.
+- **Tu Tarea**: ¡Ninguna! El sistema es 100% autónomo y se encarga de mantener el flujo de contenido.
+
+### c) Generador de Planes de Entrenamiento con IA
 - **Cómo funciona**: Las usuarias seleccionan sus preferencias y la IA crea una rutina personalizada al instante.
 - **Captación de Prospectos**: Si la usuaria introduce su email (opcional), se guarda en la colección `leads` con la fuente "Generador IA".
-
-### b) Generación Automática de Artículos de Blog (¡NUEVO!)
-Esta es una de las funciones más avanzadas de tu sitio.
-1.  **¿Qué hace?**: Cada semana, la IA escribe y publica automáticamente un artículo de blog nuevo, completo y optimizado para SEO en tu sitio.
-2.  **¿Cómo funciona?**:
-    - Un **Cron Job** (tarea programada) en Vercel se activa una vez por semana (actualmente configurado para los lunes a las 10:00 AM).
-    - Esta tarea llama a una ruta segura en tu API (`/api/cron/generate-post`).
-    - La ruta de API le pide a la IA (Google Genkit) que escriba un artículo sobre un tema nuevo, asegurándose de no repetir los últimos 10 títulos.
-    - El nuevo artículo se guarda automáticamente en tu base de datos de MongoDB y aparece en tu blog.
-3.  **Tu única tarea**: ¡Ninguna! El sistema es 100% autónomo.
 
 ---
 
@@ -88,12 +90,12 @@ Esta es una de las funciones más avanzadas de tu sitio.
 Tu web es una plataforma de negocio completa construida con tecnología de vanguardia.
 
 *   **Motor (Next.js 14)**: Para una velocidad de carga instantánea y una experiencia de usuario fluida.
-*   **Cerebro de IA (Google AI & Genkit)**: Es el corazón de las funciones inteligentes. No solo crea planes de entrenamiento, sino que también actúa como tu "escritora fantasma", generando artículos de blog completos y de alta calidad cada semana.
-*   **Bases de Datos Inteligentes**:
-    *   **MongoDB**: Almacena el contenido duradero como los artículos del blog (incluidos los generados por IA) y los testimonios.
-    *   **Firestore**: Funciona como tu CRM en tiempo real, capturando cada prospecto y cada inscripción al instante para que puedas actuar sobre ellos.
+*   **Cerebro de IA (Google AI & Genkit)**: Es el corazón de las funciones inteligentes. No solo crea planes de entrenamiento, sino que también actúa como tu "escritora fantasma", generando artículos de blog completos cada semana.
+*   **Bases de Datos y Contenido**:
+    *   **Shopify**: Es la fuente principal para tus **productos**, **programas** y los **artículos de blog que escribes manualmente**.
+    *   **MongoDB**: Almacena el contenido generado por la IA, como los **artículos de blog automáticos** y los **testimonios de clientes**.
+    *   **Firestore**: Funciona como tu CRM en tiempo real, capturando cada prospecto, inscripción y registro de diagnóstico para que puedas actuar sobre ellos.
 *   **E-commerce y Pagos**:
-    *   **Shopify**: Sincroniza tus programas y productos directamente desde tu panel de Shopify.
     *   **Stripe**: Procesa los pagos de forma segura para tus productos digitales y ofertas "tripwire".
 *   **Automatización (Vercel Cron Jobs)**: El programador que le dice a tu IA cuándo escribir un nuevo artículo, asegurando que tu blog siempre tenga contenido fresco para atraer visitantes.
 *   **Diseño (Tailwind CSS & ShadCN)**: Un diseño moderno y adaptable que se ve perfecto en cualquier dispositivo.
@@ -167,23 +169,25 @@ This is your most powerful sales funnel.
 
 ---
 
-## 3. AI-Powered Content Generation
+## 3. Blog Content: Manual and Automatic
 
-Your website uses Artificial Intelligence to create valuable content and keep the site updated without manual effort.
+Your website combines articles written by you with content automatically generated by AI to keep your blog fresh.
 
-### a) Workout Plan Generator
+### a) Manual Posts (Your Articles)
+- **How it works**: Log into your **Shopify** dashboard, go to the "Blog Posts" section, and create new articles. They will automatically appear on your website and be prioritized at the top of the blog list.
+- **Your Task**: Write whenever inspiration strikes. you have full control over this content.
+
+### b) Automatic AI Posts
+- **What it does**: Every week, the AI automatically writes and publishes a new blog post to your site.
+- **How it works**:
+    - A **Cron Job** (scheduled task) in Vercel runs once a week (Mondays at 10:00 AM).
+    - This task asks the AI to write an article on a fitness or wellness topic.
+    - The new article is saved to a database (MongoDB) and appears on your blog, right below your manual articles.
+- **Your Task**: None! The system is 100% autonomous and handles the content flow for you.
+
+### c) AI Workout Plan Generator
 - **How it works**: Users select their preferences, and the AI instantly creates a personalized routine.
 - **Lead Capture**: If the user enters their email (optional), it is saved in the `leads` collection with the source "Generador IA".
-
-### b) Automatic Blog Post Generation (NEW!)
-This is one of the most advanced features of your site.
-1.  **What it does**: Every week, the AI automatically writes and publishes a new, complete, and SEO-optimized blog post on your site.
-2.  **How it works**:
-    - A **Cron Job** (scheduled task) in Vercel runs once a week (currently set for Mondays at 10:00 AM).
-    - This task calls a secure API route on your site (`/api/cron/generate-post`).
-    - The API route asks the AI (Google Genkit) to write an article on a new topic, ensuring it doesn't repeat the last 10 titles.
-    - The new article is automatically saved to your MongoDB database and appears on your blog.
-3.  **Your only task**: None! The system is 100% autonomous.
 
 ---
 
@@ -193,11 +197,11 @@ Your website is a complete business platform built with cutting-edge technology.
 
 *   **Engine (Next.js 14)**: For instant loading speeds and a fluid user experience.
 *   **AI Brain (Google AI & Genkit)**: This is the heart of the smart features. It not only creates workout plans but also acts as your "ghostwriter," generating complete, high-quality blog posts every week.
-*   **Intelligent Databases**:
-    *   **MongoDB**: Stores long-term content like blog articles (including those generated by AI) and testimonials.
-    *   **Firestore**: Functions as your real-time CRM, instantly capturing every lead and enrollment so you can act on them.
+*   **Databases & Content**:
+    *   **Shopify**: The primary source for your **products**, **programs**, and the **blog articles you write manually**.
+    *   **MongoDB**: Stores content generated by the AI, such as **automatic blog articles** and **client testimonials**.
+    *   **Firestore**: Functions as your real-time CRM, instantly capturing every lead, enrollment, and diagnostic log so you can act on them.
 *   **E-commerce and Payments**:
-    *   **Shopify**: Syncs your programs and products directly from your Shopify dashboard.
     *   **Stripe**: Securely processes payments for your digital products and "tripwire" offers.
 *   **Automation (Vercel Cron Jobs)**: The scheduler that tells your AI when to write a new article, ensuring your blog always has fresh content to attract visitors.
 *   **Design (Tailwind CSS & ShadCN)**: A modern, adaptive design that looks perfect on any device.
