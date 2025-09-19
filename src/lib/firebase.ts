@@ -1,14 +1,24 @@
 
 import * as admin from 'firebase-admin';
 
-// This is a simplified singleton pattern to ensure Firebase is initialized only once.
+// This is a robust singleton pattern to ensure Firebase is initialized only once on the server.
 let firestoreInstance: admin.firestore.Firestore | null = null;
 let initError: Error | null = null;
+let isInitialized = false;
 
-function initializeFirebaseAdmin() {
-    if (firestoreInstance) return;
+function initializeFirebaseAdmin(): admin.firestore.Firestore | null {
+    if (isInitialized) {
+        return firestoreInstance;
+    }
+    isInitialized = true; // Mark as initialized to prevent re-entry
 
     try {
+        if (admin.apps.length > 0) {
+            console.log("✅ Firebase Admin SDK already initialized.");
+            firestoreInstance = admin.firestore();
+            return firestoreInstance;
+        }
+
         const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
         if (!serviceAccountKey) {
             throw new Error("Firebase service account key (FIREBASE_SERVICE_ACCOUNT_KEY) is not set in environment variables.");
@@ -16,26 +26,19 @@ function initializeFirebaseAdmin() {
 
         let serviceAccount: admin.ServiceAccount;
         try {
-            // Prefer Base64 decoding, as it's common for environment variables.
             const decodedKey = Buffer.from(serviceAccountKey, 'base64').toString('utf-8');
             serviceAccount = JSON.parse(decodedKey);
         } catch (e) {
-            // Fallback to direct JSON parsing if Base64 fails.
-            try {
-                serviceAccount = JSON.parse(serviceAccountKey);
-            } catch (jsonError) {
-                throw new Error("Failed to parse Firebase service account key. It is not valid JSON or Base64-encoded JSON.");
-            }
+            throw new Error("Failed to parse Firebase service account key. It is not valid Base64-encoded JSON.");
         }
         
-        if (admin.apps.length === 0) {
-            admin.initializeApp({
-                credential: admin.credential.cert(serviceAccount),
-            });
-            console.log("✅ Firebase Admin SDK initialized successfully.");
-        }
-
+        admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount),
+        });
+        
+        console.log("✅ Firebase Admin SDK initialized successfully.");
         firestoreInstance = admin.firestore();
+        return firestoreInstance;
 
     } catch (error) {
         if (error instanceof Error) {
@@ -45,19 +48,20 @@ function initializeFirebaseAdmin() {
         }
         console.error("❌ Error initializing Firebase Admin SDK:", initError.message);
         firestoreInstance = null; // Ensure instance is null on failure
+        return null;
     }
 }
 
-// Call initialization on module load.
-initializeFirebaseAdmin();
-
 export const getFirestore = (): admin.firestore.Firestore | null => {
-    if (initError) {
-        // Log the persistent error if anyone tries to get the instance after a failed init.
-        console.warn(`Firestore access blocked due to initialization error: ${initError.message}`);
-        return null;
+    // If it's already initialized (or initialization failed), return the cached result.
+    if (isInitialized) {
+        if (initError) {
+             console.warn(`Firestore access blocked due to persistent initialization error: ${initError.message}`);
+        }
+        return firestoreInstance;
     }
-    return firestoreInstance;
+    // Otherwise, attempt to initialize.
+    return initializeFirebaseAdmin();
 }
 
     

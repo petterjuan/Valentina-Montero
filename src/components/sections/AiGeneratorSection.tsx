@@ -20,10 +20,10 @@ import { Input } from "@/components/ui/input";
 import { useFormState } from "react-dom";
 
 const aiGeneratorSchema = z.object({
-  fitnessGoal: z.string({ required_error: "Por favor, selecciona una meta." }),
-  experienceLevel: z.string({ required_error: "Por favor, selecciona tu nivel." }),
-  equipment: z.string({ required_error: "Por favor, selecciona tu equipo." }),
-  workoutFocus: z.string({ required_error: "Por favor, selecciona un enfoque." }),
+  fitnessGoal: z.string({ required_error: "Por favor, selecciona una meta." }).min(1),
+  experienceLevel: z.string({ required_error: "Por favor, selecciona tu nivel." }).min(1),
+  equipment: z.string({ required_error: "Por favor, selecciona tu equipo." }).min(1),
+  workoutFocus: z.string({ required_error: "Por favor, selecciona un enfoque." }).min(1),
   duration: z.number(),
   frequency: z.number(),
   email: z.string().email({ message: "Por favor, introduce un email válido." }).optional().or(z.literal('')),
@@ -68,7 +68,7 @@ export default function AiGeneratorSection() {
         description: formState.error,
       });
     }
-    if (formState.data && !formState.error) {
+    if (formState.data && !formState.error && (isPending || isUnlockPending)) {
         let toastDescription = "Tu vista previa te espera más abajo.";
         if (formState.isFullPlan) {
             toastDescription = "¡Plan completo desbloqueado! Revisa los detalles a continuación.";
@@ -279,7 +279,7 @@ export default function AiGeneratorSection() {
                         />
                   </div>
                   
-                  <Button type="submit" disabled={isPending} className="w-full font-bold">
+                  <Button type="submit" disabled={isPending || isUnlockPending} className="w-full font-bold">
                     <Wand2 className="mr-2 h-4 w-4" />
                     {isPending ? "Generando Vista Previa..." : "Generar Mi Plan (Vista Previa)"}
                   </Button>
@@ -295,7 +295,7 @@ export default function AiGeneratorSection() {
             </CardContent>
           </Card>
 
-          {isPending && (
+          {(isPending || isUnlockPending) && (
              <Card className="mt-8">
                 <CardContent className="p-6 text-center">
                     <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
@@ -304,7 +304,7 @@ export default function AiGeneratorSection() {
             </Card>
           )}
 
-          {formState.error && !formState.data && (
+          {formState.error && !isPending && !isUnlockPending && (
             <Card className="mt-8 border-destructive bg-destructive/10">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
@@ -315,7 +315,7 @@ export default function AiGeneratorSection() {
             </Card>
           )}
 
-          {formState.data && !formState.isFullPlan && (
+          {formState.data && !formState.isFullPlan && !isPending && !isUnlockPending && (
             <div className="mt-8 space-y-8">
                 <Card>
                     <CardHeader>
@@ -400,7 +400,7 @@ export default function AiGeneratorSection() {
                                 </FormItem>
                                 )}
                             />
-                            <Button onClick={handleUnlockFullPlan} disabled={isUnlockPending} className="font-bold w-full sm:w-auto flex-shrink-0">
+                            <Button onClick={handleUnlockFullPlan} disabled={isUnlockPending || isPending} className="font-bold w-full sm:w-auto flex-shrink-0">
                                 {isUnlockPending 
                                     ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Desbloqueando...</>
                                     : <><Sparkles className="mr-2 h-4 w-4" />Desbloquear Plan</>
@@ -413,7 +413,7 @@ export default function AiGeneratorSection() {
           )}
 
 
-          {formState.data && formState.isFullPlan && (
+          {formState.data && formState.isFullPlan && !isPending && !isUnlockPending && (
             <Card className="mt-8">
               <CardHeader>
                 <CardTitle className="flex items-center gap-3 font-headline">
@@ -499,3 +499,6 @@ export default function AiGeneratorSection() {
     </section>
   );
 }
+
+
+    

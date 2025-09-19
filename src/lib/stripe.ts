@@ -3,9 +3,13 @@ import Stripe from 'stripe';
 
 let stripeInstance: Stripe | null = null;
 let initError: Error | null = null;
+let isInitialized = false;
 
-function initializeStripe() {
-    if (stripeInstance) return;
+function initializeStripe(): Stripe | null {
+    if (isInitialized) {
+        return stripeInstance;
+    }
+    isInitialized = true;
 
     try {
         const stripeKey = process.env.STRIPE_SECRET_KEY;
@@ -18,6 +22,7 @@ function initializeStripe() {
             typescript: true,
         });
         console.log("✅ Stripe SDK initialized successfully.");
+        return stripeInstance;
 
     } catch (error) {
         if (error instanceof Error) {
@@ -27,17 +32,18 @@ function initializeStripe() {
         }
         console.error("❌ Error initializing Stripe:", initError.message);
         stripeInstance = null;
+        return null;
     }
 }
 
-initializeStripe();
-
 export const getStripe = (): Stripe | null => {
-    if (initError) {
-        console.warn(`Stripe access blocked due to initialization error: ${initError.message}`);
-        return null;
+    if (isInitialized) {
+        if (initError) {
+            console.warn(`Stripe access blocked due to persistent initialization error: ${initError.message}`);
+        }
+        return stripeInstance;
     }
-    return stripeInstance;
+    return initializeStripe();
 }
 
     

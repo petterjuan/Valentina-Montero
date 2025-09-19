@@ -15,7 +15,11 @@ import { generateBlogPost } from "@/ai/flows/generate-blog-post";
 import { logEvent } from "@/lib/logger";
 
 // Schemas
-const aiGeneratorSchema = z.object({
+const leadSchema = z.object({
+  email: z.string().email({ message: "Por favor, introduce un email válido." }),
+});
+
+const aiGeneratorClientSchema = z.object({
   fitnessGoal: z.string().min(1, "El objetivo de fitness es requerido"),
   experienceLevel: z.string().min(1, "El nivel de experiencia es requerido"),
   equipment: z.string().min(1, "El equipo disponible es requerido"),
@@ -25,15 +29,12 @@ const aiGeneratorSchema = z.object({
   email: z.string().email({ message: "Por favor, introduce un email válido." }).optional().or(z.literal('')),
 });
 
-const leadSchema = z.object({
-  email: z.string().email({ message: "Por favor, introduce un email válido." }),
-});
 
 // Types
 export type AiGeneratorFormState = {
   data?: GeneratePersonalizedWorkoutOutput;
   error?: string;
-  inputs?: z.infer<typeof aiGeneratorSchema>;
+  inputs?: z.infer<typeof aiGeneratorClientSchema>;
   isFullPlan?: boolean;
 };
 
@@ -155,25 +156,27 @@ export async function handleAiGeneration(
 ): Promise<AiGeneratorFormState> {
   try {
     const rawData = Object.fromEntries(formData.entries());
+    const validatedInput = aiGeneratorClientSchema.parse(rawData);
     
-    const validatedInput = aiGeneratorSchema.parse(rawData);
     const { email, ...workoutInput } = validatedInput;
-
-    // Use previous data if email is now provided for an existing plan
     const previousData = prevState.data;
+
     let result = previousData;
 
-    // Rerun generation if there's no previous data OR if an email is being submitted to unlock.
-    if (!previousData || email) {
-       logEvent('AI Workout Generation Triggered', { fitnessGoal: workoutInput.fitnessGoal, experienceLevel: workoutInput.experienceLevel });
-       result = await generatePersonalizedWorkout(workoutInput);
+    // We must generate a plan if:
+    // 1. We don't have one in the state yet (first run).
+    // 2. An email has been submitted, which means we are unlocking the full plan.
+    const shouldGenerate = !previousData || email;
+
+    if (shouldGenerate) {
+      logEvent('AI Workout Generation Triggered', { fitnessGoal: workoutInput.fitnessGoal, experienceLevel: workoutInput.experienceLevel });
+      result = await generatePersonalizedWorkout(workoutInput);
     }
-    
+
     if (!result) {
-      logEvent('AI Workout Generation Failed', { error: 'No content from AI' }, 'error');
-      return { error: "No se pudo generar el entrenamiento. Por favor, inténtalo de nuevo." };
+      throw new Error("The AI failed to return any content for the workout plan.");
     }
-    
+
     if (email) {
       const firestore = getFirestore();
       if (firestore) {
@@ -524,10 +527,20 @@ async function checkFirebase(): Promise<Status> {
 
     let projectId = 'tu-proyecto';
     try {
-        const key = process.env.NEXT_PUBLIC_FIREBASE_CONFIG!;
-        const config = JSON.parse(key);
-        projectId = config.projectId;
-    } catch (e) {}
+        // Attempt to parse project ID from a public config if available, otherwise default.
+        // Note: This is for display purposes only.
+        if (process.env.NEXT_PUBLIC_FIREBASE_CONFIG) {
+            const config = JSON.parse(process.env.NEXT_PUBLIC_FIREBASE_CONFIG);
+            projectId = config.projectId || projectId;
+        } else {
+             // Fallback for getting project ID if public config isn't there
+             const app = admin.app();
+             projectId = app.options.projectId || projectId;
+        }
+    } catch (e) {
+      // It's okay if this fails, it's just for display.
+      console.warn("Could not determine Firebase project ID for display.");
+    }
 
     return { status: "success" as const, message: `Conectado exitosamente al proyecto de Firebase: <b>${projectId}</b>.` };
   } catch (error: any) {
@@ -659,5 +672,6 @@ export async function getSystemStatuses(): Promise<SystemStatus> {
         mongoData: mongoDataStatus,
     };
 }
+    
 
     

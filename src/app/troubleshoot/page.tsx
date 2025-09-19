@@ -1,15 +1,15 @@
 
 'use client';
 
-import { CheckCircle, XCircle, FileText, Loader2 } from "lucide-react";
+import * as React from "react";
+import { CheckCircle, XCircle, FileText, Loader2, RefreshCw } from "lucide-react";
 import { getLogs, getSystemStatuses, SystemStatus } from "@/app/actions";
 import { type LogEntry } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
 
-// Helper function to create a status component
 const StatusCheck = ({
   title,
   status,
@@ -48,27 +48,31 @@ const StatusCheck = ({
 
 
 export default function TroubleshootPage() {
-    const [statuses, setStatuses] = useState<SystemStatus>({});
-    const [logs, setLogs] = useState<LogEntry[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [statuses, setStatuses] = React.useState<SystemStatus>({});
+    const [logs, setLogs] = React.useState<LogEntry[]>([]);
+    const [isLoading, setIsLoading] = React.useState(true);
+    const [isRefreshing, setIsRefreshing] = React.useState(false);
 
-    useEffect(() => {
-        async function runChecks() {
-            setIsLoading(true);
-            const [
-                fetchedStatuses,
-                fetchedLogs
-            ] = await Promise.all([
-                getSystemStatuses(),
-                getLogs(15),
-            ]);
-            
-            setStatuses(fetchedStatuses);
-            setLogs(fetchedLogs);
-            setIsLoading(false);
-        }
-        runChecks();
+    const runChecks = React.useCallback(async () => {
+      setIsLoading(true);
+      const [fetchedStatuses, fetchedLogs] = await Promise.all([
+          getSystemStatuses(),
+          getLogs(15),
+      ]);
+      setStatuses(fetchedStatuses);
+      setLogs(fetchedLogs);
+      setIsLoading(false);
     }, []);
+
+    React.useEffect(() => {
+        runChecks();
+    }, [runChecks]);
+
+    const handleRefresh = async () => {
+        setIsRefreshing(true);
+        await runChecks();
+        setIsRefreshing(false);
+    };
 
     return (
         <div className="bg-gray-50 min-h-screen py-12">
@@ -90,6 +94,12 @@ export default function TroubleshootPage() {
                     ) : (
                         <div className="space-y-8">
                             <div className="space-y-4">
+                                <div className="flex justify-end">
+                                    <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isRefreshing}>
+                                        <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                                        Refrescar
+                                    </Button>
+                                </div>
                                 {statuses.firebase && <StatusCheck title="Conexión a Firebase (Firestore)" {...statuses.firebase} />}
                                 {statuses.mongo && <StatusCheck title="Conexión a MongoDB" {...statuses.mongo} />}
                                 {statuses.mongoData && <StatusCheck title="Lectura de Datos de MongoDB" {...statuses.mongoData} />}
@@ -155,3 +165,5 @@ export default function TroubleshootPage() {
         </div>
     );
 }
+
+    

@@ -3,8 +3,8 @@ import mongoose from 'mongoose';
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
+// This check is critical and should happen at boot time.
 if (!MONGODB_URI) {
-  // This check is critical and should happen at boot time.
   throw new Error(
     'Please define the MONGODB_URI environment variable inside .env. It should include the database name.'
   );
@@ -28,7 +28,6 @@ if (!cached) {
 
 async function connectToDb() {
   if (cached.conn) {
-    // console.log("♻️ Using cached Mongoose connection.");
     return cached.conn;
   }
 
@@ -50,8 +49,6 @@ async function connectToDb() {
   try {
     cached.conn = await cached.promise;
   } catch (e) {
-    // If the promise was already rejected, this will re-throw.
-    // The promise is reset inside the .catch block above.
     cached.promise = null;
     throw e;
   }
