@@ -260,6 +260,7 @@ export async function handleAiGeneration(
     const previousData = prevState.data;
     let result = previousData;
     
+    // Generate new data if it's the first run, or if an email is provided to unlock the full plan.
     const shouldGenerate = !previousData || (!!email && !prevState.isFullPlan);
 
     if (shouldGenerate) {
@@ -501,15 +502,18 @@ export async function getBlogPosts(limit: number = 20): Promise<Post[]> {
 }
 
 export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
-    // 1. Try to fetch from Shopify first
     const blogHandle = process.env.SHOPIFY_BLOG_HANDLE;
+
+    // 1. Try to fetch from Shopify first, but only if the blog handle is configured.
     if (blogHandle) {
         try {
             const response: ShopifySingleArticleResponse = await fetchShopify(ARTICLE_BY_HANDLE_QUERY, {
                 blogHandle: blogHandle,
                 articleHandle: slug
             });
+            
             const article = response.data?.blog?.articleByHandle;
+
             if (article) {
                 return {
                     id: article.id,
@@ -524,11 +528,13 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
                 };
             }
         } catch (error) {
-            console.warn(`Could not fetch slug "${slug}" from Shopify, will try MongoDB. Error: ${error instanceof Error ? error.message : String(error)}`);
+            console.warn(`Could not fetch slug "${slug}" from Shopify. This might be expected if the post is from MongoDB. Error: ${error instanceof Error ? error.message : String(error)}`);
         }
+    } else {
+        console.warn('SHOPIFY_BLOG_HANDLE is not set. Skipping Shopify post check.');
     }
 
-    // 2. If not found in Shopify (or if Shopify check failed), try MongoDB
+    // 2. If not found in Shopify (or if Shopify check failed/was skipped), try MongoDB
     try {
         await connectToDb();
         const post = await PostModel.findOne({ slug: slug }).lean().exec() as PostDocument | null;
@@ -551,7 +557,7 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
     }
 
     // 3. If not found in either, return null
-    console.warn(`No post found for slug: "${slug}" in Shopify or MongoDB.`);
+    console.warn(`No post found for slug: "${slug}" in either Shopify or MongoDB.`);
     return null;
 }
 
@@ -833,6 +839,3 @@ export async function getSystemStatuses(): Promise<SystemStatus> {
         mongoData: mongoDataStatus,
     };
 }
-
-
-    

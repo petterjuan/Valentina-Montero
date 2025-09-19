@@ -1,15 +1,6 @@
 
 import mongoose from 'mongoose';
 
-const MONGODB_URI = process.env.MONGODB_URI;
-
-// This check is critical and should happen at boot time.
-if (!MONGODB_URI) {
-  throw new Error(
-    'Please define the MONGODB_URI environment variable inside .env. It should include the database name.'
-  );
-}
-
 /**
  * Global is used here to maintain a cached connection across hot reloads
  * in development. This prevents connections from growing exponentially
@@ -27,6 +18,14 @@ if (!cached) {
 }
 
 async function connectToDb() {
+  const MONGODB_URI = process.env.MONGODB_URI;
+
+  if (!MONGODB_URI) {
+    throw new Error(
+      'Please define the MONGODB_URI environment variable. This is required for fetching testimonials and AI-generated blog posts.'
+    );
+  }
+
   if (cached.conn) {
     return cached.conn;
   }
@@ -36,7 +35,7 @@ async function connectToDb() {
       bufferCommands: false,
     };
 
-    cached.promise = mongoose.connect(MONGODB_URI!, opts).then((mongooseInstance) => {
+    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongooseInstance) => {
       console.log("✅ New Mongoose connection established.");
       return mongooseInstance;
     }).catch(err => {
@@ -57,5 +56,3 @@ async function connectToDb() {
 }
 
 export default connectToDb;
-
-    
