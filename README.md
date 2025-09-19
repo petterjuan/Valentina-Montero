@@ -13,10 +13,11 @@ Welcome to the GitHub repository for the VM Fitness Hub, a modern, feature-rich 
 - **Stripe Integration**: Secure payment processing for digital products and tripwire offers via Stripe Checkout.
 - **AI-Powered Content Engine (Google Genkit & Gemini)**:
     - **Personalized Workout Generator**: Creates custom workout plans based on user input and optionally captures their email.
-    - **Automatic Blog Post Generation**: A fully autonomous system that uses a **Vercel Cron Job** to trigger an AI agent once a week. The agent writes a new, full-length, SEO-friendly blog post and saves it to the database, ensuring the blog always has fresh content.
+    - **Automatic Blog Post Generation**: A fully autonomous system that uses a **Vercel Cron Job** to trigger an AI agent once a week. The agent writes a new, full-length, SEO-friendly blog post and **publishes it directly to the Shopify blog** via the Shopify Admin API.
 - **Dual Database Strategy**:
-    - **MongoDB**: Manages persistent content like blog posts (including AI-generated ones) and testimonials.
-    - **Firebase Firestore**: Acts as a real-time CRM to capture leads and coaching plan signups for manual follow-up.
+    - **Shopify**: Manages all products and blog posts. It is the single source of truth for all public content.
+    - **Firebase Firestore**: Acts as a real-time CRM to capture leads, coaching plan signups, and application logs for diagnostics.
+    - **MongoDB**: Manages internal content like testimonials.
 - **Modern UX**:
     - Fully responsive design built with Tailwind CSS and ShadCN UI.
     - Smooth scrolling, a "back-to-top" button, and instant visual feedback on forms.
@@ -32,11 +33,11 @@ Welcome to the GitHub repository for the VM Fitness Hub, a modern, feature-rich 
 - **Language**: [TypeScript](https://www.typescriptlang.org/)
 - **Styling**: [Tailwind CSS](https://tailwindcss.com/) & [ShadCN UI](https://ui.shadcn.com/)
 - **AI Engine**: [Google Genkit](https://firebase.google.com/docs/genkit) (with Gemini)
-- **Databases**: 
-    - [MongoDB](https://www.mongodb.com/) (for blog posts, testimonials)
-    - [Firebase Firestore](https://firebase.google.com/docs/firestore) (for leads/signups)
+- **Databases & Content**: 
+    - [Shopify Admin & Storefront APIs](https://shopify.dev/docs/api) (for blog posts, products)
+    - [Firebase Firestore](https://firebase.google.com/docs/firestore) (for leads/signups/logs)
+    - [MongoDB](https://www.mongodb.com/) (for testimonials)
 - **Payments**: [Stripe](https://stripe.com/)
-- **E-commerce Source**: [Shopify Storefront API](https://shopify.dev/docs/api/storefront)
 - **Deployment & Automation**: [Vercel](https://vercel.com/) (including Vercel Cron Jobs)
 
 ---
@@ -68,23 +69,29 @@ npm install
 Create a file named `.env` in the root of your project and add the following variables. These should also be configured in your hosting provider (e.g., Vercel).
 
 ```env
-# MongoDB Connection
+# MongoDB Connection (for testimonials)
 # Example: mongodb+srv://<user>:<password>@<cluster-url>/<db-name>?retryWrites=true&w=majority
 MONGODB_URI=
 MONGODB_DB_NAME=
 
-# Firebase (for Firestore)
+# Firebase (for Firestore leads & logs)
 # A base64-encoded JSON string of your Firebase service account key
 FIREBASE_SERVICE_ACCOUNT_KEY=
 
 # Stripe (for payments)
 STRIPE_SECRET_KEY=
 
-# Shopify Storefront API
+# Shopify Storefront API (for reading products & blog posts)
 # Your Shopify store domain (e.g., your-store.myshopify.com)
 SHOPIFY_STORE_DOMAIN=
 # Your public Storefront API access token
 SHOPIFY_STOREFRONT_ACCESS_TOKEN=
+
+# Shopify Admin API (for creating AI blog posts)
+# Your private Admin API access token (requires `write_content`, `read_content` scopes)
+SHOPIFY_ADMIN_ACCESS_TOKEN=
+# The handle of the blog you want to post to (e.g., 'news' or 'fitness-tips')
+SHOPIFY_BLOG_HANDLE=
 
 # Cron Job Security
 # A long, random, secure string to protect your cron job endpoint
@@ -96,12 +103,12 @@ NEXT_PUBLIC_APP_URL=http://localhost:9002
 
 ### 4. Seed the Database
 
-To populate your MongoDB database with initial sample data for blog posts and testimonials, run the seed script.
+To populate your MongoDB database with initial sample data for testimonials, run the seed script.
 
 ```bash
 npm run seed
 ```
-This will connect to your database, clear the `posts` and `testimonials` collections, and insert the sample data from `seed.js`.
+This will connect to your database, clear the `testimonials` collection, and insert the sample data from `seed.js`. Blog posts are now managed in Shopify.
 
 ### 5. Run the Development Server
 
@@ -119,7 +126,7 @@ The application should now be running on [http://localhost:9002](http://localhos
 - `npm run build`: Creates a production-ready build of the application.
 - `npm run start`: Starts the production server.
 - `npm run lint`: Lints the codebase for potential errors.
-- `npm run seed`: Populates the database with initial data.
+- `npm run seed`: Populates the database with initial testimonial data.
 
 ---
 

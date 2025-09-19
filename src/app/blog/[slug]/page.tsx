@@ -1,6 +1,5 @@
 
-import { getBlogPostBySlug } from "@/app/actions";
-import { Badge } from "@/components/ui/badge";
+import { getBlogPostBySlug, getBlogPosts } from "@/app/actions";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, Download, Eye } from "lucide-react";
@@ -9,8 +8,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import DOMPurify from 'isomorphic-dompurify';
-import { Post } from "@/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Post } from "@/types";
 
 export const dynamic = 'force-dynamic';
 
@@ -18,6 +17,13 @@ interface BlogPostPageProps {
   params: {
     slug: string;
   };
+}
+
+export async function generateStaticParams() {
+  const posts = await getBlogPosts(20); // Get recent posts to generate static pages
+  return posts.map((post) => ({
+    slug: post.slug,
+  }));
 }
 
 export async function generateMetadata({ params }: BlogPostPageProps): Promise<Metadata> {
@@ -143,5 +149,3 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
     </article>
   );
 }
-
-    

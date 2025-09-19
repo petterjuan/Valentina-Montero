@@ -1,15 +1,15 @@
 
 import { Document } from 'mongoose';
 
+// Represents a blog post, now fetched from Shopify
 export interface Post {
-    _id: string;
     id: string;
     title: string;
     slug: string;
     excerpt: string;
-    content: string;
+    content: string; // This will be HTML from Shopify
     imageUrl?: string;
-    aiHint?: string;
+    aiHint?: string; // Often from image alt text
     createdAt: Date;
 }
 
@@ -40,8 +40,6 @@ export interface LogEntry {
     metadata?: Record<string, any>;
 }
 
-// Mongoose document interfaces
-export interface PostDocument extends Omit<Post, '_id' | 'id'>, Document {}
+// Mongoose document interfaces (only for collections still in Mongo)
+export interface PostDocument extends Omit<Post, 'id'>, Document {} // Omit id as it's from Shopify now
 export interface TestimonialDocument extends Omit<Testimonial, '_id' | 'id'>, Document {}
-
-    

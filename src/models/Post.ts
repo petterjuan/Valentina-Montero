@@ -1,3 +1,5 @@
+// This file is no longer used as blog posts are managed in Shopify.
+// It is kept for reference but can be safely deleted.
 
 import { PostDocument } from '@/types';
 import mongoose, { Schema, model, models } from 'mongoose';
@@ -12,7 +14,7 @@ const PostSchema = new Schema<PostDocument>({
   createdAt: { type: Date, default: Date.now },
 });
 
-// Use mongoose.model to ensure the model is not re-registered.
+// To prevent re-registering the model on hot reloads
 const PostModel = models.Post || model<PostDocument>('Post', PostSchema);
 
 export default PostModel;

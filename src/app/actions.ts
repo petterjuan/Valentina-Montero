@@ -8,7 +8,6 @@ import { Post, Testimonial, Lead, LogEntry } from "@/types";
 import { getFirestore } from "@/lib/firebase";
 import { Program } from "@/components/sections/CoachingProgramsSection";
 import connectToDb from "@/lib/mongoose";
-import PostModel from "@/models/Post";
 import TestimonialModel from "@/models/Testimonial";
 import crypto from 'crypto';
 import { generateBlogPost } from "@/ai/flows/generate-blog-post";
@@ -38,8 +37,8 @@ export type AiGeneratorFormState = {
   isFullPlan?: boolean;
 };
 
-// GraphQL Query
-const COLLECTION_QUERY = /* GraphQL */`
+// GraphQL Queries for Shopify
+const PRODUCTS_IN_COLLECTION_QUERY = /* GraphQL */`
   query CollectionDetails($handle: String!, $first: Int!) {
     collection(handle: $handle) {
       id
@@ -77,6 +76,47 @@ const COLLECTION_QUERY = /* GraphQL */`
   }
 `;
 
+const ARTICLES_QUERY = /* GraphQL */`
+  query GetArticles($first: Int!) {
+    articles(first: $first, sortKey: PUBLISHED_AT, reverse: true) {
+      nodes {
+        id
+        title
+        handle
+        excerpt
+        publishedAt
+        image {
+          url(transform: {maxWidth: 1200, maxHeight: 800, crop: CENTER})
+          altText
+        }
+      }
+    }
+  }
+`;
+
+const ARTICLE_BY_HANDLE_QUERY = /* GraphQL */`
+  query GetArticleByHandle($blogHandle: String!, $articleHandle: String!) {
+    blog(handle: $blogHandle) {
+      articleByHandle(handle: $articleHandle) {
+        id
+        title
+        contentHtml
+        excerpt
+        publishedAt
+        image {
+          url(transform: {maxWidth: 1200, maxHeight: 630, crop: CENTER})
+          altText
+        }
+        author: authorV2 {
+          name
+        }
+      }
+    }
+  }
+`;
+
+
+// Shopify Interface Definitions
 interface ShopifyProduct {
   id: string;
   title: string;
@@ -98,7 +138,7 @@ interface ShopifyProduct {
   isDigital?: { value: string };
 }
 
-interface ShopifyCollectionResponse {
+interface ShopifyProductCollectionResponse {
   data?: {
     collection?: {
       id: string;
@@ -111,6 +151,52 @@ interface ShopifyCollectionResponse {
   };
   errors?: Array<{ message: string; [key: string]: any }>;
 }
+
+interface ShopifyArticle {
+    id: string;
+    title: string;
+    handle: string;
+    excerpt: string | null;
+    publishedAt: string;
+    image: {
+        url: string;
+        altText: string | null;
+    } | null;
+}
+
+interface ShopifyArticleResponse {
+    data: {
+        articles: {
+            nodes: ShopifyArticle[];
+        }
+    }
+    errors?: Array<{ message: string; [key: string]: any }>;
+}
+
+interface ShopifySingleArticle {
+    id: string;
+    title: string;
+    contentHtml: string;
+    excerpt: string;
+    publishedAt: string;
+    image: {
+        url: string;
+        altText: string | null;
+    } | null;
+    author: {
+        name: string;
+    };
+}
+
+interface ShopifySingleArticleResponse {
+    data: {
+        blog: {
+            articleByHandle: ShopifySingleArticle | null;
+        } | null;
+    }
+    errors?: Array<{ message: string; [key: string]: any }>;
+}
+
 
 // Helper functions
 const transformShopifyProducts = (products: ShopifyProduct[]): Program[] => {
@@ -154,11 +240,23 @@ export async function handleAiGeneration(
     prevState: AiGeneratorFormState, 
     formData: FormData
 ): Promise<AiGeneratorFormState> {
+  const rawData = Object.fromEntries(formData.entries());
+  
+  // Use a schema with coercion for validation within the action
+  const safeParseResult = aiGeneratorClientSchema.safeParse(rawData);
+  
+  if (!safeParseResult.success) {
+    const firstError = safeParseResult.error.errors[0];
+    logEvent('AI Workout Validation Error', { zodIssues: safeParseResult.error.issues, message: firstError?.message }, 'error');
+    return { 
+      error: firstError?.message || "Los datos de entrada no son válidos. Por favor, revisa el formulario." 
+    };
+  }
+
+  const validatedInput = safeParseResult.data;
+  const { email, ...workoutInput } = validatedInput;
+
   try {
-    const rawData = Object.fromEntries(formData.entries());
-    const validatedInput = aiGeneratorClientSchema.parse(rawData);
-    
-    const { email, ...workoutInput } = validatedInput;
     const previousData = prevState.data;
 
     let result = previousData;
@@ -211,14 +309,6 @@ export async function handleAiGeneration(
     };
     if (error instanceof Error && error.stack) {
         errorDetails.stack = error.stack;
-    }
-    if (error instanceof z.ZodError) {
-      errorDetails.zodIssues = error.issues;
-      const firstError = error.errors[0];
-      logEvent('AI Workout Validation Error', { ...errorDetails, message: firstError?.message }, 'error');
-      return { 
-        error: firstError?.message || "Los datos de entrada no son válidos. Por favor, revisa el formulario." 
-      };
     }
     
     logEvent('AI Workout Generation Error', errorDetails, 'error');
@@ -297,52 +387,120 @@ export async function handleLeadSubmission(formData: { email: string }) {
 }
 
 
-// Data Fetching Actions
-export async function getBlogPosts(limit?: number): Promise<Post[]> {
+// --- Shopify Data Fetching ---
+async function fetchShopify(query: string, variables: Record<string, any> = {}) {
+    const domain = process.env.SHOPIFY_STORE_DOMAIN;
+    const token = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN;
+
+    if (!domain || !token) {
+        const errorMsg = "Shopify domain or token not configured for Storefront API.";
+        console.error(errorMsg);
+        throw new Error(errorMsg);
+    }
+    
+    const endpoint = `https://${domain}/api/2024-04/graphql.json`;
+
     try {
-        await connectToDb();
-        const validLimit = Math.min(Math.max(limit || 20, 1), 100);
-        const posts = await PostModel.find({})
-            .sort({ createdAt: -1 })
-            .limit(validLimit)
-            .lean()
-            .exec();
-        
-        if (!posts) return [];
-        
-        return posts.map(post => {
-            const { _id, ...rest } = post;
-            return { id: _id.toString(), ...rest } as Post;
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'X-Shopify-Storefront-Access-Token': token,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ query, variables }),
+            next: { revalidate: 3600, tags: ['shopify', 'articles'] },
         });
 
+        if (!response.ok) {
+            const errorBody = await response.text();
+            console.error(`Shopify Storefront API request failed with status ${response.status}: ${errorBody}`);
+            throw new Error(`Shopify API request failed: ${response.statusText}`);
+        }
+
+        const responseBody = await response.json();
+
+        if (responseBody.errors && responseBody.errors.length > 0) {
+            const errorMessages = responseBody.errors.map((err: any) => err.message).join(', ');
+            throw new Error(`GraphQL errors from Storefront API: ${errorMessages}`);
+        }
+
+        return responseBody;
+
     } catch (error) {
-        console.error("Error fetching blog posts:", error);
-        logEvent('Fetch Blog Posts Failed', { error: error instanceof Error ? error.message : String(error) }, 'error');
+        console.error("Error fetching from Shopify Storefront API:", {
+            error: error instanceof Error ? error.message : String(error),
+            domain,
+            hasToken: !!token
+        });
+        logEvent('Shopify Storefront API Error', { error: error instanceof Error ? error.message : String(error) }, 'error');
+        throw error;
+    }
+}
+
+// Data Fetching Actions
+export async function getBlogPosts(limit: number = 10): Promise<Post[]> {
+    try {
+        const response: ShopifyArticleResponse = await fetchShopify(ARTICLES_QUERY, { first: limit });
+        const articles = response.data.articles.nodes;
+
+        if (!articles) return [];
+        
+        return articles.map(article => ({
+            id: article.id,
+            title: article.title,
+            slug: article.handle,
+            excerpt: article.excerpt || '',
+            content: '', // Not fetched in list view
+            imageUrl: article.image?.url,
+            aiHint: article.image?.altText || 'blog post',
+            createdAt: new Date(article.publishedAt),
+        }));
+
+    } catch (error) {
+        console.error("Error fetching blog posts from Shopify:", error);
         return [];
     }
 }
 
 export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
+    const blogHandle = process.env.SHOPIFY_BLOG_HANDLE;
+
+    if (!blogHandle) {
+        console.error("SHOPIFY_BLOG_HANDLE is not set in environment variables.");
+        return null;
+    }
+
     try {
         if (!slug) {
             console.warn("getBlogPostBySlug called with an empty slug.");
             return null;
         }
         
-        await connectToDb();
-        const post = await PostModel.findOne({ slug }).lean().exec();
+        const response: ShopifySingleArticleResponse = await fetchShopify(ARTICLE_BY_HANDLE_QUERY, {
+            blogHandle: blogHandle,
+            articleHandle: slug
+        });
+        
+        const article = response.data?.blog?.articleByHandle;
 
-        if (!post) {
-            console.warn(`No post found for slug: "${slug}"`);
+        if (!article) {
+            console.warn(`No Shopify article found for slug: "${slug}" in blog "${blogHandle}"`);
             return null;
         }
         
-        const { _id, ...rest } = post;
-        return { id: _id.toString(), ...rest } as Post;
+        return {
+            id: article.id,
+            title: article.title,
+            slug: slug, // The slug is the handle we used for query
+            content: article.contentHtml,
+            excerpt: article.excerpt,
+            imageUrl: article.image?.url,
+            aiHint: article.image?.altText || 'blog post',
+            createdAt: new Date(article.publishedAt),
+        };
 
     } catch (error) {
-        console.error(`Error fetching post by slug "${slug}":`, error);
-        logEvent('Fetch Blog Post By Slug Failed', { slug, error: error instanceof Error ? error.message : String(error) }, 'error');
+        console.error(`Error fetching Shopify post by slug "${slug}":`, error);
         return null;
     }
 }
@@ -371,13 +529,13 @@ export async function getTestimonials(): Promise<Testimonial[]> {
 }
 
 export async function getLeads(): Promise<Lead[]> {
+  const firestore = getFirestore();
+  if (!firestore) {
+    console.error("Firestore not configured, cannot fetch leads.");
+    return [];
+  }
+  
   try {
-    const firestore = getFirestore();
-    if (!firestore) {
-      console.error("Firestore not configured, cannot fetch leads.");
-      return [];
-    }
-
     const leadsSnapshot = await firestore.collection('leads')
         .orderBy('createdAt', 'desc')
         .get();
@@ -406,50 +564,20 @@ export async function getLeads(): Promise<Lead[]> {
 
 
 export async function getPrograms(collectionHandle: string, maxProducts: number = 10): Promise<Program[] | null> {
-  const domain = process.env.SHOPIFY_STORE_DOMAIN;
-  const token = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN;
-
-  if (!domain || !token) {
-    console.error("Shopify domain or token not configured in environment variables.");
-    return null;
-  }
-
+  const validMaxProducts = Math.min(Math.max(maxProducts, 1), 100);
+  
   if (!collectionHandle || typeof collectionHandle !== 'string') {
     console.error("Invalid collection handle provided");
     return null;
   }
 
-  const validMaxProducts = Math.min(Math.max(maxProducts, 1), 100);
-  const endpoint = `https://${domain}/api/2024-04/graphql.json`;
-
   try {
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'X-Shopify-Storefront-Access-Token': token,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ 
-        query: COLLECTION_QUERY, 
-        variables: { handle: collectionHandle, first: validMaxProducts } 
-      }),
-      next: { revalidate: 3600, tags: ['shopify'] },
-    });
-
-    if (!response.ok) {
-        const errorBody = await response.text();
-        console.error(`Shopify API request failed with status ${response.status}: ${errorBody}`);
-        throw new Error(`Shopify API request failed: ${response.statusText}`);
-    }
-
-    const responseBody: ShopifyCollectionResponse = await response.json();
-
-    if (responseBody.errors && responseBody.errors.length > 0) {
-      const errorMessages = responseBody.errors.map(err => err.message).join(', ');
-      throw new Error(`GraphQL errors: ${errorMessages}`);
-    }
+    const response: ShopifyProductCollectionResponse = await fetchShopify(
+      PRODUCTS_IN_COLLECTION_QUERY,
+      { handle: collectionHandle, first: validMaxProducts }
+    );
     
-    const shopifyProducts = responseBody.data?.collection?.products?.nodes;
+    const shopifyProducts = response.data?.collection?.products?.nodes;
     
     if (!shopifyProducts || !Array.isArray(shopifyProducts)) {
       console.warn(`No products found for collection: ${collectionHandle}`);
@@ -458,26 +586,19 @@ export async function getPrograms(collectionHandle: string, maxProducts: number 
     
     return transformShopifyProducts(shopifyProducts);
   } catch (error) {
-    console.error("Error fetching Shopify data:", {
-      error: error instanceof Error ? error.message : String(error),
-      collectionHandle,
-      maxProducts: validMaxProducts,
-      domain,
-      hasToken: !!token
-    });
-    logEvent('Fetch Shopify Programs Failed', { collectionHandle, error: error instanceof Error ? error.message : String(error) }, 'error');
+    // Error is already logged in fetchShopify
     return null;
   }
 }
 
 export async function getLogs(limit: number = 15): Promise<LogEntry[]> {
-    try {
-        const firestore = getFirestore();
-        if (!firestore) {
-            console.error("Firestore not configured, cannot fetch logs.");
-            return [];
-        }
+    const firestore = getFirestore();
+    if (!firestore) {
+        console.error("Firestore not configured, cannot fetch logs.");
+        return [];
+    }
 
+    try {
         const logsSnapshot = await firestore.collection('logs')
             .orderBy('timestamp', 'desc')
             .limit(limit)
@@ -524,21 +645,18 @@ async function checkFirebase(): Promise<Status> {
     }
     
     await firestore.listCollections();
-
+    
+    // This is a roundabout way to get the project ID from the service account
+    // if it's not available in the environment directly.
     let projectId = 'tu-proyecto';
     try {
-        // Attempt to parse project ID from a public config if available, otherwise default.
-        // Note: This is for display purposes only.
-        if (process.env.NEXT_PUBLIC_FIREBASE_CONFIG) {
-            const config = JSON.parse(process.env.NEXT_PUBLIC_FIREBASE_CONFIG);
-            projectId = config.projectId || projectId;
-        } else if (admin.apps.length > 0) {
-             // Fallback for getting project ID if public config isn't there
-             const app = admin.app();
-             projectId = app.options.projectId || projectId;
+        const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+        if (serviceAccountKey) {
+            const decodedKey = Buffer.from(serviceAccountKey, 'base64').toString('utf-8');
+            const serviceAccount = JSON.parse(decodedKey);
+            projectId = serviceAccount.project_id || projectId;
         }
     } catch (e) {
-      // It's okay if this fails, it's just for display.
       console.warn("Could not determine Firebase project ID for display.");
     }
 
@@ -589,40 +707,47 @@ async function checkMongoDB(): Promise<Status> {
 
 async function checkShopify(): Promise<Status> {
     const domain = process.env.SHOPIFY_STORE_DOMAIN;
-    const token = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN;
+    const storefrontToken = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN;
+    const adminToken = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN;
 
     if (!domain) return { status: 'error' as const, message: `Configuración incompleta. Falta la variable de entorno: <b>SHOPIFY_STORE_DOMAIN</b>.` };
-    if (!token) return { status: 'error' as const, message: `Configuración incompleta. Falta la variable de entorno: <b>SHOPIFY_STOREFRONT_ACCESS_TOKEN</b>.` };
+    if (!storefrontToken) return { status: 'error' as const, message: `Configuración incompleta. Falta la variable de entorno: <b>SHOPIFY_STOREFRONT_ACCESS_TOKEN</b>.` };
+    if (!adminToken) return { status: 'error' as const, message: `Configuración incompleta. Falta la variable de entorno: <b>SHOPIFY_ADMIN_ACCESS_TOKEN</b> para crear posts de blog.` };
 
-    const endpoint = `https://${domain}/api/2024-04/graphql.json`;
+    const storefrontEndpoint = `https://${domain}/api/2024-04/graphql.json`;
+    const adminEndpoint = `https://${domain}/admin/api/2024-04/graphql.json`;
     const query = `{ shop { name } }`;
 
     try {
-        const response = await fetch(endpoint, {
+        // Check Storefront API
+        const storefrontResponse = await fetch(storefrontEndpoint, {
             method: 'POST',
-            headers: { 'X-Shopify-Storefront-Access-Token': token, 'Content-Type': 'application/json' },
+            headers: { 'X-Shopify-Storefront-Access-Token': storefrontToken, 'Content-Type': 'application/json' },
             body: JSON.stringify({ query }),
         });
 
-        if (!response.ok) {
-            if (response.status === 401) {
-                 throw new Error(`Error de autenticación (Unauthorized). El <b>Storefront Access Token</b> es inválido o no tiene los permisos necesarios. Revisa que el token en Vercel sea correcto y que los permisos de Storefront API en tu app de Shopify estén habilitados (ej. 'unauthenticated_read_products').`);
-            }
-            if (response.status === 404) {
-                 throw new Error(`La URL de la API de Shopify no fue encontrada (404 Not Found). Revisa que el SHOPIFY_STORE_DOMAIN (<b>'${domain}'</b>) sea correcto. Debe ser del tipo 'tu-tienda.myshopify.com', sin 'https://'.`);
-            }
-            const errorText = await response.text();
-            throw new Error(`La API de Shopify devolvió un estado <b>${response.status}</b>. Respuesta: ${errorText}`);
+        if (!storefrontResponse.ok) {
+            const errorText = await storefrontResponse.text();
+            throw new Error(`La API de Storefront devolvió un estado <b>${storefrontResponse.status}</b>. Revisa <b>SHOPIFY_STOREFRONT_ACCESS_TOKEN</b> y los permisos. Respuesta: ${errorText}`);
         }
-        
-        const json = await response.json();
-        
-        if (json.errors) {
-             throw new Error(`Errores de GraphQL: ${json.errors.map((e: any) => e.message).join(', ')}. Esto casi siempre significa que al token le faltan permisos. En Shopify, ve a tu App > Configuration > Storefront API integration y asegúrate de que todos los permisos de lectura de productos estén marcados (ej. 'unauthenticated_read_products').`);
-        }
+        const storefrontJson = await storefrontResponse.json();
+        if (storefrontJson.errors) throw new Error(`Errores de GraphQL en Storefront API: ${storefrontJson.errors.map((e: any) => e.message).join(', ')}.`);
+        const shopName = storefrontJson.data?.shop?.name;
 
-        const shopName = json.data?.shop?.name;
-        return { status: 'success' as const, message: `Conectado exitosamente a la tienda de Shopify: <b>${shopName}</b>.` };
+        // Check Admin API
+        const adminResponse = await fetch(adminEndpoint, {
+            method: 'POST',
+            headers: { 'X-Shopify-Access-Token': adminToken, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query }),
+        });
+        if (!adminResponse.ok) {
+            const errorText = await adminResponse.text();
+            throw new Error(`La API de Admin devolvió un estado <b>${adminResponse.status}</b>. Revisa <b>SHOPIFY_ADMIN_ACCESS_TOKEN</b> y sus permisos (write_content). Respuesta: ${errorText}`);
+        }
+        const adminJson = await adminResponse.json();
+        if (adminJson.errors) throw new Error(`Errores de GraphQL en Admin API: ${adminJson.errors.map((e: any) => e.message).join(', ')}. Asegúrate de que el token tenga permisos de 'write_content'.`);
+
+        return { status: 'success' as const, message: `Conectado exitosamente a la tienda de Shopify: <b>${shopName}</b>. Ambas APIs (Storefront y Admin) funcionan.` };
 
     } catch (error: any) {
         return { status: 'error' as const, message: `Falló la conexión a Shopify. Error: ${error.message}` };
@@ -636,13 +761,12 @@ async function checkMongoData(): Promise<Status> {
              return { status: 'error' as const, message: `No se pudo establecer conexión con MongoDB para la lectura de datos.` };
         }
 
-        const postCount = await PostModel.countDocuments();
         const testimonialCount = await TestimonialModel.countDocuments();
         const dbName = client.connection.db.databaseName;
 
         return { 
             status: 'success' as const, 
-            message: `Lectura exitosa. Se encontraron <b>${postCount} posts</b> y <b>${testimonialCount} testimonios</b> en la base de datos <b>${dbName}</b>.`
+            message: `Lectura exitosa. Se encontraron <b>${testimonialCount} testimonios</b> en la base de datos <b>${dbName}</b>.`
         };
 
     } catch (error: any) {
@@ -672,6 +796,4 @@ export async function getSystemStatuses(): Promise<SystemStatus> {
         mongoData: mongoDataStatus,
     };
 }
-    
-
     

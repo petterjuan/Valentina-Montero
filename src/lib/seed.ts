@@ -1,5 +1,4 @@
 import mongoose from 'mongoose';
-import PostModel from '@/models/Post';
 import TestimonialModel from '@/models/Testimonial';
 import placeholderImages from './placeholder-images.json';
 
@@ -42,36 +41,6 @@ const fallbackTestimonials = [
   },
 ];
 
-const fallbackPosts = [
-    {
-        title: "5 Mitos del Fitness que Debes Dejar de Creer Hoy",
-        slug: "5-mitos-fitness",
-        excerpt: "Desmentimos las creencias más comunes que te impiden alcanzar tus metas. Prepárate para sorprenderte y cambiar tu enfoque.",
-        content: "<p>El mundo del fitness está lleno de información, pero no toda es correcta. Aquí desmentimos 5 mitos que probablemente has escuchado y que podrían estar saboteando tu progreso. Desde 'sudar más es quemar más grasa' hasta 'las pesas te harán voluminosa', es hora de separar la realidad de la ficción para que puedas entrenar de manera más inteligente y efectiva.</p>",
-        imageUrl: placeholderImages.blog.fallback1.src,
-        aiHint: placeholderImages.blog.fallback1.aiHint,
-        createdAt: new Date("2024-05-10T10:00:00Z"),
-    },
-    {
-        title: "Nutrición 101: Cómo Balancear tus Macronutrientes",
-        slug: "nutricion-101-macros",
-        excerpt: "Proteínas, carbohidratos y grasas. Te explicamos de forma sencilla qué son, por qué los necesitas y cómo distribuirlos para tus objetivos.",
-        content: "<p>Entender los macronutrientes es la base de una nutrición exitosa. En este artículo, te guiaremos a través de los conceptos básicos de las proteínas, los carbohidratos y las grasas. Aprenderás por qué cada uno es vital para tu energía, recuperación y salud general, y te daremos estrategias prácticas para balancearlos según si tu objetivo es perder peso, ganar músculo o simplemente sentirte mejor.</p>",
-        imageUrl: placeholderImages.blog.fallback2.src,
-        aiHint: placeholderImages.blog.fallback2.aiHint,
-        createdAt: new Date("2024-05-15T11:30:00Z"),
-    },
-    {
-        title: "La Importancia del Descanso: Más Allá del Gimnasio",
-        slug: "importancia-del-descanso",
-        excerpt: "El entrenamiento es solo una parte de la ecuación. Descubre por qué el sueño y la recuperación activa son cruciales para tu transformación.",
-        content: "<p>Puedes entrenar tan duro como quieras, pero si no le das a tu cuerpo el tiempo y las herramientas para recuperarse, no verás los resultados que esperas. Hablamos sobre la ciencia del descanso, la importancia del sueño de calidad y las técnicas de recuperación activa que puedes implementar para reducir el dolor muscular, prevenir lesiones y maximizar tus ganancias. ¡El verdadero crecimiento ocurre cuando descansas!</p>",
-        imageUrl: placeholderImages.blog.fallback3.src,
-        aiHint: placeholderImages.blog.fallback3.aiHint,
-        createdAt: new Date("2024-05-20T09:00:00Z"),
-    },
-];
-
 async function seedDatabase() {
     const uri = process.env.MONGODB_URI;
 
@@ -89,14 +58,9 @@ async function seedDatabase() {
         console.log("Cleared 'testimonials' collection.");
         await TestimonialModel.insertMany(fallbackTestimonials);
         console.log(`Seeded ${fallbackTestimonials.length} testimonials.`);
-        
-        // Seed Posts
-        await PostModel.deleteMany({});
-        console.log("Cleared 'posts' collection.");
-        await PostModel.insertMany(fallbackPosts);
-        console.log(`Seeded ${fallbackPosts.length} posts.`);
 
-        console.log("\nDatabase seeding completed successfully!");
+        console.log("\nDatabase seeding for testimonials completed successfully!");
+        console.log("Blog posts are now managed directly in Shopify and are not seeded.");
 
     } catch (err) {
         console.error("Error seeding database:", err);

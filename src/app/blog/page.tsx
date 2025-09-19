@@ -5,7 +5,6 @@ import { Post } from "@/types";
 import { type Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import placeholderImages from "@/lib/placeholder-images.json";
 import { Separator } from "@/components/ui/separator";
 
 export const dynamic = 'force-dynamic';
@@ -15,48 +14,12 @@ export const metadata: Metadata = {
   description: "Consejos, trucos e ideas sobre fitness, nutrición y mentalidad de la mano de Valentina Montero.",
 };
 
-const fallbackPosts: Omit<Post, "_id" | "id">[] = [
-    {
-        title: "5 Mitos del Fitness que Debes Dejar de Creer Hoy",
-        slug: "5-mitos-fitness",
-        excerpt: "Desmentimos las creencias más comunes que te impiden alcanzar tus metas. Prepárate para sorprenderte y cambiar tu enfoque.",
-        content: "<p>...</p>",
-        imageUrl: placeholderImages.blog.fallback1.src,
-        aiHint: placeholderImages.blog.fallback1.aiHint,
-        createdAt: new Date("2024-05-10T10:00:00Z"),
-    },
-    {
-        title: "Nutrición 101: Cómo Balancear tus Macronutrientes",
-        slug: "nutricion-101-macros",
-        excerpt: "Proteínas, carbohidratos y grasas. Te explicamos de forma sencilla qué son, por qué los necesitas y cómo distribuirlos para tus objetivos.",
-        content: "<p>...</p>",
-        imageUrl: placeholderImages.blog.fallback2.src,
-        aiHint: placeholderImages.blog.fallback2.aiHint,
-        createdAt: new Date("2024-05-15T11:30:00Z"),
-    },
-    {
-        title: "La Importancia del Descanso: Más Allá del Gimnasio",
-        slug: "importancia-del-descanso",
-        excerpt: "El entrenamiento es solo una parte de la ecuación. Descubre por qué el sueño y la recuperación activa son cruciales para tu transformación.",
-        content: "<p>...</p>",
-imageUrl: placeholderImages.blog.fallback3.src,
-        aiHint: placeholderImages.blog.fallback3.aiHint,
-        createdAt: new Date("2024-05-20T09:00:00Z"),
-    },
-];
-
 export default async function BlogIndexPage() {
-    let posts: (Post | Omit<Post, "_id" | "id">)[] = [];
+    let posts: Post[] = [];
     try {
-        const fetchedPosts = await getBlogPosts();
-        if (fetchedPosts && fetchedPosts.length > 0) {
-            posts = fetchedPosts;
-        } else {
-            posts = fallbackPosts;
-        }
+        posts = await getBlogPosts(20);
     } catch(e) {
-        console.error("[BlogIndexPage] Error fetching posts, using fallback.");
-        posts = fallbackPosts;
+        console.error("[BlogIndexPage] Error fetching posts from Shopify, page will show empty state.", e);
     }
     
     const featuredPost = posts[0];
@@ -80,7 +43,7 @@ export default async function BlogIndexPage() {
                       <article className="group grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
                           <Link href={`/blog/${featuredPost.slug}`} className="aspect-video relative block w-full overflow-hidden rounded-lg">
                               <Image
-                                  src={featuredPost.imageUrl || "https://picsum.photos/600/400?random=8"}
+                                  src={featuredPost.imageUrl || "https://picsum.photos/seed/blog-fallback/600/400"}
                                   alt={featuredPost.title}
                                   fill
                                   className="object-cover transition-transform duration-300 group-hover:scale-105"
@@ -111,7 +74,7 @@ export default async function BlogIndexPage() {
                                   <Card key={post.slug} className="flex flex-col overflow-hidden">
                                       <Link href={`/blog/${post.slug}`} className="aspect-video relative block">
                                           <Image
-                                              src={post.imageUrl || "https://picsum.photos/600/400?random=8"}
+                                              src={post.imageUrl || "https://picsum.photos/seed/blog-fallback-2/600/400"}
                                               alt={post.title}
                                               fill
                                               className="object-cover"
@@ -139,7 +102,7 @@ export default async function BlogIndexPage() {
                 {posts.length === 0 && (
                     <div className="col-span-1 md:col-span-2 lg:col-span-3 text-center py-12">
                         <h3 className="text-xl font-semibold">No hay artículos aún</h3>
-                        <p className="text-muted-foreground mt-2">Vuelve pronto para leer nuevos artículos o comprueba la conexión con la base de datos si eres el administrador.</p>
+                        <p className="text-muted-foreground mt-2">Vuelve pronto para leer nuevos artículos o comprueba la conexión con Shopify si eres el administrador.</p>
                     </div>
                 )}
             </div>

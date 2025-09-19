@@ -11,50 +11,17 @@ import {
 import { Button } from "@/components/ui/button";
 import { getBlogPosts } from "@/app/actions";
 import { Post } from "@/types";
-import placeholderImages from "@/lib/placeholder-images.json";
-
-const fallbackPosts: Omit<Post, "_id" | "id">[] = [
-    {
-        title: "5 Mitos del Fitness que Debes Dejar de Creer Hoy",
-        slug: "5-mitos-fitness",
-        excerpt: "Desmentimos las creencias más comunes que te impiden alcanzar tus metas. Prepárate para sorprenderte y cambiar tu enfoque.",
-        content: "<p>El mundo del fitness está lleno de información, pero no toda es correcta. Aquí desmentimos 5 mitos que probablemente has escuchado y que podrían estar saboteando tu progreso. Desde 'sudar más es quemar más grasa' hasta 'las pesas te harán voluminosa', es hora de separar la realidad de la ficción para que puedas entrenar de manera más inteligente y efectiva.</p>",
-        imageUrl: placeholderImages.blog.fallback1.src,
-        aiHint: placeholderImages.blog.fallback1.aiHint,
-        createdAt: new Date("2024-05-10T10:00:00Z"),
-    },
-    {
-        title: "Nutrición 101: Cómo Balancear tus Macronutrientes",
-        slug: "nutricion-101-macros",
-        excerpt: "Proteínas, carbohidratos y grasas. Te explicamos de forma sencilla qué son, por qué los necesitas y cómo distribuirlos para tus objetivos.",
-        content: "<p>Entender los macronutrientes es la base de una nutrición exitosa. En este artículo, te guiaremos a través de los conceptos básicos de las proteínas, los carbohidratos y las grasas. Aprenderás por qué cada uno es vital para tu energía, recuperación y salud general, y te daremos estrategias prácticas para balancearlos según si tu objetivo es perder peso, ganar músculo o simplemente sentirte mejor.</p>",
-        imageUrl: placeholderImages.blog.fallback2.src,
-        aiHint: placeholderImages.blog.fallback2.aiHint,
-        createdAt: new Date("2024-05-15T11:30:00Z"),
-    },
-    {
-        title: "La Importancia del Descanso: Más Allá del Gimnasio",
-        slug: "importancia-del-descanso",
-        excerpt: "El entrenamiento es solo una parte de la ecuación. Descubre por qué el sueño y la recuperación activa son cruciales para tu transformación.",
-        content: "<p>Puedes entrenar tan duro como quieras, pero si no le das a tu cuerpo el tiempo y las herramientas para recuperarse, no verás los resultados que esperas. Hablamos sobre la ciencia del descanso, la importancia del sueño de calidad y las técnicas de recuperación activa que puedes implementar para reducir el dolor muscular, prevenir lesiones y maximizar tus ganancias. ¡El verdadero crecimiento ocurre cuando descansas!</p>",
-        imageUrl: placeholderImages.blog.fallback3.src,
-        aiHint: placeholderImages.blog.fallback3.aiHint,
-        createdAt: new Date("2024-05-20T09:00:00Z"),
-    },
-];
-
 
 export default async function BlogSection() {
-  let fetchedPosts: Post[] | null = null;
+  let displayPosts: Post[] = [];
 
   try {
-    fetchedPosts = await getBlogPosts(3);
+    // Fetch the 3 most recent posts from Shopify
+    displayPosts = await getBlogPosts(3);
   } catch (e) {
-     // Errors are logged in the action, here we just ensure fallback.
-     console.error(`[BlogSection] Could not fetch posts, will use fallback data.`);
+     // Errors are logged in the action, here we just ensure the section doesn't crash.
+     console.error(`[BlogSection] Could not fetch posts from Shopify, section will be empty.`);
   }
-  
-  const displayPosts = (fetchedPosts && fetchedPosts.length > 0) ? fetchedPosts : fallbackPosts;
 
   return (
     <section id="blog" className="py-16 sm:py-24 bg-background">
@@ -74,7 +41,7 @@ export default async function BlogSection() {
               <Card key={post.slug} className="flex flex-col overflow-hidden">
                 <Link href={`/blog/${post.slug}`} className="aspect-video relative block">
                   <Image
-                    src={post.imageUrl || "https://picsum.photos/600/400?random=8"}
+                    src={post.imageUrl || "https://picsum.photos/seed/blog-fallback/600/400"}
                     alt={post.title}
                     fill
                     className="object-cover"
@@ -96,7 +63,7 @@ export default async function BlogSection() {
             ))
           ) : (
              <div className="md:col-span-2 lg:col-span-3 text-center py-12">
-                <h3 className="text-xl font-semibold">No hay artículos aún</h3>
+                <h3 className="text-xl font-semibold">No hay artículos para mostrar</h3>
                 <p className="text-muted-foreground mt-2">Vuelve pronto para leer nuevos artículos.</p>
             </div>
           )}
