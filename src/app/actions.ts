@@ -524,11 +524,11 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
                 };
             }
         } catch (error) {
-            console.warn(`Could not fetch slug "${slug}" from Shopify, will try MongoDB. Error: ${error}`);
+            console.warn(`Could not fetch slug "${slug}" from Shopify, will try MongoDB. Error: ${error instanceof Error ? error.message : String(error)}`);
         }
     }
 
-    // 2. If not found in Shopify, try MongoDB
+    // 2. If not found in Shopify (or if Shopify check failed), try MongoDB
     try {
         await connectToDb();
         const post = await PostModel.findOne({ slug: slug }).lean().exec() as PostDocument | null;
@@ -833,3 +833,6 @@ export async function getSystemStatuses(): Promise<SystemStatus> {
         mongoData: mongoDataStatus,
     };
 }
+
+
+    
