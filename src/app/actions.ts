@@ -489,12 +489,23 @@ async function fetchMongoBlogPosts(limit: number): Promise<Post[]> {
 }
 
 export async function getBlogPosts(limit: number = 20): Promise<Post[]> {
-    const [shopifyPosts, mongoPosts] = await Promise.all([
-        fetchShopifyBlogPosts(limit),
-        fetchMongoBlogPosts(limit),
-    ]);
+    let shopifyPosts: Post[] = [];
+    let mongoPosts: Post[] = [];
 
-    // Prioritize Shopify posts, then add MongoDB posts and sort by date
+    try {
+        shopifyPosts = await fetchShopifyBlogPosts(limit);
+    } catch (e) {
+        console.error("Failed to fetch posts from Shopify, continuing with MongoDB posts only.", e);
+        logEvent('Shopify Fetch Error (getBlogPosts)', { error: e instanceof Error ? e.message : String(e) }, 'warn');
+    }
+
+    try {
+        mongoPosts = await fetchMongoBlogPosts(limit);
+    } catch (e) {
+        console.error("Failed to fetch posts from MongoDB.", e);
+        logEvent('MongoDB Fetch Error (getBlogPosts)', { error: e instanceof Error ? e.message : String(e) }, 'error');
+    }
+
     const allPosts = [...shopifyPosts, ...mongoPosts];
     allPosts.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     
@@ -502,36 +513,32 @@ export async function getBlogPosts(limit: number = 20): Promise<Post[]> {
 }
 
 export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
-    const blogHandle = process.env.SHOPIFY_BLOG_HANDLE;
+    const blogHandle = 'news';
 
-    // 1. Try to fetch from Shopify first
-    if (blogHandle) {
-        try {
-            const response: ShopifySingleArticleResponse = await fetchShopify(ARTICLE_BY_HANDLE_QUERY, {
-                blogHandle: blogHandle,
-                articleHandle: slug
-            });
-            
-            const article = response.data?.blog?.articleByHandle;
+    // 1. Try to fetch from Shopify first, as it's the priority source.
+    try {
+        const response: ShopifySingleArticleResponse = await fetchShopify(ARTICLE_BY_HANDLE_QUERY, {
+            blogHandle: blogHandle,
+            articleHandle: slug
+        });
+        
+        const article = response.data?.blog?.articleByHandle;
 
-            if (article) {
-                return {
-                    id: article.id,
-                    source: 'Shopify',
-                    title: article.title,
-                    slug: slug,
-                    content: article.contentHtml,
-                    excerpt: article.excerpt,
-                    imageUrl: article.image?.url,
-                    aiHint: article.image?.altText || 'blog post',
-                    createdAt: new Date(article.publishedAt),
-                };
-            }
-        } catch (error) {
-            console.warn(`Could not fetch slug "${slug}" from Shopify. This might be expected if the post is from MongoDB. Error: ${error instanceof Error ? error.message : String(error)}`);
+        if (article) {
+            return {
+                id: article.id,
+                source: 'Shopify',
+                title: article.title,
+                slug: slug,
+                content: article.contentHtml,
+                excerpt: article.excerpt,
+                imageUrl: article.image?.url,
+                aiHint: article.image?.altText || 'blog post',
+                createdAt: new Date(article.publishedAt),
+            };
         }
-    } else {
-        console.warn('SHOPIFY_BLOG_HANDLE is not set. Skipping Shopify post check.');
+    } catch (error) {
+        console.warn(`Could not fetch slug "${slug}" from Shopify. This might be expected if the post is from MongoDB. Error: ${error instanceof Error ? error.message : String(error)}`);
     }
 
     // 2. If not found in Shopify, try MongoDB
