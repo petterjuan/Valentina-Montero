@@ -1,5 +1,3 @@
-// This file is no longer used as blog posts are managed in Shopify.
-// It is kept for reference but can be safely deleted.
 
 import { PostDocument } from '@/types';
 import mongoose, { Schema, model, models } from 'mongoose';

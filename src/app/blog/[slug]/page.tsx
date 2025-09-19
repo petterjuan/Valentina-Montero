@@ -2,31 +2,26 @@
 import { getBlogPostBySlug, getBlogPosts } from "@/app/actions";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Download, Eye } from "lucide-react";
+import { ArrowLeft, Download, Eye, Bot, Building } from "lucide-react";
 import { type Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import DOMPurify from 'isomorphic-dompurify';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Post } from "@/types";
+import { Badge } from "@/components/ui/badge";
 
-export const dynamic = 'force-dynamic';
-
-interface BlogPostPageProps {
-  params: {
-    slug: string;
-  };
-}
+export const revalidate = 60; // Revalidate every 60 seconds
 
 export async function generateStaticParams() {
   const posts = await getBlogPosts(20); // Get recent posts to generate static pages
+  if (!posts) return [];
   return posts.map((post) => ({
     slug: post.slug,
   }));
 }
 
-export async function generateMetadata({ params }: BlogPostPageProps): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const post = await getBlogPostBySlug(params.slug);
 
   if (!post) {
@@ -53,7 +48,7 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
   };
 }
 
-export default async function BlogPostPage({ params }: BlogPostPageProps) {
+export default async function BlogPostPage({ params }: { params: { slug: string } }) {
   const post = await getBlogPostBySlug(params.slug);
 
   if (!post) {
@@ -61,6 +56,9 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
   }
 
   const sanitizedContent = DOMPurify.sanitize(post.content || "");
+
+  const SourceIcon = post.source === 'MongoDB' ? Bot : Building;
+  const sourceText = post.source === 'MongoDB' ? 'Contenido por IA' : 'Escrito por Valentina';
 
   return (
     <article className="py-12 sm:py-20">
@@ -81,6 +79,11 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
               <span>Publicado el {new Date(post.createdAt).toLocaleDateString("es-ES", {
                   year: 'numeric', month: 'long', day: 'numeric'
               })}</span>
+              <span className="text-muted-foreground/50">|</span>
+              <Badge variant="outline" className="flex items-center gap-1.5">
+                  <SourceIcon className="h-3.5 w-3.5" />
+                  {sourceText}
+              </Badge>
             </div>
           </div>
           

@@ -1,9 +1,10 @@
 
 import { Document } from 'mongoose';
 
-// Represents a blog post, now fetched from Shopify
+// Represents a blog post, now fetched from Shopify or MongoDB
 export interface Post {
     id: string;
+    source: 'Shopify' | 'MongoDB';
     title: string;
     slug: string;
     excerpt: string;
@@ -40,6 +41,6 @@ export interface LogEntry {
     metadata?: Record<string, any>;
 }
 
-// Mongoose document interfaces (only for collections still in Mongo)
-export interface PostDocument extends Omit<Post, 'id'>, Document {} // Omit id as it's from Shopify now
+// Mongoose document interfaces
+export interface PostDocument extends Omit<Post, 'id' | 'source'>, Document {}
 export interface TestimonialDocument extends Omit<Testimonial, '_id' | 'id'>, Document {}

@@ -1,3 +1,4 @@
+
 import { getBlogPosts } from "@/app/actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +8,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Separator } from "@/components/ui/separator";
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60; // Revalidate every 60 seconds
 
 export const metadata: Metadata = {
   title: "Blog | Valentina Montero Fitness",
@@ -19,11 +20,15 @@ export default async function BlogIndexPage() {
     try {
         posts = await getBlogPosts(20);
     } catch(e) {
-        console.error("[BlogIndexPage] Error fetching posts from Shopify, page will show empty state.", e);
+        console.error("[BlogIndexPage] Error fetching posts, page will show empty state.", e);
     }
     
-    const featuredPost = posts[0];
-    const otherPosts = posts.slice(1);
+    // Separate Shopify (manual) from MongoDB (AI) posts
+    const manualPosts = posts.filter(p => p.source === 'Shopify');
+    const aiPosts = posts.filter(p => p.source === 'MongoDB');
+
+    const featuredPost = manualPosts[0] || aiPosts[0]; // Prioritize manual post as featured
+    const otherPosts = posts.filter(p => p.id !== featuredPost?.id);
 
     return (
         <section className="py-16 sm:py-24">
@@ -37,7 +42,7 @@ export default async function BlogIndexPage() {
                     </p>
                 </div>
 
-                {posts.length > 0 && (
+                {posts.length > 0 && featuredPost && (
                   <div className="mt-16 space-y-16">
                       {/* Featured Post */}
                       <article className="group grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
@@ -102,7 +107,7 @@ export default async function BlogIndexPage() {
                 {posts.length === 0 && (
                     <div className="col-span-1 md:col-span-2 lg:col-span-3 text-center py-12">
                         <h3 className="text-xl font-semibold">No hay artículos aún</h3>
-                        <p className="text-muted-foreground mt-2">Vuelve pronto para leer nuevos artículos o comprueba la conexión con Shopify si eres el administrador.</p>
+                        <p className="text-muted-foreground mt-2">Vuelve pronto para leer nuevos artículos o comprueba las conexiones si eres el administrador.</p>
                     </div>
                 )}
             </div>

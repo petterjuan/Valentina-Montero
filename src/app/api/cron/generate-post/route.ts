@@ -4,83 +4,10 @@ import { getBlogPosts } from '@/app/actions';
 import { generateBlogPost } from '@/ai/flows/generate-blog-post';
 import { logEvent } from '@/lib/logger';
 import { Post } from '@/types';
+import PostModel from '@/models/Post';
+import connectToDb from '@/lib/mongoose';
 
 export const dynamic = 'force-dynamic';
-
-const CREATE_ARTICLE_MUTATION = /* GraphQL */`
-  mutation articleCreate($input: ArticleInput!) {
-    articleCreate(blogHandle: $blogHandle, input: $input) {
-      article {
-        id
-        handle
-        title
-      }
-      userErrors {
-        field
-        message
-      }
-    }
-  }
-`;
-
-async function publishArticleToShopify(articleData: {
-    title: string;
-    content: string;
-    slug: string;
-    excerpt: string;
-    imageUrl: string;
-    aiHint: string;
-}) {
-    const { SHOPIFY_STORE_DOMAIN, SHOPIFY_ADMIN_ACCESS_TOKEN, SHOPIFY_BLOG_HANDLE } = process.env;
-
-    if (!SHOPIFY_STORE_DOMAIN || !SHOPIFY_ADMIN_ACCESS_TOKEN || !SHOPIFY_BLOG_HANDLE) {
-        throw new Error("Shopify environment variables for Admin API are not configured.");
-    }
-    
-    const adminEndpoint = `https://${SHOPIFY_STORE_DOMAIN}/admin/api/2024-04/graphql.json`;
-
-    const input = {
-        title: articleData.title,
-        contentHtml: articleData.content,
-        handle: articleData.slug,
-        excerpt: articleData.excerpt,
-        tags: "AI Generated, Fitness, Nutrición",
-        publishedAt: new Date().toISOString(),
-        image: {
-            src: articleData.imageUrl,
-            altText: articleData.aiHint,
-        }
-    };
-
-    const response = await fetch(adminEndpoint, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-Shopify-Access-Token': SHOPIFY_ADMIN_ACCESS_TOKEN,
-        },
-        body: JSON.stringify({
-            query: CREATE_ARTICLE_MUTATION,
-            variables: { 
-                input: input,
-                blogHandle: SHOPIFY_BLOG_HANDLE 
-            },
-        }),
-    });
-
-    const responseBody = await response.json();
-
-    if (responseBody.errors) {
-        throw new Error(`Shopify Admin API GraphQL errors: ${JSON.stringify(responseBody.errors)}`);
-    }
-
-    const userErrors = responseBody.data?.articleCreate?.userErrors;
-    if (userErrors && userErrors.length > 0) {
-        throw new Error(`Shopify Admin API user errors: ${userErrors.map((e: any) => `${e.field}: ${e.message}`).join(', ')}`);
-    }
-
-    return responseBody.data.articleCreate.article;
-}
-
 
 export async function GET(request: NextRequest) {
   // Vercel Cron Job security
@@ -103,8 +30,10 @@ export async function GET(request: NextRequest) {
   try {
     logEvent('Cron Job Started: Generate Blog Post', {});
     console.log('Iniciando tarea CRON: Generación de artículo de blog.');
+    
+    await connectToDb();
 
-    // 1. Obtener los últimos 10 títulos para evitar repeticiones
+    // 1. Obtener los últimos 10 títulos para evitar repeticiones (de ambas fuentes)
     const recentPosts: Post[] = await getBlogPosts(10);
     const existingTitles = recentPosts.map(p => p.title);
     console.log(`Títulos existentes enviados a la IA: ${existingTitles.join(', ')}`);
@@ -113,13 +42,23 @@ export async function GET(request: NextRequest) {
     const newPostData = await generateBlogPost({ existingTitles });
     console.log(`IA generó un nuevo artículo con título: "${newPostData.title}"`);
 
-    // 3. Publicar el nuevo artículo en Shopify
-    const shopifyArticle = await publishArticleToShopify(newPostData);
-
-    console.log(`Tarea CRON completada: Nuevo artículo publicado en Shopify con ID: ${shopifyArticle.id}`);
-    logEvent('Cron Job Success: Blog Post Generated and Published to Shopify', { title: newPostData.title, shopifyId: shopifyArticle.id });
+    // 3. Guardar el nuevo artículo en MongoDB
+    const newPost = new PostModel({
+      title: newPostData.title,
+      slug: newPostData.slug,
+      excerpt: newPostData.excerpt,
+      content: newPostData.content,
+      imageUrl: newPostData.imageUrl,
+      aiHint: newPostData.aiHint,
+      createdAt: new Date(),
+    });
     
-    return NextResponse.json({ success: true, title: newPostData.title, shopifyId: shopifyArticle.id });
+    await newPost.save();
+
+    console.log(`Tarea CRON completada: Nuevo artículo guardado en MongoDB con slug: ${newPost.slug}`);
+    logEvent('Cron Job Success: Blog Post Generated and Saved to MongoDB', { title: newPost.title, slug: newPost.slug });
+    
+    return NextResponse.json({ success: true, title: newPost.title, slug: newPost.slug });
     
   } catch (error) {
     console.error('Error durante la ejecución de la tarea CRON:', error);
@@ -128,5 +67,3 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ message: 'Error al generar el artículo.', error: errorMessage }, { status: 500 });
   }
 }
-
-    

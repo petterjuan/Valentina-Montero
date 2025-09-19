@@ -4,11 +4,12 @@
 import { generatePersonalizedWorkout, GeneratePersonalizedWorkoutOutput } from "@/ai/flows/generate-personalized-workout";
 import { processPlanSignup, PlanSignupInput } from "@/ai/flows/plan-signup-flow";
 import { z } from "zod";
-import { Post, Testimonial, Lead, LogEntry } from "@/types";
+import { Post, Testimonial, Lead, LogEntry, PostDocument } from "@/types";
 import { getFirestore } from "@/lib/firebase";
 import { Program } from "@/components/sections/CoachingProgramsSection";
 import connectToDb from "@/lib/mongoose";
 import TestimonialModel from "@/models/Testimonial";
+import PostModel from "@/models/Post";
 import crypto from 'crypto';
 import { logEvent } from "@/lib/logger";
 
@@ -236,8 +237,8 @@ const transformShopifyProducts = (products: ShopifyProduct[]): Program[] => {
 
 // Server Actions
 export async function handleAiGeneration(
-    prevState: AiGeneratorFormState, 
-    formData: FormData
+  prevState: AiGeneratorFormState,
+  formData: FormData
 ): Promise<AiGeneratorFormState> {
   const rawData = Object.fromEntries(formData.entries());
   
@@ -245,9 +246,10 @@ export async function handleAiGeneration(
   
   if (!safeParseResult.success) {
     const firstError = safeParseResult.error.errors[0];
-    logEvent('AI Workout Validation Error', { zodIssues: safeParseResult.error.issues, message: firstError?.message }, 'error');
+    const errorMessage = firstError?.message || "Los datos de entrada no son válidos. Por favor, revisa el formulario.";
+    logEvent('AI Workout Validation Error', { zodIssues: safeParseResult.error.issues, message: errorMessage }, 'error');
     return { 
-      error: firstError?.message || "Los datos de entrada no son válidos. Por favor, revisa el formulario." 
+      error: errorMessage
     };
   }
 
@@ -298,7 +300,7 @@ export async function handleAiGeneration(
     return { data: result, inputs: validatedInput, isFullPlan: false };
 
   } catch (error) {
-    let errorDetails: Record<string, any> = {
+    const errorDetails: Record<string, any> = {
         message: error instanceof Error ? error.message : String(error),
     };
     if (error instanceof Error && error.stack) {
@@ -311,6 +313,7 @@ export async function handleAiGeneration(
     };
   }
 }
+
 
 export async function handlePlanSignup(input: PlanSignupInput) {
   try {
@@ -432,72 +435,126 @@ async function fetchShopify(query: string, variables: Record<string, any> = {}) 
 }
 
 // Data Fetching Actions
+async function fetchShopifyBlogPosts(limit: number): Promise<Post[]> {
+  try {
+    const response: ShopifyArticleResponse = await fetchShopify(ARTICLES_QUERY, { first: limit });
+    const articles = response.data.articles.nodes;
+
+    if (!articles) return [];
+    
+    return articles.map(article => ({
+      id: article.id,
+      source: 'Shopify',
+      title: article.title,
+      slug: article.handle,
+      excerpt: article.excerpt || '',
+      content: '', // Not fetched in list view
+      imageUrl: article.image?.url,
+      aiHint: article.image?.altText || 'blog post',
+      createdAt: new Date(article.publishedAt),
+    }));
+  } catch (error) {
+    console.error("Error fetching blog posts from Shopify:", error);
+    return [];
+  }
+}
+
+async function fetchMongoBlogPosts(limit: number): Promise<Post[]> {
+  try {
+    await connectToDb();
+    const posts = await PostModel.find({})
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean()
+      .exec() as PostDocument[];
+
+    if (!posts) return [];
+
+    return posts.map(post => ({
+      id: post._id.toString(),
+      source: 'MongoDB',
+      title: post.title,
+      slug: post.slug,
+      excerpt: post.excerpt,
+      content: post.content,
+      imageUrl: post.imageUrl,
+      aiHint: post.aiHint,
+      createdAt: new Date(post.createdAt),
+    }));
+  } catch (error) {
+    console.error("Error fetching blog posts from MongoDB:", error);
+    return [];
+  }
+}
+
 export async function getBlogPosts(limit: number = 20): Promise<Post[]> {
-    try {
-        const response: ShopifyArticleResponse = await fetchShopify(ARTICLES_QUERY, { first: limit });
-        const articles = response.data.articles.nodes;
+    const [shopifyPosts, mongoPosts] = await Promise.all([
+        fetchShopifyBlogPosts(limit),
+        fetchMongoBlogPosts(limit),
+    ]);
 
-        if (!articles) return [];
-        
-        return articles.map(article => ({
-            id: article.id,
-            title: article.title,
-            slug: article.handle,
-            excerpt: article.excerpt || '',
-            content: '', // Not fetched in list view
-            imageUrl: article.image?.url,
-            aiHint: article.image?.altText || 'blog post',
-            createdAt: new Date(article.publishedAt),
-        }));
-
-    } catch (error) {
-        console.error("Error fetching blog posts from Shopify:", error);
-        return [];
-    }
+    // Prioritize Shopify posts, then add MongoDB posts and sort by date
+    const allPosts = [...shopifyPosts, ...mongoPosts];
+    allPosts.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    
+    return allPosts.slice(0, limit);
 }
 
 export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
+    // 1. Try to fetch from Shopify first
     const blogHandle = process.env.SHOPIFY_BLOG_HANDLE;
-
-    if (!blogHandle) {
-        console.error("SHOPIFY_BLOG_HANDLE is not set in environment variables.");
-        return null;
+    if (blogHandle) {
+        try {
+            const response: ShopifySingleArticleResponse = await fetchShopify(ARTICLE_BY_HANDLE_QUERY, {
+                blogHandle: blogHandle,
+                articleHandle: slug
+            });
+            const article = response.data?.blog?.articleByHandle;
+            if (article) {
+                return {
+                    id: article.id,
+                    source: 'Shopify',
+                    title: article.title,
+                    slug: slug,
+                    content: article.contentHtml,
+                    excerpt: article.excerpt,
+                    imageUrl: article.image?.url,
+                    aiHint: article.image?.altText || 'blog post',
+                    createdAt: new Date(article.publishedAt),
+                };
+            }
+        } catch (error) {
+            console.warn(`Could not fetch slug "${slug}" from Shopify, will try MongoDB. Error: ${error}`);
+        }
     }
 
+    // 2. If not found in Shopify, try MongoDB
     try {
-        if (!slug) {
-            console.warn("getBlogPostBySlug called with an empty slug.");
-            return null;
+        await connectToDb();
+        const post = await PostModel.findOne({ slug: slug }).lean().exec() as PostDocument | null;
+        if (post) {
+            return {
+                id: post._id.toString(),
+                source: 'MongoDB',
+                title: post.title,
+                slug: post.slug,
+                content: post.content,
+                excerpt: post.excerpt,
+                imageUrl: post.imageUrl,
+                aiHint: post.aiHint,
+                createdAt: new Date(post.createdAt),
+            };
         }
-        
-        const response: ShopifySingleArticleResponse = await fetchShopify(ARTICLE_BY_HANDLE_QUERY, {
-            blogHandle: blogHandle,
-            articleHandle: slug
-        });
-        
-        const article = response.data?.blog?.articleByHandle;
-
-        if (!article) {
-            console.warn(`No Shopify article found for slug: "${slug}" in blog "${blogHandle}"`);
-            return null;
-        }
-        
-        return {
-            id: article.id,
-            title: article.title,
-            slug: slug, // The slug is the handle we used for query
-            content: article.contentHtml,
-            excerpt: article.excerpt,
-            imageUrl: article.image?.url,
-            aiHint: article.image?.altText || 'blog post',
-            createdAt: new Date(article.publishedAt),
-        };
-
     } catch (error) {
-        console.error(`Error fetching Shopify post by slug "${slug}":`, error);
+        console.error(`Error fetching post by slug "${slug}" from MongoDB:`, error);
         return null;
     }
+
+    // 3. If not found in either, return null
+    console.warn(`No post found for slug: "${slug}" in Shopify or MongoDB.`);
+    return null;
 }
+
 
 export async function getTestimonials(): Promise<Testimonial[]> {
     try {
@@ -702,14 +759,11 @@ async function checkMongoDB(): Promise<Status> {
 async function checkShopify(): Promise<Status> {
     const domain = process.env.SHOPIFY_STORE_DOMAIN;
     const storefrontToken = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN;
-    const adminToken = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN;
-
+    
     if (!domain) return { status: 'error' as const, message: `Configuración incompleta. Falta la variable de entorno: <b>SHOPIFY_STORE_DOMAIN</b>.` };
     if (!storefrontToken) return { status: 'error' as const, message: `Configuración incompleta. Falta la variable de entorno: <b>SHOPIFY_STOREFRONT_ACCESS_TOKEN</b>.` };
-    if (!adminToken) return { status: 'error' as const, message: `Configuración incompleta. Falta la variable de entorno: <b>SHOPIFY_ADMIN_ACCESS_TOKEN</b> para crear posts de blog.` };
 
     const storefrontEndpoint = `https://${domain}/api/2024-04/graphql.json`;
-    const adminEndpoint = `https://${domain}/admin/api/2024-04/graphql.json`;
     const query = `{ shop { name } }`;
 
     try {
@@ -728,20 +782,8 @@ async function checkShopify(): Promise<Status> {
         if (storefrontJson.errors) throw new Error(`Errores de GraphQL en Storefront API: ${storefrontJson.errors.map((e: any) => e.message).join(', ')}.`);
         const shopName = storefrontJson.data?.shop?.name;
 
-        // Check Admin API
-        const adminResponse = await fetch(adminEndpoint, {
-            method: 'POST',
-            headers: { 'X-Shopify-Access-Token': adminToken, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query }),
-        });
-        if (!adminResponse.ok) {
-            const errorText = await adminResponse.text();
-            throw new Error(`La API de Admin devolvió un estado <b>${adminResponse.status}</b>. Revisa <b>SHOPIFY_ADMIN_ACCESS_TOKEN</b> y sus permisos (write_content). Respuesta: ${errorText}`);
-        }
-        const adminJson = await adminResponse.json();
-        if (adminJson.errors) throw new Error(`Errores de GraphQL en Admin API: ${adminJson.errors.map((e: any) => e.message).join(', ')}. Asegúrate de que el token tenga permisos de 'write_content'.`);
 
-        return { status: 'success' as const, message: `Conectado exitosamente a la tienda de Shopify: <b>${shopName}</b>. Ambas APIs (Storefront y Admin) funcionan.` };
+        return { status: 'success' as const, message: `Conectado exitosamente a la tienda de Shopify: <b>${shopName}</b>. La API de Storefront funciona.` };
 
     } catch (error: any) {
         return { status: 'error' as const, message: `Falló la conexión a Shopify. Error: ${error.message}` };
@@ -756,11 +798,12 @@ async function checkMongoData(): Promise<Status> {
         }
 
         const testimonialCount = await TestimonialModel.countDocuments();
+        const postCount = await PostModel.countDocuments();
         const dbName = client.connection.db.databaseName;
 
         return { 
             status: 'success' as const, 
-            message: `Lectura exitosa. Se encontraron <b>${testimonialCount} testimonios</b> en la base de datos <b>${dbName}</b>.`
+            message: `Lectura exitosa. Se encontraron <b>${testimonialCount} testimonios</b> y <b>${postCount} posts</b> en la base de datos <b>${dbName}</b>.`
         };
 
     } catch (error: any) {
@@ -790,6 +833,3 @@ export async function getSystemStatuses(): Promise<SystemStatus> {
         mongoData: mongoDataStatus,
     };
 }
-    
-
-    
