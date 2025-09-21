@@ -1,7 +1,6 @@
-
 "use client";
 
-import { useForm, FormProvider, Controller } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { handleAiGeneration, type AiGeneratorFormState } from "@/app/actions";
 import { useEffect, useState, useTransition } from "react";
@@ -99,41 +98,86 @@ export default function AiGeneratorSection() {
           </p>
         </div>
         <div className="mt-12 max-w-4xl mx-auto">
-          <FormProvider {...form}>
-            <Card>
-              <CardHeader>
-                <CardTitle className="font-headline text-2xl flex items-center gap-2">
-                  <Dumbbell className="h-6 w-6 text-primary" />
-                  Preferencias de Entrenamiento
-                </CardTitle>
-                <CardDescription>
-                  Cuéntanos sobre ti para obtener un plan personalizado.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Form {...form}>
-                  <form
-                    onSubmit={form.handleSubmit(handleFormSubmit)}
-                    className="space-y-6"
-                  >
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <FormField
-                        control={form.control}
-                        name="fitnessGoal"
-                        render={({ field }) => (
-                          <FormItem>
-                            <Label>Meta Fitness</Label>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-headline text-2xl flex items-center gap-2">
+                <Dumbbell className="h-6 w-6 text-primary" />
+                Preferencias de Entrenamiento
+              </CardTitle>
+              <CardDescription>
+                Cuéntanos sobre ti para obtener un plan personalizado.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Form {...form}>
+                <form
+                  onSubmit={form.handleSubmit(handleFormSubmit)}
+                  className="space-y-6"
+                >
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField
+                      control={form.control}
+                      name="fitnessGoal"
+                      render={({ field }) => (
+                        <FormItem>
+                          <Label>Meta Fitness</Label>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecciona una meta" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="perder-peso">Perder Peso</SelectItem>
+                              <SelectItem value="ganar-musculo">Ganar Músculo</SelectItem>
+                              <SelectItem value="mejorar-resistencia">Mejorar Resistencia</SelectItem>
+                              <SelectItem value="mantenerse-activo">Mantenerse Activo/a</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="experienceLevel"
+                      render={({ field }) => (
+                        <FormItem>
+                          <Label>Nivel de Experiencia</Label>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
                               <FormControl>
                                 <SelectTrigger>
-                                  <SelectValue placeholder="Selecciona una meta" />
+                                  <SelectValue placeholder="Selecciona tu nivel" />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                <SelectItem value="perder-peso">Perder Peso</SelectItem>
-                                <SelectItem value="ganar-musculo">Ganar Músculo</SelectItem>
-                                <SelectItem value="mejorar-resistencia">Mejorar Resistencia</SelectItem>
-                                <SelectItem value="mantenerse-activo">Mantenerse Activo/a</SelectItem>
+                                <SelectItem value="principiante">Principiante</SelectItem>
+                                <SelectItem value="intermedio">Intermedio</SelectItem>
+                                <SelectItem value="avanzado">Avanzado</SelectItem>
+                              </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField
+                        control={form.control}
+                        name="equipment"
+                        render={({ field }) => (
+                          <FormItem>
+                            <Label>Equipo Disponible</Label>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Selecciona tu equipo" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="solo-cuerpo">Solo Peso Corporal</SelectItem>
+                                <SelectItem value="basico">Básico (Mancuernas, bandas)</SelectItem>
+                                <SelectItem value="gimnasio">Gimnasio Completo</SelectItem>
                               </SelectContent>
                             </Select>
                             <FormMessage />
@@ -141,145 +185,98 @@ export default function AiGeneratorSection() {
                         )}
                       />
                       <FormField
+                      control={form.control}
+                      name="workoutFocus"
+                      render={({ field }) => (
+                        <FormItem>
+                          <Label>Enfoque Principal</Label>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecciona un enfoque" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="full-body">Cuerpo Completo (Full Body)</SelectItem>
+                              <SelectItem value="tren-superior">Tren Superior</SelectItem>
+                              <SelectItem value="tren-inferior">Tren Inferior</SelectItem>
+                              <SelectItem value="cardio-resistencia">Cardio y Resistencia</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <FormField
                         control={form.control}
-                        name="experienceLevel"
+                        name="duration"
                         render={({ field }) => (
                           <FormItem>
-                            <Label>Nivel de Experiencia</Label>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Selecciona tu nivel" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="principiante">Principiante</SelectItem>
-                                  <SelectItem value="intermedio">Intermedio</SelectItem>
-                                  <SelectItem value="avanzado">Avanzado</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <FormField
-                          control={form.control}
-                          name="equipment"
-                          render={({ field }) => (
-                            <FormItem>
-                              <Label>Equipo Disponible</Label>
-                              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Selecciona tu equipo" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="solo-cuerpo">Solo Peso Corporal</SelectItem>
-                                  <SelectItem value="basico">Básico (Mancuernas, bandas)</SelectItem>
-                                  <SelectItem value="gimnasio">Gimnasio Completo</SelectItem>
-                                </SelectContent>
-                              </Select>
+                              <Label className="flex justify-between">
+                                  <span>Duración (minutos)</span>
+                                  <span className="text-primary font-bold">{durationValue} min</span>
+                              </Label>
+                              <FormControl>
+                                <Controller
+                                  name="duration"
+                                  control={form.control}
+                                  render={({ field: controllerField }) => (
+                                    <Slider
+                                      value={[controllerField.value]}
+                                      onValueChange={(vals) => controllerField.onChange(vals[0])}
+                                      min={15}
+                                      max={90}
+                                      step={5}
+                                    />
+                                  )}
+                                />
+                              </FormControl>
                               <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                        control={form.control}
-                        name="workoutFocus"
-                        render={({ field }) => (
-                          <FormItem>
-                            <Label>Enfoque Principal</Label>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Selecciona un enfoque" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="full-body">Cuerpo Completo (Full Body)</SelectItem>
-                                <SelectItem value="tren-superior">Tren Superior</SelectItem>
-                                <SelectItem value="tren-inferior">Tren Inferior</SelectItem>
-                                <SelectItem value="cardio-resistencia">Cardio y Resistencia</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
                           </FormItem>
                         )}
                       />
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <FormField
-                          control={form.control}
-                          name="duration"
-                          render={({ field }) => (
-                            <FormItem>
-                                <Label className="flex justify-between">
-                                    <span>Duración (minutos)</span>
-                                    <span className="text-primary font-bold">{durationValue} min</span>
-                                </Label>
-                                <FormControl>
-                                  <Controller
-                                    name="duration"
+                      <FormField
+                        control={form.control}
+                        name="frequency"
+                        render={({ field }) => (
+                          <FormItem>
+                              <Label className="flex justify-between">
+                                  <span>Frecuencia (por semana)</span>
+                                  <span className="text-primary font-bold">{frequencyValue} veces</span>
+                              </Label>
+                              <FormControl>
+                                <Controller
+                                    name="frequency"
                                     control={form.control}
                                     render={({ field: controllerField }) => (
                                       <Slider
                                         value={[controllerField.value]}
                                         onValueChange={(vals) => controllerField.onChange(vals[0])}
-                                        min={15}
-                                        max={90}
-                                        step={5}
+                                        min={1}
+                                        max={7}
+                                        step={1}
                                       />
                                     )}
                                   />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="frequency"
-                          render={({ field }) => (
-                            <FormItem>
-                                <Label className="flex justify-between">
-                                    <span>Frecuencia (por semana)</span>
-                                    <span className="text-primary font-bold">{frequencyValue} veces</span>
-                                </Label>
-                                <FormControl>
-                                  <Controller
-                                      name="frequency"
-                                      control={form.control}
-                                      render={({ field: controllerField }) => (
-                                        <Slider
-                                          value={[controllerField.value]}
-                                          onValueChange={(vals) => controllerField.onChange(vals[0])}
-                                          min={1}
-                                          max={7}
-                                          step={1}
-                                        />
-                                      )}
-                                    />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                         )}
-                        />
-                    </div>
-                    
-                    {!formResult.data && (
-                      <Button type="submit" disabled={isLoading} className="w-full font-bold">
-                        <Wand2 className="mr-2 h-4 w-4" />
-                        {isLoading ? "Generando Vista Previa..." : "Generar Mi Plan (Vista Previa)"}
-                      </Button>
-                    )}
-                  </form>
-                </Form>
-              </CardContent>
-            </Card>
-          </FormProvider>
+                              </FormControl>
+                              <FormMessage />
+                          </FormItem>
+                       )}
+                      />
+                  </div>
+                  
+                  {!formResult.data && (
+                    <Button type="submit" disabled={isLoading} className="w-full font-bold">
+                      <Wand2 className="mr-2 h-4 w-4" />
+                      {isLoading ? "Generando Vista Previa..." : "Generar Mi Plan (Vista Previa)"}
+                    </Button>
+                  )}
+                </form>
+              </Form>
+            </CardContent>
+          </Card>
 
           {isLoading && !formResult.data && (
              <Card className="mt-8">
