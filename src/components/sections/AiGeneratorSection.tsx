@@ -70,7 +70,6 @@ export default function AiGeneratorSection() {
         setFormResult(result);
       } else {
         // This is the "preview" generation flow.
-        const { email, ...workoutInput } = data;
         const result = await handleAiGeneration(data);
         if (result.error) {
            toast({ variant: "destructive", title: "Error", description: result.error });
