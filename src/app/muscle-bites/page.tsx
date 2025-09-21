@@ -13,7 +13,7 @@ import { logConversion } from '@/app/actions';
 
 const productOffer: Program = {
   title: 'Guía PDF "Muscle Bites"',
-  price: 25,
+  price: 29,
   features: [
     'Más de 50 recetas altas en proteína',
     'Tips para meal prep y batch cooking',
