@@ -32,18 +32,31 @@ const features = [
   { icon: Shield, text: 'Optimiza la Recuperación Muscular' },
 ];
 
+function debounce<T extends (...args: any[]) => void>(func: T, wait: number): (...args: Parameters<T>) => void {
+  let timeout: NodeJS.Timeout;
+  return function executedFunction(...args: Parameters<T>) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
+
 export default function MuscleBitesPage() {
   const [copy, setCopy] = useState(optimizationCopy.hero);
   const [microcopy, setMicrocopy] = useState(optimizationCopy.microcopy[0]);
   const [stickyText, setStickyText] = useState(optimizationCopy.stickyCTA[0].text);
   const [isStickyVisible, setIsStickyVisible] = useState(false);
   const [activeMicrocopyId, setActiveMicrocopyId] = useState(optimizationCopy.microcopy[0].id);
+  const [hasLoggedConversion, setHasLoggedConversion] = useState(false);
 
 
   useEffect(() => {
     // --- Client-side only logic ---
     
-    // A/B Test Microcopy
+    // A/B Test Microcopy (persists for the session)
     let storedVariation = sessionStorage.getItem('microcopyVariation');
     if (!storedVariation) {
       const randomIndex = Math.floor(Math.random() * optimizationCopy.microcopy.length);
@@ -53,8 +66,19 @@ export default function MuscleBitesPage() {
     const activeVariation = optimizationCopy.microcopy.find(m => m.id === storedVariation) || optimizationCopy.microcopy[0];
     setMicrocopy(activeVariation);
     setActiveMicrocopyId(activeVariation.id);
+    
+    // A/B Test Sticky CTA
+    let stickyVariation = sessionStorage.getItem('stickyCtaVariation');
+    if(!stickyVariation) {
+        const randomIndex = Math.floor(Math.random() * optimizationCopy.stickyCTA.length);
+        stickyVariation = optimizationCopy.stickyCTA[randomIndex].id;
+        sessionStorage.setItem('stickyCtaVariation', stickyVariation);
+    }
+    const activeStickyVariation = optimizationCopy.stickyCTA.find(s => s.id === stickyVariation) || optimizationCopy.stickyCTA[0];
+    setStickyText(activeStickyVariation.text);
 
-    // Personalization for returning visitors
+
+    // Personalization for returning visitors (only affects hero copy)
     const isReturning = localStorage.getItem('visitedMuscleBites');
     if (isReturning) {
       setCopy(optimizationCopy.personalization.returning);
@@ -66,7 +90,6 @@ export default function MuscleBitesPage() {
     // Time-based Personalization
     const timeTimeout = setTimeout(() => {
         const timeCopy = optimizationCopy.personalization.time30s;
-        // Only apply if the user is currently seeing the targeted microcopy
         if (activeMicrocopyId === timeCopy.microcopy_id) {
             setMicrocopy({ id: timeCopy.microcopy_id, text: timeCopy.text_override });
         }
@@ -83,24 +106,27 @@ export default function MuscleBitesPage() {
       const scrollPercentage = (window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100;
       if (scrollPercentage > 50) {
         const scrollCopy = optimizationCopy.personalization.scroll50;
-        // Only apply if the user is currently seeing the targeted microcopy
         if (activeMicrocopyId === scrollCopy.microcopy_id) {
           setMicrocopy({ id: scrollCopy.microcopy_id, text: scrollCopy.text_override });
         }
       }
     };
-
-    window.addEventListener('scroll', handleScroll);
+    
+    const debouncedScrollHandler = debounce(handleScroll, 300);
+    window.addEventListener('scroll', debouncedScrollHandler);
     
     // Cleanup
     return () => {
-      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('scroll', debouncedScrollHandler);
       clearTimeout(timeTimeout);
     };
-  }, [activeMicrocopyId]); // Rerun effect if the active ID changes
+  }, [activeMicrocopyId]);
   
   const handleCtaClick = (variationId: string) => {
-    logConversion(variationId);
+    if (!hasLoggedConversion) {
+      logConversion(variationId);
+      setHasLoggedConversion(true);
+    }
   };
 
   return (
@@ -113,7 +139,7 @@ export default function MuscleBitesPage() {
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <span className="font-bold text-lg hidden sm:inline">{stickyText}</span>
           <PlanSignupDialog program={productOffer}>
-            <Button onClick={() => handleCtaClick(optimizationCopy.stickyCTA[0].id)} className="font-bold w-full sm:w-auto">
+            <Button onClick={() => handleCtaClick(optimizationCopy.stickyCTA.find(s => s.text === stickyText)?.id || 'sticky_unknown')} className="font-bold w-full sm:w-auto">
               {copy.cta} {copy.emoji}
             </Button>
           </PlanSignupDialog>
