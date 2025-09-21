@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { CheckCheck, Flame, Star, Zap, Clock, Shield } from 'lucide-react';
+import { Flame, Star, Zap, Clock, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import optimizationCopy from '@/lib/optimization-copy.json';
 import placeholderImages from '@/lib/placeholder-images.json';
@@ -37,18 +37,42 @@ export default function MuscleBitesPage() {
   const [microcopy, setMicrocopy] = useState(optimizationCopy.microcopy[0]);
   const [stickyText, setStickyText] = useState(optimizationCopy.stickyCTA[0].text);
   const [isStickyVisible, setIsStickyVisible] = useState(false);
+  const [activeMicrocopyId, setActiveMicrocopyId] = useState(optimizationCopy.microcopy[0].id);
+
 
   useEffect(() => {
-    // A/B Test Microcopy - Client-side only
+    // --- Client-side only logic ---
+    
+    // A/B Test Microcopy
     let storedVariation = sessionStorage.getItem('microcopyVariation');
     if (!storedVariation) {
       const randomIndex = Math.floor(Math.random() * optimizationCopy.microcopy.length);
       storedVariation = optimizationCopy.microcopy[randomIndex].id;
       sessionStorage.setItem('microcopyVariation', storedVariation);
     }
-    const activeMicrocopy = optimizationCopy.microcopy.find(m => m.id === storedVariation) || optimizationCopy.microcopy[0];
-    setMicrocopy(activeMicrocopy);
+    const activeVariation = optimizationCopy.microcopy.find(m => m.id === storedVariation) || optimizationCopy.microcopy[0];
+    setMicrocopy(activeVariation);
+    setActiveMicrocopyId(activeVariation.id);
 
+    // Personalization for returning visitors
+    const isReturning = localStorage.getItem('visitedMuscleBites');
+    if (isReturning) {
+      setCopy(optimizationCopy.personalization.returning);
+    } else {
+      setCopy(optimizationCopy.personalization.firstTime);
+      localStorage.setItem('visitedMuscleBites', 'true');
+    }
+    
+    // Time-based Personalization
+    const timeTimeout = setTimeout(() => {
+        const timeCopy = optimizationCopy.personalization.time30s;
+        // Only apply if the user is currently seeing the targeted microcopy
+        if (activeMicrocopyId === timeCopy.microcopy_id) {
+            setMicrocopy({ id: timeCopy.microcopy_id, text: timeCopy.text_override });
+        }
+    }, 30000);
+
+    // Scroll-based Personalization
     const handleScroll = () => {
       const heroSection = document.getElementById('hero-offer');
       if (heroSection) {
@@ -59,31 +83,21 @@ export default function MuscleBitesPage() {
       const scrollPercentage = (window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100;
       if (scrollPercentage > 50) {
         const scrollCopy = optimizationCopy.personalization.scroll50;
-        const targetMicro = optimizationCopy.microcopy.find(m => m.id === scrollCopy.microcopy_id);
-        if(targetMicro) setMicrocopy({ id: targetMicro.id, text: scrollCopy.text_override });
+        // Only apply if the user is currently seeing the targeted microcopy
+        if (activeMicrocopyId === scrollCopy.microcopy_id) {
+          setMicrocopy({ id: scrollCopy.microcopy_id, text: scrollCopy.text_override });
+        }
       }
     };
-    
-    const timeTimeout = setTimeout(() => {
-        const timeCopy = optimizationCopy.personalization.time30s;
-        const targetMicro = optimizationCopy.microcopy.find(m => m.id === timeCopy.microcopy_id);
-        if(targetMicro) setMicrocopy({ id: targetMicro.id, text: timeCopy.text_override });
-    }, 30000);
-
-    const isReturning = localStorage.getItem('visitedMuscleBites');
-    if (isReturning) {
-      setCopy(optimizationCopy.personalization.returning);
-    } else {
-      setCopy(optimizationCopy.personalization.firstTime);
-      localStorage.setItem('visitedMuscleBites', 'true');
-    }
 
     window.addEventListener('scroll', handleScroll);
+    
+    // Cleanup
     return () => {
       window.removeEventListener('scroll', handleScroll);
       clearTimeout(timeTimeout);
     };
-  }, []);
+  }, [activeMicrocopyId]); // Rerun effect if the active ID changes
   
   const handleCtaClick = (variationId: string) => {
     logConversion(variationId);
@@ -100,7 +114,7 @@ export default function MuscleBitesPage() {
           <span className="font-bold text-lg hidden sm:inline">{stickyText}</span>
           <PlanSignupDialog program={productOffer}>
             <Button onClick={() => handleCtaClick(optimizationCopy.stickyCTA[0].id)} className="font-bold w-full sm:w-auto">
-              {optimizationCopy.hero.cta} {optimizationCopy.hero.emoji}
+              {copy.cta} {copy.emoji}
             </Button>
           </PlanSignupDialog>
         </div>
@@ -114,15 +128,15 @@ export default function MuscleBitesPage() {
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-3xl mx-auto">
             <h1 className="text-4xl md:text-6xl font-headline font-black tracking-tight uppercase text-foreground drop-shadow-lg">
-              {copy.headline} {copy.emoji}
+              {copy.headline}
             </h1>
             <p className="mt-4 max-w-2xl mx-auto text-lg md:text-xl text-muted-foreground drop-shadow-md">
               {copy.subheadline}
             </p>
             <div className="mt-8 flex flex-col items-center gap-4">
               <PlanSignupDialog program={productOffer}>
-                  <Button onClick={() => handleCtaClick('hero_cta')} size="lg" className="font-bold text-lg h-14 px-10">
-                    {copy.cta}
+                  <Button onClick={() => handleCtaClick(microcopy.id)} size="lg" className="font-bold text-lg h-14 px-10">
+                    {copy.cta} {copy.emoji}
                   </Button>
               </PlanSignupDialog>
               <p className="text-sm text-muted-foreground h-8">{microcopy.text}</p>
@@ -174,7 +188,7 @@ export default function MuscleBitesPage() {
                   <p className="text-4xl font-bold font-code">${productOffer.price}</p>
                 </div>
                 <PlanSignupDialog program={productOffer}>
-                    <Button onClick={() => handleCtaClick('main_cta')} size="lg" className="w-full mt-4 font-bold">
+                    <Button onClick={() => handleCtaClick('main_content_cta')} size="lg" className="w-full mt-4 font-bold">
                         ¡Quiero Mi Guía Ahora!
                     </Button>
                 </PlanSignupDialog>
