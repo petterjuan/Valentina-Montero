@@ -60,7 +60,8 @@ export default function AiGeneratorSection() {
 
   const handleFormSubmit = (data: AiGeneratorFormData) => {
     startTransition(async () => {
-      // If we are unlocking the plan, we pass the existing data back to the action
+      // This is the "unlock" flow. We have the user's email and the existing plan.
+      // We pass the new form data (which includes the email) and the existing workout data back to the action.
       if (formResult.data && !formResult.isFullPlan && data.email) {
         const result = await handleAiGeneration(data, formResult.data);
         if (result.error) {
@@ -68,7 +69,7 @@ export default function AiGeneratorSection() {
         }
         setFormResult(result);
       } else {
-        // Otherwise, it's a new preview generation.
+        // This is the "preview" generation flow.
         const { email, ...workoutInput } = data;
         const result = await handleAiGeneration(workoutInput);
         if (result.error) {
