@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -62,7 +63,7 @@ const fallbackPrograms: Program[] = [
       ],
       isDigital: true,
       image: { src: placeholderImages.programs.fallback3.src, alt: placeholderImages.programs.fallback3.alt },
-      handle: 'muscle-bites',
+      handle: 'muscle-bites-pdf-guide',
     },
 ];
 
@@ -152,7 +153,7 @@ export default async function CoachingProgramsSection({
                        ¡Plazas limitadas para asegurar la calidad!
                      </p>
                    )}
-                   {program.handle === 'muscle-bites' ? (
+                   {program.handle === 'muscle-bites-pdf-guide' ? (
                        <Button asChild className="w-full font-bold">
                            <Link href="/muscle-bites">Comprar Guía</Link>
                        </Button>
