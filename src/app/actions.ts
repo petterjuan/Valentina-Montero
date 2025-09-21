@@ -241,34 +241,22 @@ const transformShopifyProducts = (products: ShopifyProduct[]): Program[] => {
 
 // Server Actions
 export async function handleAiGeneration(
-  validatedInput: AiGeneratorFormData,
+  validatedInput: Omit<AiGeneratorFormData, 'email'> | AiGeneratorFormData,
   existingData?: GeneratePersonalizedWorkoutOutput
 ): Promise<AiGeneratorFormState> {
   
-  const { email, ...workoutInput } = validatedInput;
-
   try {
-    let result = existingData;
-
-    // A new plan is generated only if there is no existing data or no email is provided (preview mode).
-    if (!result) {
-      result = await generatePersonalizedWorkout(workoutInput);
-    }
-
-    if (!result) {
-      throw new Error("The AI failed to return any content for the workout plan.");
-    }
-
-    // If an email is provided, the plan is considered "full" and we log the lead.
-    if (email) {
+    // This is the "unlock" flow. We have the user's email and the existing plan.
+    // We just log the lead and return the existing data as a "full plan".
+    if (existingData && 'email' in validatedInput && validatedInput.email) {
       const firestore = getFirestore();
       if (firestore) {
         const now = new Date();
-        const safeId = crypto.createHash("sha256").update(email.toLowerCase()).digest("hex");
+        const safeId = crypto.createHash("sha256").update(validatedInput.email.toLowerCase()).digest("hex");
         const leadRef = firestore.collection("leads").doc(safeId);
 
         const leadData = {
-          email,
+          email: validatedInput.email,
           source: "IA Workout - Full Plan",
           status: "subscribed",
           tags: {
@@ -282,10 +270,15 @@ export async function handleAiGeneration(
         
         await leadRef.set(leadData, { merge: true });
       }
-      return { data: result, inputs: validatedInput, isFullPlan: true };
+      return { data: existingData, inputs: validatedInput, isFullPlan: true };
     }
-    
-    // If no email, it's just a preview.
+
+    // This is the "preview" generation flow.
+    const workoutInput = { ...validatedInput };
+    const result = await generatePersonalizedWorkout(workoutInput);
+    if (!result) {
+      throw new Error("The AI failed to return any content for the workout plan.");
+    }
     return { data: result, inputs: validatedInput, isFullPlan: false };
 
   } catch (error) {
@@ -851,7 +844,5 @@ export async function logConversion(variationId: string) {
         return { success: false, error: 'Failed to log conversion.' };
     }
 }
-
-    
 
     

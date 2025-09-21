@@ -4,7 +4,7 @@
 import { useForm, Controller } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { handleAiGeneration, type AiGeneratorFormState } from "@/app/actions";
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Wand2, AlertTriangle, Dumbbell, Calendar, Brain, Utensils, Lock, Sparkles, Loader2, Target, Flame, Activity, Shield, CheckCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -58,27 +58,22 @@ export default function AiGeneratorSection() {
   const durationValue = form.watch("duration");
   const frequencyValue = form.watch("frequency");
 
-  useEffect(() => {
-    if (formResult.error) {
-      toast({
-        variant: "destructive",
-        title: "Error al generar",
-        description: formResult.error,
-      });
-    }
-  }, [formResult, toast]);
-
   const handleFormSubmit = (data: AiGeneratorFormData) => {
     startTransition(async () => {
       // If we are unlocking the plan, we pass the existing data back to the action
-      // to avoid re-generating it.
       if (formResult.data && !formResult.isFullPlan && data.email) {
         const result = await handleAiGeneration(data, formResult.data);
+        if (result.error) {
+           toast({ variant: "destructive", title: "Error", description: result.error });
+        }
         setFormResult(result);
       } else {
         // Otherwise, it's a new preview generation.
         const { email, ...workoutInput } = data;
         const result = await handleAiGeneration(workoutInput);
+        if (result.error) {
+           toast({ variant: "destructive", title: "Error", description: result.error });
+        }
         setFormResult(result);
       }
     });
@@ -485,3 +480,5 @@ export default function AiGeneratorSection() {
     </section>
   );
 }
+
+    
