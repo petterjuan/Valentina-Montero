@@ -251,7 +251,7 @@ export async function handleAiGeneration(
     let result = existingData;
 
     // A new plan is generated only if there is no existing data or no email is provided (preview mode).
-    if (!result || !email) {
+    if (!result) {
       result = await generatePersonalizedWorkout(workoutInput);
     }
 
@@ -851,5 +851,7 @@ export async function logConversion(variationId: string) {
         return { success: false, error: 'Failed to log conversion.' };
     }
 }
+
+    
 
     
