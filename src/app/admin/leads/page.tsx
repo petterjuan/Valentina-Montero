@@ -1,7 +1,7 @@
 
 'use client';
 
-import { getLeads } from "@/app/actions";
+import { getLeadsForAdmin } from "@/app/actions";
 import {
   Table,
   TableBody,
@@ -24,7 +24,7 @@ export default function AdminLeadsPage() {
   useEffect(() => {
     async function fetchLeads() {
       setIsLoading(true);
-      const fetchedLeads = await getLeads();
+      const fetchedLeads = await getLeadsForAdmin();
       setLeads(fetchedLeads);
       setIsLoading(false);
     }

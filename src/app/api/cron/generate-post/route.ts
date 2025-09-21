@@ -12,15 +12,15 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   // Vercel Cron Job security
   const authHeader = request.headers.get('authorization');
-  const vercelCronSecret = request.headers.get('x-vercel-cron-secret');
   const cronSecret = process.env.CRON_SECRET;
   
   if (!cronSecret) {
       console.error('CRON_SECRET no está configurado en las variables de entorno.');
+      logEvent('Cron Job Failed - Server Misconfiguration', { reason: 'CRON_SECRET is not set' }, 'error');
       return NextResponse.json({ message: 'Error de configuración del servidor.' }, { status: 500 });
   }
   
-  const providedSecret = vercelCronSecret || (authHeader ? authHeader.replace('Bearer ', '') : undefined);
+  const providedSecret = authHeader ? authHeader.replace('Bearer ', '') : undefined;
 
   if (providedSecret !== cronSecret) {
     logEvent('Cron Job Failed - Unauthorized', { reason: 'Secret mismatch or not provided' }, 'error');

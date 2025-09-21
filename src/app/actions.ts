@@ -253,6 +253,7 @@ export async function handleAiGeneration(
     const errorMessage = firstError?.message || "Los datos de entrada no son válidos. Por favor, revisa el formulario.";
     logEvent('AI Workout Validation Error', { zodIssues: safeParseResult.error.issues, message: errorMessage }, 'error');
     return { 
+      ...prevState, // Return previous state to not lose generated data
       error: errorMessage
     };
   }
@@ -264,8 +265,9 @@ export async function handleAiGeneration(
     const previousData = prevState.data;
     let result = previousData;
     
-    // Generate new data if it's the first run, or if an email is provided to unlock the full plan.
-    const shouldGenerate = !previousData || (!!email && !prevState.isFullPlan);
+    // Generate new data only if it doesn't exist yet.
+    // The check for email unlock happens after this.
+    const shouldGenerate = !previousData;
 
     if (shouldGenerate) {
       logEvent('AI Workout Generation Triggered', { fitnessGoal: workoutInput.fitnessGoal, experienceLevel: workoutInput.experienceLevel });
@@ -276,6 +278,8 @@ export async function handleAiGeneration(
       throw new Error("The AI failed to return any content for the workout plan.");
     }
 
+    // If an email is provided, the plan is considered "full".
+    // This happens on the first generation if email is included, or on the second "unlock" action.
     if (email) {
       const firestore = getFirestore();
       if (firestore) {
@@ -302,6 +306,7 @@ export async function handleAiGeneration(
       return { data: result, inputs: validatedInput, isFullPlan: true };
     }
     
+    // If no email, it's a preview.
     return { data: result, inputs: validatedInput, isFullPlan: false };
 
   } catch (error) {
@@ -496,18 +501,24 @@ export async function getBlogPosts(limit: number = 20): Promise<Post[]> {
     let shopifyPosts: Post[] = [];
     let mongoPosts: Post[] = [];
 
-    try {
-        shopifyPosts = await fetchShopifyBlogPosts(limit);
-    } catch (e) {
-        console.error("Failed to fetch posts from Shopify, continuing with MongoDB posts only.", e);
-        logEvent('Shopify Fetch Error (getBlogPosts)', { error: e instanceof Error ? e.message : String(e) }, 'warn');
+    // Use Promise.allSettled to ensure both sources are attempted regardless of one failing
+    const results = await Promise.allSettled([
+        fetchShopifyBlogPosts(limit),
+        fetchMongoBlogPosts(limit)
+    ]);
+
+    if (results[0].status === 'fulfilled') {
+        shopifyPosts = results[0].value;
+    } else {
+        console.error("Failed to fetch posts from Shopify, continuing with MongoDB posts only.", results[0].reason);
+        logEvent('Shopify Fetch Error (getBlogPosts)', { error: results[0].reason instanceof Error ? results[0].reason.message : String(results[0].reason) }, 'warn');
     }
 
-    try {
-        mongoPosts = await fetchMongoBlogPosts(limit);
-    } catch (e) {
-        console.error("Failed to fetch posts from MongoDB.", e);
-        logEvent('MongoDB Fetch Error (getBlogPosts)', { error: e instanceof Error ? e.message : String(e) }, 'error');
+    if (results[1].status === 'fulfilled') {
+        mongoPosts = results[1].value;
+    } else {
+        console.error("Failed to fetch posts from MongoDB.", results[1].reason);
+        logEvent('MongoDB Fetch Error (getBlogPosts)', { error: results[1].reason instanceof Error ? results[1].reason.message : String(results[1].reason) }, 'error');
     }
 
     const allPosts = [...shopifyPosts, ...mongoPosts];
@@ -597,7 +608,7 @@ export async function getTestimonials(): Promise<Testimonial[]> {
     }
 }
 
-export async function getLeads(): Promise<Lead[]> {
+async function getLeadsForAdmin(): Promise<Lead[]> {
   const firestore = getFirestore();
   if (!firestore) {
     console.error("Firestore not configured, cannot fetch leads.");
@@ -875,4 +886,7 @@ export async function logConversion(variationId: string) {
     }
 }
 
+// Exporting this for use only in the admin page.
+// This function should NOT be used in general client components.
+export { getLeadsForAdmin };
     

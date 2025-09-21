@@ -42,7 +42,6 @@ export default function AiGeneratorSection() {
   const { toast } = useToast();
   const [formState, formAction] = useFormState(handleAiGeneration, initialState);
   const [isPending, startTransition] = useTransition();
-  const [isUnlockPending, startUnlockTransition] = useTransition();
 
   const form = useForm<AiGeneratorFormData>({
     resolver: zodResolver(aiGeneratorClientSchema),
@@ -68,9 +67,14 @@ export default function AiGeneratorSection() {
         description: formState.error,
       });
     }
-  }, [formState.error, toast]);
+    // Sync useForm with useFormState, especially for keeping the email after unlock
+    if (formState.inputs?.email) {
+      form.setValue('email', formState.inputs.email);
+    }
+
+  }, [formState, toast, form]);
   
-  const handleGeneratePreview = (data: AiGeneratorFormData) => {
+  const handleFormSubmit = (data: AiGeneratorFormData) => {
     startTransition(() => {
         const formData = new FormData();
         Object.entries(data).forEach(([key, value]) => {
@@ -81,26 +85,14 @@ export default function AiGeneratorSection() {
   }
 
   const handleUnlockFullPlan = () => {
-    const currentValues = form.getValues();
-    const emailValue = form.getValues('email');
-
-    if (!emailValue || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue)) {
-        form.setError("email", { type: "manual", message: "Por favor, introduce un email válido para desbloquear." });
-        return;
-    }
-    form.clearErrors('email');
-    
-    startUnlockTransition(() => {
-        const formData = new FormData();
-        Object.entries(currentValues).forEach(([key, value]) => {
-            formData.append(key, String(value));
-        });
-        formAction(formData);
-    });
+    // This function will now call the same submit handler.
+    // The handleAiGeneration action is smart enough to know
+    // to reuse the data if an email is now present.
+    form.handleSubmit(handleFormSubmit)();
   }
 
   const firstDay = formState.data?.fullWeekWorkout[0];
-  const isLoading = isPending || isUnlockPending;
+  const isLoading = isPending;
 
   return (
     <section className="py-16 sm:py-24 bg-background">
@@ -127,7 +119,7 @@ export default function AiGeneratorSection() {
               </CardHeader>
               <CardContent>
                 <Form {...form}>
-                  <form onSubmit={form.handleSubmit(handleGeneratePreview)} className="space-y-6">
+                  <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <FormField
                         control={form.control}
@@ -273,7 +265,7 @@ export default function AiGeneratorSection() {
                     
                     <Button type="submit" disabled={isLoading} className="w-full font-bold">
                       <Wand2 className="mr-2 h-4 w-4" />
-                      {isPending ? "Generando Vista Previa..." : "Generar Mi Plan (Vista Previa)"}
+                      {isLoading ? "Generando Vista Previa..." : "Generar Mi Plan (Vista Previa)"}
                     </Button>
                   </form>
                 </Form>
@@ -281,7 +273,7 @@ export default function AiGeneratorSection() {
             </Card>
           </FormProvider>
 
-          {isLoading && (
+          {isLoading && !formState.data && (
              <Card className="mt-8">
                 <CardContent className="p-6 text-center">
                     <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
@@ -388,7 +380,7 @@ export default function AiGeneratorSection() {
                                   )}
                               />
                               <Button onClick={handleUnlockFullPlan} disabled={isLoading} className="font-bold w-full sm:w-auto flex-shrink-0">
-                                  {isUnlockPending 
+                                  {isLoading 
                                       ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Desbloqueando...</>
                                       : <><Sparkles className="mr-2 h-4 w-4" />Desbloquear Plan</>
                                   }
@@ -488,4 +480,3 @@ export default function AiGeneratorSection() {
   );
 }
 
-    
