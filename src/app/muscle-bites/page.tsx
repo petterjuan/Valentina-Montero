@@ -236,5 +236,4 @@ export default function MuscleBitesPage() {
       </main>
     </div>
   );
-
-    
+}
