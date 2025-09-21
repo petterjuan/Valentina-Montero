@@ -262,12 +262,11 @@ export async function handleAiGeneration(
   const { email, ...workoutInput } = validatedInput;
 
   try {
-    const previousData = prevState.data;
-    let result = previousData;
+    let result = prevState.data;
     
-    // Generate new data only if it doesn't exist yet.
-    // The check for email unlock happens after this.
-    const shouldGenerate = !previousData;
+    // Generate a new workout plan only if no email is provided (i.e., it's a preview request).
+    // If an email is provided, it's an "unlock" request, so we reuse the existing data.
+    const shouldGenerate = !email;
 
     if (shouldGenerate) {
       logEvent('AI Workout Generation Triggered', { fitnessGoal: workoutInput.fitnessGoal, experienceLevel: workoutInput.experienceLevel });
@@ -279,7 +278,7 @@ export async function handleAiGeneration(
     }
 
     // If an email is provided, the plan is considered "full".
-    // This happens on the first generation if email is included, or on the second "unlock" action.
+    // This happens on the "unlock" action.
     if (email) {
       const firestore = getFirestore();
       if (firestore) {
@@ -889,4 +888,6 @@ export async function logConversion(variationId: string) {
 // Exporting this for use only in the admin page.
 // This function should NOT be used in general client components.
 export { getLeadsForAdmin };
+    
+
     

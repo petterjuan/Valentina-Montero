@@ -20,9 +20,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ message: 'Error de configuración del servidor.' }, { status: 500 });
   }
   
-  const providedSecret = authHeader ? authHeader.replace('Bearer ', '') : undefined;
-
-  if (providedSecret !== cronSecret) {
+  if (authHeader !== `Bearer ${cronSecret}`) {
     logEvent('Cron Job Failed - Unauthorized', { reason: 'Secret mismatch or not provided' }, 'error');
     return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
   }
@@ -67,3 +65,5 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ message: 'Error al generar el artículo.', error: errorMessage }, { status: 500 });
   }
 }
+
+    
