@@ -77,17 +77,19 @@ const PRODUCTS_IN_COLLECTION_QUERY = /* GraphQL */`
 `;
 
 const ARTICLES_QUERY = /* GraphQL */`
-  query GetArticles($first: Int!) {
-    articles(first: $first, sortKey: PUBLISHED_AT, reverse: true) {
-      nodes {
-        id
-        title
-        handle
-        excerpt
-        publishedAt
-        image {
-          url(transform: {maxWidth: 1200, maxHeight: 800, crop: CENTER})
-          altText
+  query GetArticles($blogHandle: String!, $first: Int!) {
+    blog(handle: $blogHandle) {
+      articles(first: $first, sortKey: PUBLISHED_AT, reverse: true) {
+        nodes {
+          id
+          title
+          handle
+          excerpt
+          publishedAt
+          image {
+            url(transform: {maxWidth: 1200, maxHeight: 800, crop: CENTER})
+            altText
+          }
         }
       }
     }
@@ -166,8 +168,10 @@ interface ShopifyArticle {
 
 interface ShopifyArticleResponse {
     data: {
-        articles: {
-            nodes: ShopifyArticle[];
+        blog: {
+            articles: {
+                nodes: ShopifyArticle[];
+            }
         }
     }
     errors?: Array<{ message: string; [key: string]: any }>;
@@ -438,8 +442,8 @@ async function fetchShopify(query: string, variables: Record<string, any> = {}) 
 // Data Fetching Actions
 async function fetchShopifyBlogPosts(limit: number): Promise<Post[]> {
   try {
-    const response: ShopifyArticleResponse = await fetchShopify(ARTICLES_QUERY, { first: limit });
-    const articles = response.data.articles.nodes;
+    const response: ShopifyArticleResponse = await fetchShopify(ARTICLES_QUERY, { first: limit, blogHandle: "news" });
+    const articles = response.data.blog.articles.nodes;
 
     if (!articles) return [];
     
@@ -847,3 +851,28 @@ export async function getSystemStatuses(): Promise<SystemStatus> {
         mongoData: mongoDataStatus,
     };
 }
+
+export async function logConversion(variationId: string) {
+    'use server';
+    try {
+        const firestore = getFirestore();
+        if (!firestore) {
+            throw new Error("Firestore not available");
+        }
+
+        const conversionData = {
+            variationId,
+            clickedAt: new Date(),
+        };
+
+        await firestore.collection('conversions').add(conversionData);
+
+        return { success: true };
+    } catch (error) {
+        console.error('Failed to log conversion:', error);
+        logEvent('Conversion Logging Failed', { variationId, error: error instanceof Error ? error.message : String(error) }, 'error');
+        return { success: false, error: 'Failed to log conversion.' };
+    }
+}
+
+    

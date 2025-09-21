@@ -12,6 +12,7 @@ import PlanSignupDialog from "@/components/sections/PlanSignupDialog";
 import Image from "next/image";
 import { getPrograms } from "@/app/actions";
 import placeholderImages from "@/lib/placeholder-images.json";
+import Link from "next/link";
 
 export interface Program {
   title: string;
@@ -61,6 +62,7 @@ const fallbackPrograms: Program[] = [
       ],
       isDigital: true,
       image: { src: placeholderImages.programs.fallback3.src, alt: placeholderImages.programs.fallback3.alt },
+      handle: 'muscle-bites',
     },
 ];
 
@@ -150,11 +152,17 @@ export default async function CoachingProgramsSection({
                        ¡Plazas limitadas para asegurar la calidad!
                      </p>
                    )}
-                   <PlanSignupDialog program={program}>
-                      <Button className="w-full font-bold">
-                          {program.isDigital ? 'Comprar PDF' : 'Elegir Plan'}
-                      </Button>
-                   </PlanSignupDialog>
+                   {program.handle === 'muscle-bites' ? (
+                       <Button asChild className="w-full font-bold">
+                           <Link href="/muscle-bites">Comprar Guía</Link>
+                       </Button>
+                   ) : (
+                       <PlanSignupDialog program={program}>
+                          <Button className="w-full font-bold">
+                              {program.isDigital ? 'Comprar PDF' : 'Elegir Plan'}
+                          </Button>
+                       </PlanSignupDialog>
+                   )}
                 </CardFooter>
               </Card>
             ))
@@ -179,3 +187,5 @@ export default async function CoachingProgramsSection({
     </section>
   );
 }
+
+    

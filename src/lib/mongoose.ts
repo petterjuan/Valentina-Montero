@@ -25,9 +25,10 @@ async function connectToDb() {
   if (!cached.promise) {
     const MONGODB_URI = process.env.MONGODB_URI;
     if (!MONGODB_URI) {
-      throw new Error(
-        'Please define the MONGODB_URI environment variable. This is required for fetching testimonials and AI-generated blog posts.'
+      console.warn(
+        'MONGODB_URI environment variable not set. MongoDB-dependent features will not work.'
       );
+      return null;
     }
     
     const opts = {
@@ -55,3 +56,5 @@ async function connectToDb() {
 }
 
 export default connectToDb;
+
+    
