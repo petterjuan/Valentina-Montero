@@ -1,56 +1,63 @@
+
 {
   "hero": {
-    "headline": "Come Inteligente, Entrena Increíble.",
-    "subheadline": "Desbloquea +50 recetas altas en proteína para maximizar tus resultados. Energía y sabor en cada bocado, ¡listo en minutos!",
-    "cta": "OBTENER MI GUÍA AHORA",
-    "emoji": "✨"
+    "headline": "Lleva tu Físico al Siguiente Nivel",
+    "subheadline": "Descubre cómo comidas deliciosas y rápidas pueden esculpir tu cuerpo sin sacrificar sabor ni tiempo.",
+    "cta": "¡Lo Quiero Ahora!",
+    "emoji": "💪"
   },
   "microcopy": [
     {
-      "id": "micro_urgency",
-      "text": "Oferta especial de lanzamiento. Más de 150 descargas esta semana. ¡No te quedes fuera!"
+      "id": "micro_trust_1",
+      "text": "Compra única, acceso de por vida. Resultados garantizados para transformar tu alimentación."
     },
     {
-      "id": "micro_social_proof",
-      "text": "Únete a la comunidad de cientos de mujeres que ya están transformando su nutrición con estas recetas."
+      "id": "micro_social_1",
+      "text": "Únete a más de 1,500 clientes que ya están transformando su cuerpo con estas recetas."
     },
     {
-      "id": "micro_reassurance",
-      "text": "Acceso instantáneo y para toda la vida. Compra 100% segura y garantizada."
+      "id": "micro_urgency_1",
+      "text": "Oferta especial por tiempo limitado. ¡No te quedes fuera y empieza hoy mismo tu cambio!"
     },
     {
-      "id": "micro_value",
-      "text": "Invierte en tu salud por menos del costo de un almuerzo. Resultados que duran para siempre."
+      "id": "micro_reassurance_1",
+      "text": "Recetas deliciosas y fáciles de preparar en menos de 20 minutos, perfectas para tu estilo de vida."
     }
   ],
   "stickyCTA": [
     {
-      "id": "sticky_benefit",
-      "text": "Transforma tu Nutrición Hoy"
+      "id": "sticky_cta_1",
+      "text": "¡Consigue Tus Recetas!"
     },
     {
-      "id": "sticky_scarcity",
-      "text": "¡Quiero la Oferta Exclusiva!"
+      "id": "sticky_cta_2",
+      "text": "Transforma Tu Cuerpo Hoy"
     }
   ],
   "personalization": {
     "firstTime": {
-      "headline": "La Nutrición es la Clave del Éxito.",
-      "subheadline": "Descubre cómo potenciar tu energía y acelerar tus resultados con recetas deliciosas y fáciles de preparar.",
-      "cta": "DESCUBRIR LAS RECETAS"
+      "hero": {
+        "id": "hero_first_time",
+        "headline": "El Secreto Para un Cuerpo Atlético",
+        "subheadline": "Accede a recetas exclusivas que potencian tu energía y definen tus músculos. Come delicioso, entrena potente.",
+        "cta": "Descubrir Muscle Bites"
+      }
     },
     "returning": {
-      "headline": "¿Lista para Dar el Siguiente Paso?",
-      "subheadline": "Ya nos conoces. Es hora de llevar tu compromiso al siguiente nivel con el plan de nutrición que te falta.",
-      "cta": "SÍ, ESTOY LISTA"
+      "hero": {
+        "id": "hero_returning",
+        "headline": "¡Qué Bueno Verte de Nuevo!",
+        "subheadline": "¿Lista para dar el siguiente paso con Muscle Bites y acelerar tus resultados? Tu plan te espera.",
+        "cta": "Finalizar Mi Compra"
+      }
     },
     "scroll50": {
-      "microcopy_id": "micro_value",
-      "text_override": "Has visto lo que ofrezco. Es hora de invertir en ti. Acceso de por vida por un pago único."
+      "microcopy_id": "micro_reassurance_1",
+      "text_override": "Ya viste cómo funciona. Es hora de dejar de leer y empezar a cocinar tu cambio."
     },
     "time30s": {
-      "microcopy_id": "micro_urgency",
-      "text_override": "¿Aún aquí? ¡No dejes pasar esta oportunidad! La oferta especial está por terminar."
+      "microcopy_id": "micro_urgency_1",
+      "text_override": "Estás a un clic de cambiar tu físico. ¡Aprovecha la oferta ahora!"
     }
   }
 }
