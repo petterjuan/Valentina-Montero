@@ -382,7 +382,7 @@ async function fetchShopify(query: string, variables: Record<string, any> = {}) 
 
     if (!domain || !token) {
         const errorMsg = "Shopify domain or token not configured for Storefront API.";
-        console.error(errorMsg);
+        logEvent('Shopify Storefront API Error', { message: errorMsg }, 'error');
         throw new Error(errorMsg);
     }
     
@@ -401,8 +401,8 @@ async function fetchShopify(query: string, variables: Record<string, any> = {}) 
 
         if (!response.ok) {
             const errorBody = await response.text();
-            console.error(`Shopify Storefront API request failed with status ${response.status}: ${errorBody}`);
-            throw new Error(`Shopify API request failed: ${response.statusText}`);
+            const errorDetail = `Shopify API request failed with status ${response.status}: ${errorBody}`;
+            throw new Error(errorDetail);
         }
 
         const responseBody = await response.json();
@@ -415,11 +415,12 @@ async function fetchShopify(query: string, variables: Record<string, any> = {}) 
         return responseBody;
 
     } catch (error) {
-        console.error("Error fetching from Shopify Storefront API:", {
-            error: error instanceof Error ? error.message : String(error),
-            domain,
-            hasToken: !!token
-        });
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        logEvent('Shopify Storefront API Error', { 
+            message: errorMessage,
+            query: query.substring(0, 100) + '...', // Log snippet of query
+        }, 'error');
+        console.error("Error fetching from Shopify Storefront API:", errorMessage);
         throw error;
     }
 }
@@ -578,6 +579,8 @@ export async function getTestimonials(): Promise<Testimonial[]> {
         });
 
     } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        logEvent('Fetch Testimonials Failed', { message: errorMessage }, 'error');
         console.error("Error fetching testimonials:", error);
         return [];
     }
@@ -862,5 +865,7 @@ export async function logConversion(variationId: string) {
         return { success: false, error: 'Failed to log conversion.' };
     }
 }
+
+    
 
     
