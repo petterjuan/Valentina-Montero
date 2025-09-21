@@ -1,6 +1,4 @@
 
-'use client';
-
 import { getLeadsForAdmin } from "@/app/actions";
 import {
   Table,
@@ -12,24 +10,13 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Users, Loader2 } from "lucide-react";
+import { Users } from "lucide-react";
 import { type Lead } from "@/types";
-import { useEffect, useState } from "react";
 
-
-export default function AdminLeadsPage() {
-  const [leads, setLeads] = useState<Lead[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    async function fetchLeads() {
-      setIsLoading(true);
-      const fetchedLeads = await getLeadsForAdmin();
-      setLeads(fetchedLeads);
-      setIsLoading(false);
-    }
-    fetchLeads();
-  }, []);
+// This page is now a Server Component for enhanced security.
+// It fetches data on the server and renders the page, preventing client-side data exposure.
+export default async function AdminLeadsPage() {
+  const leads: Lead[] = await getLeadsForAdmin();
 
   return (
     <section className="py-12 sm:py-16 bg-gray-50/50 min-h-screen">
@@ -51,7 +38,7 @@ export default function AdminLeadsPage() {
                 Lista de Suscriptores
               </CardTitle>
               <CardDescription>
-                { !isLoading && leads.length > 0 
+                { leads.length > 0 
                   ? `Mostrando ${leads.length} prospecto(s) ordenados por fecha de registro.`
                   : "Aún no hay prospectos registrados."
                 }
@@ -68,13 +55,7 @@ export default function AdminLeadsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {isLoading ? (
-                    <TableRow>
-                        <TableCell colSpan={4} className="h-24 text-center">
-                            <Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground" />
-                        </TableCell>
-                    </TableRow>
-                  ) : leads.length > 0 ? (
+                  {leads.length > 0 ? (
                     leads.map((lead) => (
                       <TableRow key={lead.id}>
                         <TableCell className="font-medium">{lead.email}</TableCell>

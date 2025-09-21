@@ -263,11 +263,12 @@ export async function handleAiGeneration(
 
   try {
     // Determine if we should generate a new plan.
-    // We generate a new plan only when an email is NOT provided in the current submission.
+    // A new plan is generated only when an email is NOT provided in the current submission.
+    // If an email is provided, it means we are "unlocking" a plan, so we re-use `prevState.data`.
     const shouldGenerate = !email;
     let result = prevState.data;
 
-    if (shouldGenerate) {
+    if (shouldGenerate || !result) {
       logEvent('AI Workout Generation Triggered', { fitnessGoal: workoutInput.fitnessGoal, experienceLevel: workoutInput.experienceLevel });
       result = await generatePersonalizedWorkout(workoutInput);
     }
@@ -276,8 +277,7 @@ export async function handleAiGeneration(
       throw new Error("The AI failed to return any content for the workout plan.");
     }
 
-    // If an email is provided, the plan is considered "full".
-    // This happens on the "unlock" action.
+    // If an email is provided, the plan is considered "full". This is the unlock action.
     if (email) {
       const firestore = getFirestore();
       if (firestore) {
@@ -606,7 +606,9 @@ export async function getTestimonials(): Promise<Testimonial[]> {
     }
 }
 
-async function getLeadsForAdmin(): Promise<Lead[]> {
+// This function is for admin use ONLY. It fetches sensitive data.
+// It should only be called from a secure, server-side context like a dedicated admin page.
+export async function getLeadsForAdmin(): Promise<Lead[]> {
   const firestore = getFirestore();
   if (!firestore) {
     console.error("Firestore not configured, cannot fetch leads.");
@@ -883,10 +885,7 @@ export async function logConversion(variationId: string) {
         return { success: false, error: 'Failed to log conversion.' };
     }
 }
-
-// Exporting this for use only in the admin page.
-// This function should NOT be used in general client components.
-export { getLeadsForAdmin };
     
 
     
+

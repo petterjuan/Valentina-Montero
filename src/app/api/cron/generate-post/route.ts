@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
   }
   
   if (authHeader !== `Bearer ${cronSecret}`) {
-    logEvent('Cron Job Failed - Unauthorized', { reason: 'Secret mismatch or not provided' }, 'error');
+    logEvent('Cron Job Failed - Unauthorized', { reason: 'Authorization header is invalid or not provided' }, 'error');
     return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
   }
 
