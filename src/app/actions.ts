@@ -262,7 +262,6 @@ export async function handleAiGeneration(
   const { email, ...workoutInput } = validatedInput;
 
   try {
-    // Determine if we should generate a new plan.
     // A new plan is generated only when an email is NOT provided in the current submission.
     // If an email is provided, it means we are "unlocking" a plan, so we re-use `prevState.data`.
     const shouldGenerate = !email;
@@ -889,3 +888,6 @@ export async function logConversion(variationId: string) {
 
     
 
+
+
+    
