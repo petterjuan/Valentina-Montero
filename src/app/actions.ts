@@ -1,3 +1,4 @@
+
 "use server";
 
 import { generatePersonalizedWorkout, GeneratePersonalizedWorkoutOutput } from "@/ai/flows/generate-personalized-workout";
