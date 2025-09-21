@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useForm, FormProvider } from "react-hook-form";
@@ -69,16 +68,6 @@ export default function AiGeneratorSection() {
     }
   }, [formState, toast]);
   
-  const handleFormSubmit = (data: AiGeneratorFormData) => {
-    startTransition(() => {
-        const formData = new FormData();
-        Object.entries(data).forEach(([key, value]) => {
-            formData.append(key, String(value));
-        });
-        formAction(formData);
-    });
-  }
-
   const firstDay = formState.data?.fullWeekWorkout[0];
   const isLoading = isPending;
 
@@ -107,7 +96,10 @@ export default function AiGeneratorSection() {
               </CardHeader>
               <CardContent>
                 <Form {...form}>
-                  <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
+                  <form
+                    action={(formData) => startTransition(() => formAction(formData))}
+                    className="space-y-6"
+                  >
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <FormField
                         control={form.control}
@@ -353,28 +345,29 @@ export default function AiGeneratorSection() {
                                 <span className="font-semibold">Tips de Mentalidad</span>
                             </li>
                         </ul>
-                        <FormProvider {...form}>
-                          <div className="flex flex-col sm:flex-row gap-2 max-w-lg mx-auto">
-                              <FormField
-                                  control={form.control}
-                                  name="email"
-                                  render={({ field }) => (
-                                  <FormItem className="w-full">
-                                      <FormControl>
-                                      <Input placeholder="tu.correo@ejemplo.com" {...field} />
-                                      </FormControl>
-                                      <FormMessage />
-                                  </FormItem>
-                                  )}
-                              />
-                              <Button onClick={form.handleSubmit(handleFormSubmit)} disabled={isLoading} className="font-bold w-full sm:w-auto flex-shrink-0">
-                                  {isLoading 
-                                      ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Desbloqueando...</>
-                                      : <><Sparkles className="mr-2 h-4 w-4" />Desbloquear Plan</>
-                                  }
-                              </Button>
-                          </div>
-                        </FormProvider>
+                        <form
+                            action={(formData) => startTransition(() => formAction(formData))}
+                            className="flex flex-col sm:flex-row gap-2 max-w-lg mx-auto"
+                        >
+                            <FormField
+                                control={form.control}
+                                name="email"
+                                render={({ field }) => (
+                                <FormItem className="w-full">
+                                    <FormControl>
+                                    <Input placeholder="tu.correo@ejemplo.com" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                            <Button type="submit" disabled={isLoading} className="font-bold w-full sm:w-auto flex-shrink-0">
+                                {isLoading 
+                                    ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Desbloqueando...</>
+                                    : <><Sparkles className="mr-2 h-4 w-4" />Desbloquear Plan</>
+                                }
+                            </Button>
+                        </form>
                     </CardContent>
                 </Card>
             </div>
@@ -467,8 +460,3 @@ export default function AiGeneratorSection() {
     </section>
   );
 }
-
-
-
-
-    
