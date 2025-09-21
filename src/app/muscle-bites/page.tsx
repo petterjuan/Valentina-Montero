@@ -237,8 +237,3 @@ export default function MuscleBitesPage() {
     </div>
   );
 }
-
-    
-
-    
-

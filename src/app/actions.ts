@@ -250,7 +250,6 @@ export async function handleAiGeneration(
   if (!safeParseResult.success) {
     const firstError = safeParseResult.error.errors[0];
     const errorMessage = firstError?.message || "Los datos de entrada no son válidos. Por favor, revisa el formulario.";
-    logEvent('AI Workout Validation Error', { zodIssues: safeParseResult.error.issues, message: errorMessage }, 'error');
     return { 
       ...prevState, // Return previous state to not lose generated data
       error: errorMessage
@@ -267,7 +266,6 @@ export async function handleAiGeneration(
     let result = prevState.data;
 
     if (shouldGenerate || !result) {
-      logEvent('AI Workout Generation Triggered', { fitnessGoal: workoutInput.fitnessGoal, experienceLevel: workoutInput.experienceLevel });
       result = await generatePersonalizedWorkout(workoutInput);
     }
 
@@ -297,7 +295,6 @@ export async function handleAiGeneration(
         };
         
         await leadRef.set(leadData, { merge: true });
-        logEvent('New Lead from AI Workout', { email, tags: leadData.tags });
       }
       return { data: result, inputs: validatedInput, isFullPlan: true };
     }
@@ -306,14 +303,7 @@ export async function handleAiGeneration(
     return { data: result, inputs: validatedInput, isFullPlan: false };
 
   } catch (error) {
-    const errorDetails: Record<string, any> = {
-        message: error instanceof Error ? error.message : String(error),
-    };
-    if (error instanceof Error && error.stack) {
-        errorDetails.stack = error.stack;
-    }
-    
-    logEvent('AI Workout Generation Error', errorDetails, 'error');
+    const errorMessage = error instanceof Error ? error.message : "Un error desconocido ocurrió.";
     return { 
       error: "No se pudo generar el contenido. Por favor, inténtalo de nuevo más tarde." 
     };
@@ -326,7 +316,6 @@ export async function handlePlanSignup(input: PlanSignupInput) {
     if (!input) {
       return { data: null, error: "Los datos de entrada son requeridos." };
     }
-    logEvent(input.isDigital ? 'Digital Product Purchase Started' : 'Coaching Plan Signup Started', { planName: input.planName, email: input.email });
     const result = await processPlanSignup(input);
     return { data: result, error: null };
   } catch (error) {
@@ -334,14 +323,12 @@ export async function handlePlanSignup(input: PlanSignupInput) {
     
     const isStripeError = error instanceof Error && error.message.includes("STRIPE_NOT_CONFIGURED");
     if (isStripeError) {
-      logEvent('Stripe Signup Failed - Not Configured', { planName: input.planName }, 'error');
       return { 
         data: null, 
         error: "El sistema de pagos aún no está configurado. Por favor, inténtalo más tarde." 
       };
     }
     
-    logEvent('Plan Signup Failed', { planName: input.planName, error: error instanceof Error ? error.message : String(error) }, 'error');
     return { 
       data: null, 
       error: "Ocurrió un error al procesar tu solicitud. Por favor, inténtalo de nuevo." 
@@ -356,7 +343,6 @@ export async function handleLeadSubmission(formData: { email: string }) {
     const firestore = getFirestore();
     if (!firestore) {
       console.error("Firestore not configured");
-      logEvent('Lead Submission Failed - Firestore Not Configured', { email }, 'error');
       return { success: false, message: "Servicio temporalmente no disponible. Por favor, inténtalo más tarde." };
     }
 
@@ -373,7 +359,6 @@ export async function handleLeadSubmission(formData: { email: string }) {
     };
     
     await leadRef.set(leadData, { merge: true });
-    logEvent('New Lead from Free Guide', { email });
 
     return {
       success: true,
@@ -384,7 +369,6 @@ export async function handleLeadSubmission(formData: { email: string }) {
     if (error instanceof z.ZodError) {
       return { success: false, message: error.errors[0]?.message || "Email inválido." };
     }
-    logEvent('Lead Submission Failed', { error: error instanceof Error ? error.message : String(error) }, 'error');
     return { success: false, message: "Hubo un problema con tu solicitud. Por favor, inténtalo de nuevo." };
   }
 }
@@ -435,7 +419,6 @@ async function fetchShopify(query: string, variables: Record<string, any> = {}) 
             domain,
             hasToken: !!token
         });
-        logEvent('Shopify Storefront API Error', { error: error instanceof Error ? error.message : String(error) }, 'error');
         throw error;
     }
 }
@@ -507,14 +490,12 @@ export async function getBlogPosts(limit: number = 20): Promise<Post[]> {
         shopifyPosts = results[0].value;
     } else {
         console.error("Failed to fetch posts from Shopify, continuing with MongoDB posts only.", results[0].reason);
-        logEvent('Shopify Fetch Error (getBlogPosts)', { error: results[0].reason instanceof Error ? results[0].reason.message : String(results[0].reason) }, 'warn');
     }
 
     if (results[1].status === 'fulfilled') {
         mongoPosts = results[1].value;
     } else {
         console.error("Failed to fetch posts from MongoDB.", results[1].reason);
-        logEvent('MongoDB Fetch Error (getBlogPosts)', { error: results[1].reason instanceof Error ? results[1].reason.message : String(results[1].reason) }, 'error');
     }
 
     const allPosts = [...shopifyPosts, ...mongoPosts];
@@ -571,12 +552,10 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
         }
     } catch (error) {
         console.error(`Error fetching post by slug "${slug}" from MongoDB:`, error);
-        logEvent('MongoDB Slug Fetch Error', { slug, error: error instanceof Error ? error.message : String(error) }, 'error');
         return null;
     }
 
     // 3. If not found in either, return null
-    logEvent('Post Not Found', { slug }, 'warn');
     return null;
 }
 
@@ -599,7 +578,6 @@ export async function getTestimonials(): Promise<Testimonial[]> {
 
     } catch (error) {
         console.error("Error fetching testimonials:", error);
-        logEvent('Fetch Testimonials Failed', { error: error instanceof Error ? error.message : String(error) }, 'error');
         return [];
     }
 }
@@ -892,4 +870,5 @@ export async function logConversion(variationId: string) {
     
 
     
+
 

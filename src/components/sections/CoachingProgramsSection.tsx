@@ -187,5 +187,3 @@ export default async function CoachingProgramsSection({
     </section>
   );
 }
-
-    
