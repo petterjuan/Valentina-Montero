@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { CheckCheck, Flame, Star, Zap, Clock, Shield } from 'lucide-react';
@@ -38,21 +38,16 @@ export default function MuscleBitesPage() {
   const [stickyText, setStickyText] = useState(optimizationCopy.stickyCTA[0].text);
   const [isStickyVisible, setIsStickyVisible] = useState(false);
 
-  const microcopyVariation = useMemo(() => {
-    if (typeof window !== 'undefined') {
-      let storedVariation = sessionStorage.getItem('microcopyVariation');
-      if (!storedVariation) {
-        const randomIndex = Math.floor(Math.random() * optimizationCopy.microcopy.length);
-        storedVariation = optimizationCopy.microcopy[randomIndex].id;
-        sessionStorage.setItem('microcopyVariation', storedVariation);
-      }
-      return optimizationCopy.microcopy.find(m => m.id === storedVariation) || optimizationCopy.microcopy[0];
-    }
-    return optimizationCopy.microcopy[0];
-  }, []);
-
   useEffect(() => {
-    setMicrocopy(microcopyVariation);
+    // A/B Test Microcopy - Client-side only
+    let storedVariation = sessionStorage.getItem('microcopyVariation');
+    if (!storedVariation) {
+      const randomIndex = Math.floor(Math.random() * optimizationCopy.microcopy.length);
+      storedVariation = optimizationCopy.microcopy[randomIndex].id;
+      sessionStorage.setItem('microcopyVariation', storedVariation);
+    }
+    const activeMicrocopy = optimizationCopy.microcopy.find(m => m.id === storedVariation) || optimizationCopy.microcopy[0];
+    setMicrocopy(activeMicrocopy);
 
     const handleScroll = () => {
       const heroSection = document.getElementById('hero-offer');
@@ -88,7 +83,7 @@ export default function MuscleBitesPage() {
       window.removeEventListener('scroll', handleScroll);
       clearTimeout(timeTimeout);
     };
-  }, [microcopyVariation]);
+  }, []);
   
   const handleCtaClick = (variationId: string) => {
     logConversion(variationId);
@@ -203,5 +198,3 @@ export default function MuscleBitesPage() {
     </div>
   );
 }
-
-    
