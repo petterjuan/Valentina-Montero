@@ -263,8 +263,7 @@ export async function handleAiGeneration(
 
   try {
     // Determine if we should generate a new plan.
-    // We generate a new plan only when an email is NOT provided.
-    // If an email is provided, it's an "unlock" action, so we reuse existing data.
+    // We generate a new plan only when an email is NOT provided in the current submission.
     const shouldGenerate = !email;
     let result = prevState.data;
 

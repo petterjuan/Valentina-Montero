@@ -4,7 +4,7 @@
 import { useForm, FormProvider } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { handleAiGeneration, type AiGeneratorFormState } from "@/app/actions";
-import { useEffect, useTransition, useState } from "react";
+import { useEffect, useTransition } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Wand2, AlertTriangle, Dumbbell, Calendar, Brain, Utensils, Lock, Sparkles, Loader2, Target, Flame, Activity, Shield, CheckCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,8 +42,6 @@ export default function AiGeneratorSection() {
   const { toast } = useToast();
   const [formState, formAction] = useFormState(handleAiGeneration, initialState);
   const [isPending, startTransition] = useTransition();
-  const [initialInputs, setInitialInputs] = useState<Omit<AiGeneratorFormData, 'email'>>();
-
 
   const form = useForm<AiGeneratorFormData>({
     resolver: zodResolver(aiGeneratorClientSchema),
@@ -69,18 +67,7 @@ export default function AiGeneratorSection() {
         description: formState.error,
       });
     }
-    // Sync useForm with useFormState, especially for keeping the email after unlock
-    if (formState.inputs?.email) {
-      form.setValue('email', formState.inputs.email);
-    }
-    
-    // Store the initial inputs when a plan is successfully generated for the first time
-    if (formState.data && !formState.isFullPlan && formState.inputs) {
-        const { email, ...rest } = formState.inputs;
-        setInitialInputs(rest);
-    }
-
-  }, [formState, toast, form]);
+  }, [formState, toast]);
   
   const handleFormSubmit = (data: AiGeneratorFormData) => {
     startTransition(() => {
@@ -90,21 +77,6 @@ export default function AiGeneratorSection() {
         });
         formAction(formData);
     });
-  }
-
-  const handleUnlockFullPlan = () => {
-    // This function will now call the same submit handler, but we make sure
-    // to include the initial workout preferences for logging purposes.
-    const currentEmail = form.getValues('email');
-    if (initialInputs && currentEmail) {
-        handleFormSubmit({
-            ...initialInputs,
-            email: currentEmail,
-        });
-    } else {
-        // Fallback to regular submission if something is wrong
-        form.handleSubmit(handleFormSubmit)();
-    }
   }
 
   const firstDay = formState.data?.fullWeekWorkout[0];
@@ -395,7 +367,7 @@ export default function AiGeneratorSection() {
                                   </FormItem>
                                   )}
                               />
-                              <Button onClick={handleUnlockFullPlan} disabled={isLoading} className="font-bold w-full sm:w-auto flex-shrink-0">
+                              <Button onClick={form.handleSubmit(handleFormSubmit)} disabled={isLoading} className="font-bold w-full sm:w-auto flex-shrink-0">
                                   {isLoading 
                                       ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Desbloqueando...</>
                                       : <><Sparkles className="mr-2 h-4 w-4" />Desbloquear Plan</>
