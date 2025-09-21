@@ -1,0 +1,56 @@
+{
+  "hero": {
+    "headline": "Come Inteligente, Entrena Increíble.",
+    "subheadline": "Desbloquea +50 recetas altas en proteína para maximizar tus resultados. Energía y sabor en cada bocado, ¡listo en minutos!",
+    "cta": "OBTENER MI GUÍA AHORA",
+    "emoji": "✨"
+  },
+  "microcopy": [
+    {
+      "id": "micro_urgency",
+      "text": "Oferta especial de lanzamiento. Más de 150 descargas esta semana. ¡No te quedes fuera!"
+    },
+    {
+      "id": "micro_social_proof",
+      "text": "Únete a la comunidad de cientos de mujeres que ya están transformando su nutrición con estas recetas."
+    },
+    {
+      "id": "micro_reassurance",
+      "text": "Acceso instantáneo y para toda la vida. Compra 100% segura y garantizada."
+    },
+    {
+      "id": "micro_value",
+      "text": "Invierte en tu salud por menos del costo de un almuerzo. Resultados que duran para siempre."
+    }
+  ],
+  "stickyCTA": [
+    {
+      "id": "sticky_benefit",
+      "text": "Transforma tu Nutrición Hoy"
+    },
+    {
+      "id": "sticky_scarcity",
+      "text": "¡Quiero la Oferta Exclusiva!"
+    }
+  ],
+  "personalization": {
+    "firstTime": {
+      "headline": "La Nutrición es la Clave del Éxito.",
+      "subheadline": "Descubre cómo potenciar tu energía y acelerar tus resultados con recetas deliciosas y fáciles de preparar.",
+      "cta": "DESCUBRIR LAS RECETAS"
+    },
+    "returning": {
+      "headline": "¿Lista para Dar el Siguiente Paso?",
+      "subheadline": "Ya nos conoces. Es hora de llevar tu compromiso al siguiente nivel con el plan de nutrición que te falta.",
+      "cta": "SÍ, ESTOY LISTA"
+    },
+    "scroll50": {
+      "microcopy_id": "micro_value",
+      "text_override": "Has visto lo que ofrezco. Es hora de invertir en ti. Acceso de por vida por un pago único."
+    },
+    "time30s": {
+      "microcopy_id": "micro_urgency",
+      "text_override": "¿Aún aquí? ¡No dejes pasar esta oportunidad! La oferta especial está por terminar."
+    }
+  }
+}
