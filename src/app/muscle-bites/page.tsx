@@ -80,9 +80,9 @@ export default function MuscleBitesPage() {
     // Personalization for returning visitors (only affects hero copy)
     const isReturning = localStorage.getItem('visitedMuscleBites');
     if (isReturning) {
-      setCopy(optimizationCopy.personalization.returning);
+      setCopy(optimizationCopy.personalization.returning.hero);
     } else {
-      setCopy(optimizationCopy.personalization.firstTime);
+      setCopy(optimizationCopy.personalization.firstTime.hero);
       localStorage.setItem('visitedMuscleBites', 'true');
     }
     
@@ -237,3 +237,5 @@ export default function MuscleBitesPage() {
     </div>
   );
 }
+
+    
