@@ -100,6 +100,10 @@ export default function AiGeneratorSection() {
                     action={(formData) => startTransition(() => formAction(formData))}
                     className="space-y-6"
                   >
+                    {/* Add hidden inputs for slider values to ensure they're in formData */}
+                    <input type="hidden" {...form.register("duration")} />
+                    <input type="hidden" {...form.register("frequency")} />
+                    
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <FormField
                         control={form.control}
@@ -206,7 +210,6 @@ export default function AiGeneratorSection() {
                                   </Label>
                                   <FormControl>
                                       <Slider 
-                                          name={field.name}
                                           defaultValue={[field.value]} 
                                           min={15} 
                                           max={90} 
@@ -229,7 +232,6 @@ export default function AiGeneratorSection() {
                                   </Label>
                                   <FormControl>
                                       <Slider 
-                                          name={field.name}
                                           defaultValue={[field.value]} 
                                           min={1} 
                                           max={7} 
@@ -349,6 +351,14 @@ export default function AiGeneratorSection() {
                             action={(formData) => startTransition(() => formAction(formData))}
                             className="flex flex-col sm:flex-row gap-2 max-w-lg mx-auto"
                         >
+                            {/* Add hidden inputs for parent form values */}
+                            <input type="hidden" {...form.register("fitnessGoal")} />
+                            <input type="hidden" {...form.register("experienceLevel")} />
+                            <input type="hidden" {...form.register("equipment")} />
+                            <input type="hidden" {...form.register("workoutFocus")} />
+                            <input type="hidden" {...form.register("duration")} />
+                            <input type="hidden" {...form.register("frequency")} />
+
                             <FormField
                                 control={form.control}
                                 name="email"
@@ -460,3 +470,5 @@ export default function AiGeneratorSection() {
     </section>
   );
 }
+
+    
