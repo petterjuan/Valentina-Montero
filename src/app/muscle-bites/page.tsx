@@ -75,16 +75,6 @@ export default function MuscleBitesPage() {
     }
     const activeStickyVariation = optimizationCopy.stickyCTA.find(s => s.id === stickyVariation) || optimizationCopy.stickyCTA[0];
     setStickyText(activeStickyVariation.text);
-
-
-    // Personalization for returning visitors (only affects hero copy)
-    const isReturning = localStorage.getItem('visitedMuscleBites');
-    if (isReturning) {
-      setCopy(optimizationCopy.personalization.returning.hero);
-    } else {
-      setCopy(optimizationCopy.personalization.firstTime.hero);
-      localStorage.setItem('visitedMuscleBites', 'true');
-    }
     
     // Time-based Personalization
     const timeTimeout = setTimeout(() => {
