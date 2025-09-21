@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useForm, FormProvider } from "react-hook-form";
@@ -100,10 +101,6 @@ export default function AiGeneratorSection() {
                     action={(formData) => startTransition(() => formAction(formData))}
                     className="space-y-6"
                   >
-                    {/* Add hidden inputs for slider values to ensure they're in formData */}
-                    <input type="hidden" {...form.register("duration")} />
-                    <input type="hidden" {...form.register("frequency")} />
-                    
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <FormField
                         control={form.control}
@@ -199,50 +196,38 @@ export default function AiGeneratorSection() {
                       />
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <FormField
-                          control={form.control}
-                          name="duration"
-                          render={({ field }) => (
-                              <FormItem>
-                                  <Label className="flex justify-between">
-                                      <span>Duración (minutos)</span>
-                                      <span className="text-primary font-bold">{durationValue} min</span>
-                                  </Label>
-                                  <FormControl>
-                                      <Slider 
-                                          defaultValue={[field.value]} 
-                                          min={15} 
-                                          max={90} 
-                                          step={5} 
-                                          onValueChange={(vals) => field.onChange(vals[0])}
-                                      />
-                                  </FormControl>
-                                  <FormMessage />
-                              </FormItem>
-                          )}
-                          />
-                        <FormField
-                          control={form.control}
-                          name="frequency"
-                          render={({ field }) => (
-                              <FormItem>
-                                  <Label className="flex justify-between">
-                                      <span>Frecuencia (por semana)</span>
-                                      <span className="text-primary font-bold">{frequencyValue} veces</span>
-                                  </Label>
-                                  <FormControl>
-                                      <Slider 
-                                          defaultValue={[field.value]} 
-                                          min={1} 
-                                          max={7} 
-                                          step={1}
-                                          onValueChange={(vals) => field.onChange(vals[0])}
-                                      />
-                                  </FormControl>
-                                  <FormMessage />
-                              </FormItem>
-                          )}
-                          />
+                        <FormItem>
+                            <Label className="flex justify-between">
+                                <span>Duración (minutos)</span>
+                                <span className="text-primary font-bold">{durationValue} min</span>
+                            </Label>
+                            <FormControl>
+                                <Slider 
+                                    defaultValue={[form.getValues("duration")]} 
+                                    min={15} 
+                                    max={90} 
+                                    step={5} 
+                                    onValueChange={(vals) => form.setValue("duration", vals[0])}
+                                />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        <FormItem>
+                            <Label className="flex justify-between">
+                                <span>Frecuencia (por semana)</span>
+                                <span className="text-primary font-bold">{frequencyValue} veces</span>
+                            </Label>
+                            <FormControl>
+                                <Slider 
+                                    defaultValue={[form.getValues("frequency")]} 
+                                    min={1} 
+                                    max={7} 
+                                    step={1}
+                                    onValueChange={(vals) => form.setValue("frequency", vals[0])}
+                                />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
                     </div>
                     
                     <Button type="submit" disabled={isLoading} className="w-full font-bold">
@@ -352,12 +337,12 @@ export default function AiGeneratorSection() {
                             className="flex flex-col sm:flex-row gap-2 max-w-lg mx-auto"
                         >
                             {/* Add hidden inputs for parent form values */}
-                            <input type="hidden" {...form.register("fitnessGoal")} />
-                            <input type="hidden" {...form.register("experienceLevel")} />
-                            <input type="hidden" {...form.register("equipment")} />
-                            <input type="hidden" {...form.register("workoutFocus")} />
-                            <input type="hidden" {...form.register("duration")} />
-                            <input type="hidden" {...form.register("frequency")} />
+                            <input type="hidden" name="fitnessGoal" value={form.getValues("fitnessGoal")} />
+                            <input type="hidden" name="experienceLevel" value={form.getValues("experienceLevel")} />
+                            <input type="hidden" name="equipment" value={form.getValues("equipment")} />
+                            <input type="hidden" name="workoutFocus" value={form.getValues("workoutFocus")} />
+                            <input type="hidden" name="duration" value={form.getValues("duration")} />
+                            <input type="hidden" name="frequency" value={form.getValues("frequency")} />
 
                             <FormField
                                 control={form.control}
