@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useForm, FormProvider } from "react-hook-form";
+import { useForm, FormProvider, Controller } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { handleAiGeneration, type AiGeneratorFormState } from "@/app/actions";
 import { useEffect, useState, useTransition } from "react";
@@ -70,27 +70,22 @@ export default function AiGeneratorSection() {
   
   const handleFormSubmit = (data: AiGeneratorFormData) => {
     startTransition(async () => {
-      const result = await handleAiGeneration(data, formResult.data);
+      const { email, ...workoutInput } = data;
+      const result = await handleAiGeneration(workoutInput);
       setFormResult(result);
     });
   };
 
   const handleUnlockSubmit = () => {
-    const currentValues = form.getValues();
-    // Validate only email before unlocking
-    const emailValidation = aiGeneratorClientSchema.pick({ email: true }).safeParse({ email: currentValues.email });
-    
-    if(!emailValidation.success) {
-      form.setError("email", { type: "manual", message: emailValidation.error.errors[0].message });
-      return;
-    }
-
-    startTransition(async () => {
-      // Use the already generated plan from the state (formResult.data)
-      const result = await handleAiGeneration(currentValues, formResult.data);
-      setFormResult(result);
-    });
+    form.handleSubmit((data) => {
+        // This is the full plan submission
+        startTransition(async () => {
+            const result = await handleAiGeneration(data, formResult.data);
+            setFormResult(result);
+        });
+    })();
   };
+  
 
   const firstDay = formResult.data?.fullWeekWorkout[0];
   const isLoading = isPending;
@@ -229,13 +224,19 @@ export default function AiGeneratorSection() {
                                     <span className="text-primary font-bold">{durationValue} min</span>
                                 </Label>
                                 <FormControl>
-                                    <Slider 
-                                        defaultValue={[field.value]} 
-                                        min={15} 
-                                        max={90} 
-                                        step={5} 
-                                        onValueChange={(vals) => field.onChange(vals[0])}
-                                    />
+                                  <Controller
+                                    name="duration"
+                                    control={form.control}
+                                    render={({ field: controllerField }) => (
+                                      <Slider
+                                        value={[controllerField.value]}
+                                        onValueChange={(vals) => controllerField.onChange(vals[0])}
+                                        min={15}
+                                        max={90}
+                                        step={5}
+                                      />
+                                    )}
+                                  />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
@@ -251,12 +252,18 @@ export default function AiGeneratorSection() {
                                     <span className="text-primary font-bold">{frequencyValue} veces</span>
                                 </Label>
                                 <FormControl>
-                                    <Slider 
-                                        defaultValue={[field.value]} 
-                                        min={1} 
-                                        max={7} 
-                                        step={1}
-                                        onValueChange={(vals) => field.onChange(vals[0])}
+                                  <Controller
+                                      name="frequency"
+                                      control={form.control}
+                                      render={({ field: controllerField }) => (
+                                        <Slider
+                                          value={[controllerField.value]}
+                                          onValueChange={(vals) => controllerField.onChange(vals[0])}
+                                          min={1}
+                                          max={7}
+                                          step={1}
+                                        />
+                                      )}
                                     />
                                 </FormControl>
                                 <FormMessage />
@@ -267,7 +274,7 @@ export default function AiGeneratorSection() {
                     
                     <Button type="submit" disabled={isLoading} className="w-full font-bold">
                       <Wand2 className="mr-2 h-4 w-4" />
-                      {isLoading ? "Generando Vista Previa..." : "Generar Mi Plan (Vista Previa)"}
+                      {isLoading && !formResult.data ? "Generando Vista Previa..." : "Generar Mi Plan (Vista Previa)"}
                     </Button>
                   </form>
                 </Form>
@@ -367,26 +374,28 @@ export default function AiGeneratorSection() {
                                 <span className="font-semibold">Tips de Mentalidad</span>
                             </li>
                         </ul>
-                        <div className="flex flex-col sm:flex-row gap-2 max-w-lg mx-auto">
-                            <FormField
-                                control={form.control}
-                                name="email"
-                                render={({ field }) => (
-                                <FormItem className="w-full">
-                                    <FormControl>
-                                    <Input placeholder="tu.correo@ejemplo.com" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                                )}
-                            />
-                            <Button type="button" onClick={handleUnlockSubmit} disabled={isLoading} className="font-bold w-full sm:w-auto flex-shrink-0">
-                                {isLoading 
-                                    ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Desbloqueando...</>
-                                    : <><Sparkles className="mr-2 h-4 w-4" />Desbloquear Plan</>
-                                }
-                            </Button>
-                        </div>
+                        <Form {...form}>
+                            <form onSubmit={(e) => e.preventDefault()} className="flex flex-col sm:flex-row gap-2 max-w-lg mx-auto">
+                                <FormField
+                                    control={form.control}
+                                    name="email"
+                                    render={({ field }) => (
+                                    <FormItem className="w-full">
+                                        <FormControl>
+                                        <Input placeholder="tu.correo@ejemplo.com" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                    )}
+                                />
+                                <Button type="button" onClick={handleUnlockSubmit} disabled={isLoading} className="font-bold w-full sm:w-auto flex-shrink-0">
+                                    {isLoading 
+                                        ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Desbloqueando...</>
+                                        : <><Sparkles className="mr-2 h-4 w-4" />Desbloquear Plan</>
+                                    }
+                                </Button>
+                            </form>
+                        </Form>
                     </CardContent>
                 </Card>
             </div>
@@ -479,5 +488,6 @@ export default function AiGeneratorSection() {
     </section>
   );
 }
+
 
     
