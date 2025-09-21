@@ -4,7 +4,7 @@
 import { useForm, FormProvider } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { handleAiGeneration, type AiGeneratorFormState } from "@/app/actions";
-import { useEffect, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Wand2, AlertTriangle, Dumbbell, Calendar, Brain, Utensils, Lock, Sparkles, Loader2, Target, Flame, Activity, Shield, CheckCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,15 +17,14 @@ import { Form, FormControl, FormField, FormItem, FormMessage } from "@/component
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
-import { useFormState } from "react-dom";
 
 const aiGeneratorClientSchema = z.object({
   fitnessGoal: z.string().min(1, "El objetivo de fitness es requerido"),
   experienceLevel: z.string().min(1, "El nivel de experiencia es requerido"),
   equipment: z.string().min(1, "El equipo disponible es requerido"),
   workoutFocus: z.string().min(1, "El enfoque es requerido"),
-  duration: z.coerce.number().min(1, "La duración debe ser mayor a 0"),
-  frequency: z.coerce.number().min(1, "La frecuencia debe ser mayor a 0"),
+  duration: z.coerce.number().min(15, "La duración debe ser al menos 15 minutos."),
+  frequency: z.coerce.number().min(1, "La frecuencia debe ser al menos 1."),
   email: z.string().email({ message: "Por favor, introduce un email válido." }).optional().or(z.literal('')),
 });
 
@@ -40,8 +39,8 @@ const initialState: AiGeneratorFormState = {
 
 export default function AiGeneratorSection() {
   const { toast } = useToast();
-  const [formState, formAction] = useFormState(handleAiGeneration, initialState);
   const [isPending, startTransition] = useTransition();
+  const [formResult, setFormResult] = useState<AiGeneratorFormState>(initialState);
 
   const form = useForm<AiGeneratorFormData>({
     resolver: zodResolver(aiGeneratorClientSchema),
@@ -60,16 +59,40 @@ export default function AiGeneratorSection() {
   const frequencyValue = form.watch("frequency");
 
   useEffect(() => {
-    if (formState.error) {
+    if (formResult.error) {
       toast({
         variant: "destructive",
         title: "Error al generar",
-        description: formState.error,
+        description: formResult.error,
       });
     }
-  }, [formState, toast]);
+  }, [formResult, toast]);
   
-  const firstDay = formState.data?.fullWeekWorkout[0];
+  const handleFormSubmit = (data: AiGeneratorFormData) => {
+    startTransition(async () => {
+      const result = await handleAiGeneration(data, formResult.data);
+      setFormResult(result);
+    });
+  };
+
+  const handleUnlockSubmit = () => {
+    const currentValues = form.getValues();
+    // Validate only email before unlocking
+    const emailValidation = aiGeneratorClientSchema.pick({ email: true }).safeParse({ email: currentValues.email });
+    
+    if(!emailValidation.success) {
+      form.setError("email", { type: "manual", message: emailValidation.error.errors[0].message });
+      return;
+    }
+
+    startTransition(async () => {
+      // Use the already generated plan from the state (formResult.data)
+      const result = await handleAiGeneration(currentValues, formResult.data);
+      setFormResult(result);
+    });
+  };
+
+  const firstDay = formResult.data?.fullWeekWorkout[0];
   const isLoading = isPending;
 
   return (
@@ -98,7 +121,7 @@ export default function AiGeneratorSection() {
               <CardContent>
                 <Form {...form}>
                   <form
-                    action={(formData) => startTransition(() => formAction(formData))}
+                    onSubmit={form.handleSubmit(handleFormSubmit)}
                     className="space-y-6"
                   >
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -196,38 +219,50 @@ export default function AiGeneratorSection() {
                       />
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <FormItem>
-                            <Label className="flex justify-between">
-                                <span>Duración (minutos)</span>
-                                <span className="text-primary font-bold">{durationValue} min</span>
-                            </Label>
-                            <FormControl>
-                                <Slider 
-                                    defaultValue={[form.getValues("duration")]} 
-                                    min={15} 
-                                    max={90} 
-                                    step={5} 
-                                    onValueChange={(vals) => form.setValue("duration", vals[0])}
-                                />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                        <FormItem>
-                            <Label className="flex justify-between">
-                                <span>Frecuencia (por semana)</span>
-                                <span className="text-primary font-bold">{frequencyValue} veces</span>
-                            </Label>
-                            <FormControl>
-                                <Slider 
-                                    defaultValue={[form.getValues("frequency")]} 
-                                    min={1} 
-                                    max={7} 
-                                    step={1}
-                                    onValueChange={(vals) => form.setValue("frequency", vals[0])}
-                                />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
+                        <FormField
+                          control={form.control}
+                          name="duration"
+                          render={({ field }) => (
+                            <FormItem>
+                                <Label className="flex justify-between">
+                                    <span>Duración (minutos)</span>
+                                    <span className="text-primary font-bold">{durationValue} min</span>
+                                </Label>
+                                <FormControl>
+                                    <Slider 
+                                        defaultValue={[field.value]} 
+                                        min={15} 
+                                        max={90} 
+                                        step={5} 
+                                        onValueChange={(vals) => field.onChange(vals[0])}
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="frequency"
+                          render={({ field }) => (
+                            <FormItem>
+                                <Label className="flex justify-between">
+                                    <span>Frecuencia (por semana)</span>
+                                    <span className="text-primary font-bold">{frequencyValue} veces</span>
+                                </Label>
+                                <FormControl>
+                                    <Slider 
+                                        defaultValue={[field.value]} 
+                                        min={1} 
+                                        max={7} 
+                                        step={1}
+                                        onValueChange={(vals) => field.onChange(vals[0])}
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                         )}
+                        />
                     </div>
                     
                     <Button type="submit" disabled={isLoading} className="w-full font-bold">
@@ -240,7 +275,7 @@ export default function AiGeneratorSection() {
             </Card>
           </FormProvider>
 
-          {isLoading && !formState.data && (
+          {isLoading && !formResult.data && (
              <Card className="mt-8">
                 <CardContent className="p-6 text-center">
                     <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
@@ -249,18 +284,18 @@ export default function AiGeneratorSection() {
             </Card>
           )}
 
-          {formState.error && !isLoading && (
+          {formResult.error && !isLoading && (
             <Card className="mt-8 border-destructive bg-destructive/10">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
                   <AlertTriangle className="h-5 w-5 text-destructive" />
-                  <p className="text-sm text-destructive">{formState.error}</p>
+                  <p className="text-sm text-destructive">{formResult.error}</p>
                 </div>
               </CardContent>
             </Card>
           )}
 
-          {formState.data && !formState.isFullPlan && !isLoading && (
+          {formResult.data && !formResult.isFullPlan && !isLoading && (
             <div className="mt-8 space-y-8">
                 <Card>
                     <CardHeader>
@@ -268,7 +303,7 @@ export default function AiGeneratorSection() {
                             <Target className="h-6 w-6 text-primary" />
                             Vista Previa: Tu Primer Día
                         </CardTitle>
-                        <CardDescription>{formState.data.overview}</CardDescription>
+                        <CardDescription>{formResult.data.overview}</CardDescription>
                     </CardHeader>
                     {firstDay && (
                         <CardContent>
@@ -321,7 +356,7 @@ export default function AiGeneratorSection() {
                         <ul className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center mb-6">
                             <li className="flex flex-col items-center gap-2 p-3 bg-background/50 rounded-lg">
                                 <Calendar className="h-6 w-6 text-primary"/>
-                                <span className="font-semibold">{formState.data.fullWeekWorkout.length - 1} Días Adicionales</span>
+                                <span className="font-semibold">{formResult.data.fullWeekWorkout.length - 1} Días Adicionales</span>
                             </li>
                             <li className="flex flex-col items-center gap-2 p-3 bg-background/50 rounded-lg">
                                 <Utensils className="h-6 w-6 text-primary"/>
@@ -332,18 +367,7 @@ export default function AiGeneratorSection() {
                                 <span className="font-semibold">Tips de Mentalidad</span>
                             </li>
                         </ul>
-                        <form
-                            action={(formData) => startTransition(() => formAction(formData))}
-                            className="flex flex-col sm:flex-row gap-2 max-w-lg mx-auto"
-                        >
-                            {/* Add hidden inputs for parent form values */}
-                            <input type="hidden" name="fitnessGoal" value={form.getValues("fitnessGoal")} />
-                            <input type="hidden" name="experienceLevel" value={form.getValues("experienceLevel")} />
-                            <input type="hidden" name="equipment" value={form.getValues("equipment")} />
-                            <input type="hidden" name="workoutFocus" value={form.getValues("workoutFocus")} />
-                            <input type="hidden" name="duration" value={form.getValues("duration")} />
-                            <input type="hidden" name="frequency" value={form.getValues("frequency")} />
-
+                        <div className="flex flex-col sm:flex-row gap-2 max-w-lg mx-auto">
                             <FormField
                                 control={form.control}
                                 name="email"
@@ -356,31 +380,31 @@ export default function AiGeneratorSection() {
                                 </FormItem>
                                 )}
                             />
-                            <Button type="submit" disabled={isLoading} className="font-bold w-full sm:w-auto flex-shrink-0">
+                            <Button type="button" onClick={handleUnlockSubmit} disabled={isLoading} className="font-bold w-full sm:w-auto flex-shrink-0">
                                 {isLoading 
                                     ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Desbloqueando...</>
                                     : <><Sparkles className="mr-2 h-4 w-4" />Desbloquear Plan</>
                                 }
                             </Button>
-                        </form>
+                        </div>
                     </CardContent>
                 </Card>
             </div>
           )}
 
 
-          {formState.data && formState.isFullPlan && !isLoading && (
+          {formResult.data && formResult.isFullPlan && !isLoading && (
             <Card className="mt-8">
               <CardHeader>
                 <CardTitle className="flex items-center gap-3 font-headline">
                   <Target className="h-6 w-6 text-primary" />
                   Tu Plan de Entrenamiento Completo
                 </CardTitle>
-                <CardDescription>{formState.data.overview}</CardDescription>
+                <CardDescription>{formResult.data.overview}</CardDescription>
               </CardHeader>
               <CardContent>
-                <Accordion type="multiple" defaultValue={[formState.data.fullWeekWorkout[0]?.day]} className="w-full">
-                  {formState.data.fullWeekWorkout?.map((day, index) => (
+                <Accordion type="multiple" defaultValue={[formResult.data.fullWeekWorkout[0]?.day]} className="w-full">
+                  {formResult.data.fullWeekWorkout?.map((day, index) => (
                     <AccordionItem value={day.day} key={index}>
                       <AccordionTrigger className="font-bold text-lg hover:no-underline">
                         <div className="flex items-center gap-3">
@@ -424,7 +448,7 @@ export default function AiGeneratorSection() {
                             Consejos de Nutrición
                         </h3>
                         <ul className="space-y-2">
-                            {formState.data.nutritionTips?.map((rec, i) => (
+                            {formResult.data.nutritionTips?.map((rec, i) => (
                                 <li key={i} className="flex items-start gap-2 text-sm">
                                     <CheckCircle className="h-4 w-4 mt-0.5 shrink-0 text-primary" />
                                     <span className="text-muted-foreground">{rec}</span>
@@ -438,7 +462,7 @@ export default function AiGeneratorSection() {
                             Consejos de Mentalidad
                         </h3>
                         <ul className="space-y-2">
-                            {formState.data.mindsetTips?.map((rec, i) => (
+                            {formResult.data.mindsetTips?.map((rec, i) => (
                                 <li key={i} className="flex items-start gap-2 text-sm">
                                     <CheckCircle className="h-4 w-4 mt-0.5 shrink-0 text-primary" />
                                     <span className="text-muted-foreground">{rec}</span>

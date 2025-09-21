@@ -27,13 +27,13 @@ const aiGeneratorClientSchema = z.object({
   frequency: z.coerce.number().min(1, "La frecuencia debe ser mayor a 0"),
   email: z.string().email({ message: "Por favor, introduce un email válido." }).optional().or(z.literal('')),
 });
-
+type AiGeneratorFormData = z.infer<typeof aiGeneratorClientSchema>;
 
 // Types
 export type AiGeneratorFormState = {
   data?: GeneratePersonalizedWorkoutOutput;
   error?: string;
-  inputs?: z.infer<typeof aiGeneratorClientSchema>;
+  inputs?: AiGeneratorFormData;
   isFullPlan?: boolean;
 };
 
@@ -241,32 +241,17 @@ const transformShopifyProducts = (products: ShopifyProduct[]): Program[] => {
 
 // Server Actions
 export async function handleAiGeneration(
-  prevState: AiGeneratorFormState,
-  formData: FormData
+  validatedInput: AiGeneratorFormData,
+  existingData?: GeneratePersonalizedWorkoutOutput
 ): Promise<AiGeneratorFormState> {
-  const rawData = Object.fromEntries(formData.entries());
   
-  const safeParseResult = aiGeneratorClientSchema.safeParse(rawData);
-  
-  if (!safeParseResult.success) {
-    const firstError = safeParseResult.error.errors[0];
-    const errorMessage = firstError?.message || "Los datos de entrada no son válidos. Por favor, revisa el formulario.";
-    return { 
-      ...prevState, // Return previous state to not lose generated data
-      error: errorMessage
-    };
-  }
-
-  const validatedInput = safeParseResult.data;
   const { email, ...workoutInput } = validatedInput;
 
   try {
-    // A new plan is generated only when an email is NOT provided in the current submission.
-    // If an email is provided, it means we are "unlocking" a plan, so we re-use `prevState.data`.
-    const shouldGenerate = !email;
-    let result = prevState.data;
+    let result = existingData;
 
-    if (shouldGenerate || !result) {
+    // A new plan is generated only if there is no existing data or no email is provided (preview mode).
+    if (!result || !email) {
       result = await generatePersonalizedWorkout(workoutInput);
     }
 
@@ -274,7 +259,7 @@ export async function handleAiGeneration(
       throw new Error("The AI failed to return any content for the workout plan.");
     }
 
-    // If an email is provided, the plan is considered "full". This is the unlock action.
+    // If an email is provided, the plan is considered "full" and we log the lead.
     if (email) {
       const firestore = getFirestore();
       if (firestore) {
@@ -300,11 +285,12 @@ export async function handleAiGeneration(
       return { data: result, inputs: validatedInput, isFullPlan: true };
     }
     
-    // If no email, it's a preview.
+    // If no email, it's just a preview.
     return { data: result, inputs: validatedInput, isFullPlan: false };
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Un error desconocido ocurrió.";
+    logEvent('AI Workout Generation Failed', { error: errorMessage }, 'error');
     return { 
       error: "No se pudo generar el contenido. Por favor, inténtalo de nuevo más tarde." 
     };
@@ -865,7 +851,5 @@ export async function logConversion(variationId: string) {
         return { success: false, error: 'Failed to log conversion.' };
     }
 }
-
-    
 
     
