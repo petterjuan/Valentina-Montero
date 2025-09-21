@@ -67,26 +67,23 @@ export default function AiGeneratorSection() {
       });
     }
   }, [formResult, toast]);
-  
+
   const handleFormSubmit = (data: AiGeneratorFormData) => {
     startTransition(async () => {
-      const { email, ...workoutInput } = data;
-      const result = await handleAiGeneration(workoutInput);
-      setFormResult(result);
+      // If we are unlocking the plan, we pass the existing data back to the action
+      // to avoid re-generating it.
+      if (formResult.data && !formResult.isFullPlan && data.email) {
+        const result = await handleAiGeneration(data, formResult.data);
+        setFormResult(result);
+      } else {
+        // Otherwise, it's a new preview generation.
+        const { email, ...workoutInput } = data;
+        const result = await handleAiGeneration(workoutInput);
+        setFormResult(result);
+      }
     });
   };
-
-  const handleUnlockSubmit = () => {
-    form.handleSubmit((data) => {
-        // This is the full plan submission
-        startTransition(async () => {
-            const result = await handleAiGeneration(data, formResult.data);
-            setFormResult(result);
-        });
-    })();
-  };
   
-
   const firstDay = formResult.data?.fullWeekWorkout[0];
   const isLoading = isPending;
 
@@ -272,10 +269,12 @@ export default function AiGeneratorSection() {
                         />
                     </div>
                     
-                    <Button type="submit" disabled={isLoading} className="w-full font-bold">
-                      <Wand2 className="mr-2 h-4 w-4" />
-                      {isLoading && !formResult.data ? "Generando Vista Previa..." : "Generar Mi Plan (Vista Previa)"}
-                    </Button>
+                    {!formResult.data && (
+                      <Button type="submit" disabled={isLoading} className="w-full font-bold">
+                        <Wand2 className="mr-2 h-4 w-4" />
+                        {isLoading ? "Generando Vista Previa..." : "Generar Mi Plan (Vista Previa)"}
+                      </Button>
+                    )}
                   </form>
                 </Form>
               </CardContent>
@@ -375,7 +374,7 @@ export default function AiGeneratorSection() {
                             </li>
                         </ul>
                         <Form {...form}>
-                            <form onSubmit={(e) => e.preventDefault()} className="flex flex-col sm:flex-row gap-2 max-w-lg mx-auto">
+                            <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex flex-col sm:flex-row gap-2 max-w-lg mx-auto">
                                 <FormField
                                     control={form.control}
                                     name="email"
@@ -388,7 +387,7 @@ export default function AiGeneratorSection() {
                                     </FormItem>
                                     )}
                                 />
-                                <Button type="button" onClick={handleUnlockSubmit} disabled={isLoading} className="font-bold w-full sm:w-auto flex-shrink-0">
+                                <Button type="submit" disabled={isLoading} className="font-bold w-full sm:w-auto flex-shrink-0">
                                     {isLoading 
                                         ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Desbloqueando...</>
                                         : <><Sparkles className="mr-2 h-4 w-4" />Desbloquear Plan</>
@@ -488,5 +487,3 @@ export default function AiGeneratorSection() {
     </section>
   );
 }
-
-    
