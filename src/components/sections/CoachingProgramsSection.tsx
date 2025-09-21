@@ -153,7 +153,7 @@ export default async function CoachingProgramsSection({
                        ¡Plazas limitadas para asegurar la calidad!
                      </p>
                    )}
-                   {program.isDigital && program.handle ? (
+                   {program.isDigital && program.handle === 'muscle-bites-pdf-guide' ? (
                        <Button asChild className="w-full font-bold">
                            <Link href="/muscle-bites">Comprar Guía</Link>
                        </Button>
