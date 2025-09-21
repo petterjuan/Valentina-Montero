@@ -4,7 +4,7 @@
 import { useForm, FormProvider } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { handleAiGeneration, type AiGeneratorFormState } from "@/app/actions";
-import { useEffect, useTransition } from "react";
+import { useEffect, useTransition, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Wand2, AlertTriangle, Dumbbell, Calendar, Brain, Utensils, Lock, Sparkles, Loader2, Target, Flame, Activity, Shield, CheckCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,6 +42,8 @@ export default function AiGeneratorSection() {
   const { toast } = useToast();
   const [formState, formAction] = useFormState(handleAiGeneration, initialState);
   const [isPending, startTransition] = useTransition();
+  const [initialInputs, setInitialInputs] = useState<Omit<AiGeneratorFormData, 'email'>>();
+
 
   const form = useForm<AiGeneratorFormData>({
     resolver: zodResolver(aiGeneratorClientSchema),
@@ -71,6 +73,12 @@ export default function AiGeneratorSection() {
     if (formState.inputs?.email) {
       form.setValue('email', formState.inputs.email);
     }
+    
+    // Store the initial inputs when a plan is successfully generated for the first time
+    if (formState.data && !formState.isFullPlan && formState.inputs) {
+        const { email, ...rest } = formState.inputs;
+        setInitialInputs(rest);
+    }
 
   }, [formState, toast, form]);
   
@@ -85,10 +93,18 @@ export default function AiGeneratorSection() {
   }
 
   const handleUnlockFullPlan = () => {
-    // This function will now call the same submit handler.
-    // The handleAiGeneration action is smart enough to know
-    // to reuse the data if an email is now present.
-    form.handleSubmit(handleFormSubmit)();
+    // This function will now call the same submit handler, but we make sure
+    // to include the initial workout preferences for logging purposes.
+    const currentEmail = form.getValues('email');
+    if (initialInputs && currentEmail) {
+        handleFormSubmit({
+            ...initialInputs,
+            email: currentEmail,
+        });
+    } else {
+        // Fallback to regular submission if something is wrong
+        form.handleSubmit(handleFormSubmit)();
+    }
   }
 
   const firstDay = formState.data?.fullWeekWorkout[0];
@@ -479,4 +495,5 @@ export default function AiGeneratorSection() {
     </section>
   );
 }
+
 

@@ -262,11 +262,11 @@ export async function handleAiGeneration(
   const { email, ...workoutInput } = validatedInput;
 
   try {
-    let result = prevState.data;
-    
-    // Generate a new workout plan only if no email is provided (i.e., it's a preview request).
-    // If an email is provided, it's an "unlock" request, so we reuse the existing data.
+    // Determine if we should generate a new plan.
+    // We generate a new plan only when an email is NOT provided.
+    // If an email is provided, it's an "unlock" action, so we reuse existing data.
     const shouldGenerate = !email;
+    let result = prevState.data;
 
     if (shouldGenerate) {
       logEvent('AI Workout Generation Triggered', { fitnessGoal: workoutInput.fitnessGoal, experienceLevel: workoutInput.experienceLevel });
@@ -300,7 +300,7 @@ export async function handleAiGeneration(
         };
         
         await leadRef.set(leadData, { merge: true });
-        logEvent('New Lead from AI Workout', { email });
+        logEvent('New Lead from AI Workout', { email, tags: leadData.tags });
       }
       return { data: result, inputs: validatedInput, isFullPlan: true };
     }
