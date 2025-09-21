@@ -241,14 +241,14 @@ const transformShopifyProducts = (products: ShopifyProduct[]): Program[] => {
 
 // Server Actions
 export async function handleAiGeneration(
-  validatedInput: Omit<AiGeneratorFormData, 'email'> | AiGeneratorFormData,
+  validatedInput: AiGeneratorFormData,
   existingData?: GeneratePersonalizedWorkoutOutput
 ): Promise<AiGeneratorFormState> {
   
   try {
     // This is the "unlock" flow. We have the user's email and the existing plan.
     // We just log the lead and return the existing data as a "full plan".
-    if (existingData && 'email' in validatedInput && validatedInput.email) {
+    if (existingData && validatedInput.email) {
       const firestore = getFirestore();
       if (firestore) {
         const now = new Date();
@@ -274,7 +274,7 @@ export async function handleAiGeneration(
     }
 
     // This is the "preview" generation flow.
-    const workoutInput = { ...validatedInput };
+    const { email, ...workoutInput } = validatedInput;
     const result = await generatePersonalizedWorkout(workoutInput);
     if (!result) {
       throw new Error("The AI failed to return any content for the workout plan.");
