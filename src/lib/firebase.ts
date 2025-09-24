@@ -8,6 +8,7 @@ let isInitialized = false;
 
 function initializeFirebaseAdmin(): admin.firestore.Firestore | null {
     if (isInitialized) {
+        if (initError) throw initError;
         return firestoreInstance;
     }
     isInitialized = true; // Mark as initialized to prevent re-entry
@@ -44,7 +45,6 @@ function initializeFirebaseAdmin(): admin.firestore.Firestore | null {
         } else {
             initError = new Error(String(error));
         }
-        // Instead of logging, we store the error and return null. The caller can handle it.
         firestoreInstance = null;
         throw initError;
     }
@@ -53,8 +53,6 @@ function initializeFirebaseAdmin(): admin.firestore.Firestore | null {
 export const getFirestore = (): admin.firestore.Firestore | null => {
     if (isInitialized) {
         if (initError) {
-             // The original error is re-thrown by initializeFirebaseAdmin if called again,
-             // or the caller that got the null instance can handle it.
              throw initError;
         }
         return firestoreInstance;

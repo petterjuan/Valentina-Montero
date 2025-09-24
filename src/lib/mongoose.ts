@@ -43,7 +43,6 @@ async function connectToDb() {
     cached.conn = await cached.promise;
   } catch (e) {
     cached.promise = null;
-    // We throw the error here instead of logging it to prevent circular dependencies.
     throw e;
   }
   
