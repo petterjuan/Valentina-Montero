@@ -26,7 +26,7 @@ async function connectToDb() {
     const MONGODB_URI = process.env.MONGODB_URI;
     if (!MONGODB_URI) {
       throw new Error(
-        'MONGODB_URI environment variable not set. MongoDB-dependent features will not work.'
+        'Please define the MONGODB_URI environment variable inside .env'
       );
     }
     
