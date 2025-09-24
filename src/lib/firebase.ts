@@ -46,18 +46,14 @@ function initializeFirebaseAdmin(): admin.firestore.Firestore | null {
             initError = new Error(String(error));
         }
         firestoreInstance = null;
-        // The calling function will be responsible for catching and logging this error.
+        // The calling function will be responsible for catching this error.
         throw initError;
     }
 }
 
 export const getFirestore = (): admin.firestore.Firestore | null => {
-    if (isInitialized) {
-        if (initError) {
-             throw initError;
-        }
-        return firestoreInstance;
-    }
+    // This function now simply returns the result of initializeFirebaseAdmin
+    // or throws an error if initialization fails.
     return initializeFirebaseAdmin();
 }
     

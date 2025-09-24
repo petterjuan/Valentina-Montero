@@ -43,7 +43,7 @@ async function connectToDb() {
     cached.conn = await cached.promise;
   } catch (e) {
     cached.promise = null;
-    // Let the caller handle the error. Do not log here.
+    // Let the caller handle the error.
     throw e;
   }
   
