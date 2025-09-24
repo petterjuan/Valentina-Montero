@@ -40,8 +40,8 @@ async function connectToDb() {
     cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongooseInstance) => {
       return mongooseInstance;
     }).catch(err => {
-      console.error("❌ Mongoose connection error:", err.message);
-      cached.promise = null; // Reset promise on error to allow retry
+      // Reset promise on error to allow retry on next call
+      cached.promise = null; 
       throw err;
     });
   }
