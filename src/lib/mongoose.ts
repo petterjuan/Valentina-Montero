@@ -25,12 +25,12 @@ async function connectToDb() {
   if (!cached.promise) {
     const MONGODB_URI = process.env.MONGODB_URI;
     if (!MONGODB_URI) {
-      // Use console.warn here as this is a configuration warning, not a runtime error.
-      // The logger might not be available or could cause issues if the db isn't configured.
-      console.warn(
+      // This is a critical configuration error, but logging it here can cause recursion.
+      // The error will be surfaced when a component that depends on the DB fails.
+      // Throwing an error is better than a silent failure or a recursive crash.
+      throw new Error(
         'MONGODB_URI environment variable not set. MongoDB-dependent features will not work.'
       );
-      return null;
     }
     
     const opts = {
@@ -38,7 +38,6 @@ async function connectToDb() {
     };
 
     cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongooseInstance) => {
-      // Avoid logging here to prevent potential recursive loops with a logger that uses the db.
       return mongooseInstance;
     }).catch(err => {
       console.error("❌ Mongoose connection error:", err.message);
