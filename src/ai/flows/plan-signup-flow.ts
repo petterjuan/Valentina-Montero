@@ -11,7 +11,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { getFirestore } from '@/lib/firebase';
-import { getStripe } from '@/lib/stripe';
+import { stripe } from '@/lib/stripe'; // Use the simplified backend Stripe instance
 
 const PlanSignupInputSchema = z.object({
   fullName: z.string().describe('Nombre completo del cliente.'),
@@ -47,11 +47,6 @@ const planSignupFlow = ai.defineFlow(
 
     if (input.isDigital) {
       // Flujo para producto digital (ej. PDF "Muscle Bites")
-      const stripe = getStripe();
-      if (!stripe) {
-        throw new Error("STRIPE_NOT_CONFIGURED");
-      }
-      
       const firestore = getFirestore();
       if(firestore) {
           const leadRef = firestore.collection('leads').doc();
@@ -90,11 +85,15 @@ const planSignupFlow = ai.defineFlow(
         customer: customer.id,
       });
       
+      if (!checkoutSession.url) {
+        throw new Error('Could not create Stripe Checkout session.');
+      }
+
       return {
         confirmationMessage: '¡Gracias! Serás redirigido para completar el pago.',
         clientEmail: input.email,
         planName: input.planName,
-        stripeCheckoutUrl: checkoutSession.url!,
+        stripeCheckoutUrl: checkoutSession.url,
       };
 
     } else {

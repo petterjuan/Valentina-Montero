@@ -265,7 +265,6 @@ export async function handleAiGeneration(
             focus: validatedInput.workoutFocus,
           },
           updatedAt: now,
-          createdAt: now,
         };
         
         await leadRef.set(leadData, { merge: true });
@@ -301,17 +300,14 @@ export async function handlePlanSignup(input: PlanSignupInput) {
   } catch (error) {
     console.error("Error in handlePlanSignup:", error);
     
-    const isStripeError = error instanceof Error && error.message.includes("STRIPE_NOT_CONFIGURED");
-    if (isStripeError) {
-      return { 
-        data: null, 
-        error: "El sistema de pagos aún no está configurado. Por favor, inténtalo más tarde." 
-      };
+    let errorMessage = "Ocurrió un error al procesar tu solicitud. Por favor, inténtalo de nuevo.";
+    if (error instanceof Error && error.message.includes('STRIPE_SECRET_KEY')) {
+      errorMessage = "El sistema de pagos no está configurado correctamente. Por favor, contacta al administrador.";
     }
     
     return { 
       data: null, 
-      error: "Ocurrió un error al procesar tu solicitud. Por favor, inténtalo de nuevo." 
+      error: errorMessage,
     };
   }
 }
