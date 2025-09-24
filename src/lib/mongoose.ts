@@ -36,10 +36,6 @@ async function connectToDb() {
 
     cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongooseInstance) => {
       return mongooseInstance;
-    }).catch(err => {
-      // Reset promise on error to allow retry on next call
-      cached.promise = null; 
-      throw err;
     });
   }
   

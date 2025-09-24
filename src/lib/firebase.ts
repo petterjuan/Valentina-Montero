@@ -44,21 +44,20 @@ function initializeFirebaseAdmin(): admin.firestore.Firestore | null {
         } else {
             initError = new Error(String(error));
         }
-        console.error("Critical Error initializing Firebase Admin SDK:", initError.message);
-        firestoreInstance = null; // Ensure instance is null on failure
+        // Instead of logging here, we store the error and let getFirestore handle it.
+        firestoreInstance = null;
         return null;
     }
 }
 
 export const getFirestore = (): admin.firestore.Firestore | null => {
-    // If it's already initialized (or initialization failed), return the cached result.
     if (isInitialized) {
         if (initError) {
-             // Avoid logging recursively. The initial error is logged in initializeFirebaseAdmin.
+             // The error will be thrown by the original caller if needed,
+             // but we don't re-log or throw here. We just return the failed state.
         }
         return firestoreInstance;
     }
-    // Otherwise, attempt to initialize.
     return initializeFirebaseAdmin();
 }
     
