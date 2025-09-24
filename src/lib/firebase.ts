@@ -44,7 +44,6 @@ function initializeFirebaseAdmin(): admin.firestore.Firestore | null {
         } else {
             initError = new Error(String(error));
         }
-        // Instead of logging here, we store the error and let getFirestore handle it.
         firestoreInstance = null;
         return null;
     }
