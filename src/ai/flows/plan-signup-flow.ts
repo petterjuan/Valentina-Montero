@@ -11,7 +11,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { getFirestore } from '@/lib/firebase';
-import { stripe } from '@/lib/stripe'; // Use the simplified backend Stripe instance
+import { stripe } from '@/lib/stripe';
 
 const PlanSignupInputSchema = z.object({
   fullName: z.string().describe('Nombre completo del cliente.'),
