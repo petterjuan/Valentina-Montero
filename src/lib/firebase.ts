@@ -1,6 +1,5 @@
 
 import * as admin from 'firebase-admin';
-import { logEvent } from './logger';
 
 // This is a robust singleton pattern to ensure Firebase is initialized only once on the server.
 let firestoreInstance: admin.firestore.Firestore | null = null;
@@ -15,7 +14,6 @@ function initializeFirebaseAdmin(): admin.firestore.Firestore | null {
 
     try {
         if (admin.apps.length > 0) {
-            logEvent("Firebase Admin SDK already initialized.", {}, 'info');
             firestoreInstance = admin.firestore();
             return firestoreInstance;
         }
@@ -37,7 +35,6 @@ function initializeFirebaseAdmin(): admin.firestore.Firestore | null {
             credential: admin.credential.cert(serviceAccount),
         });
         
-        logEvent("Firebase Admin SDK initialized successfully.", {}, 'info');
         firestoreInstance = admin.firestore();
         return firestoreInstance;
 
@@ -47,7 +44,7 @@ function initializeFirebaseAdmin(): admin.firestore.Firestore | null {
         } else {
             initError = new Error(String(error));
         }
-        logEvent("Error initializing Firebase Admin SDK", { error: initError.message }, 'error');
+        console.error("Error initializing Firebase Admin SDK", { error: initError.message });
         firestoreInstance = null; // Ensure instance is null on failure
         return null;
     }
@@ -57,7 +54,7 @@ export const getFirestore = (): admin.firestore.Firestore | null => {
     // If it's already initialized (or initialization failed), return the cached result.
     if (isInitialized) {
         if (initError) {
-             logEvent(`Firestore access blocked due to persistent initialization error: ${initError.message}`, {}, 'warn');
+             console.warn(`Firestore access blocked due to persistent initialization error: ${initError.message}`);
         }
         return firestoreInstance;
     }
