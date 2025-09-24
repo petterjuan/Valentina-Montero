@@ -25,9 +25,6 @@ async function connectToDb() {
   if (!cached.promise) {
     const MONGODB_URI = process.env.MONGODB_URI;
     if (!MONGODB_URI) {
-      // This is a critical configuration error, but logging it here can cause recursion.
-      // The error will be surfaced when a component that depends on the DB fails.
-      // Throwing an error is better than a silent failure or a recursive crash.
       throw new Error(
         'MONGODB_URI environment variable not set. MongoDB-dependent features will not work.'
       );
