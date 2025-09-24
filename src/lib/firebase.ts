@@ -44,16 +44,18 @@ function initializeFirebaseAdmin(): admin.firestore.Firestore | null {
         } else {
             initError = new Error(String(error));
         }
+        // Instead of logging, we store the error and return null. The caller can handle it.
         firestoreInstance = null;
-        return null;
+        throw initError;
     }
 }
 
 export const getFirestore = (): admin.firestore.Firestore | null => {
     if (isInitialized) {
         if (initError) {
-             // The error will be thrown by the original caller if needed,
-             // but we don't re-log or throw here. We just return the failed state.
+             // The original error is re-thrown by initializeFirebaseAdmin if called again,
+             // or the caller that got the null instance can handle it.
+             throw initError;
         }
         return firestoreInstance;
     }
