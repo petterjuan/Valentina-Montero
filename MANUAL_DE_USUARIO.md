@@ -92,7 +92,7 @@ Tu web es una plataforma de negocio completa construida con tecnología de vangu
 *   **Motor (Next.js 14)**: Para una velocidad de carga instantánea y una experiencia de usuario fluida.
 *   **Cerebro de IA (Google AI & Genkit)**: Es el corazón de las funciones inteligentes. No solo crea planes de entrenamiento, sino que también actúa como tu "escritora fantasma", generando artículos de blog completos cada semana.
 *   **Bases de Datos y Contenido**:
-    *   **Shopify**: Es la fuente principal para tus **productos**, **programas** y los **artículos de blog que escribes manualmente**.
+    *   **Shopify**: Es la fuente principal para tus **productos**, **programas** y los **artículos de blog que escribes manually**.
     *   **MongoDB**: Almacena el contenido generado por la IA, como los **artículos de blog automáticos** y los **testimonios de clientes**.
     *   **Firestore**: Funciona como tu CRM en tiempo real, capturando cada prospecto, inscripción y registro de diagnóstico para que puedas actuar sobre ellos.
 *   **E-commerce y Pagos**:

@@ -43,7 +43,7 @@ const generateBlogPostPrompt = ai.definePrompt({
         Actúa como Valentina Montero, una experta en fitness, nutrición y coach personal con un tono cercano, motivador y profesional. Tu tarea es escribir un artículo de blog completo para su sitio web.
 
         **Instrucciones Clave:**
-        1.  **Originalidad:** Elige un tema NUEVO y relevante sobre fitness, nutrición, mentalidad o bienestar para mujeres que NO esté en esta lista de títulos existentes: {{{jsonStringify existingTitles}}}.
+        1.  **Originalidad:** Elige un tema NUEVO y relevante sobre fitness, nutrición, mentalidad o bienestar para mujeres que NO esté en esta lista de títulos existentes: {{existingTitles}}.
         2.  **Longitud y Estructura:** Escribe un artículo de entre 800 y 1200 palabras. Debe tener una estructura clara:
             *   Una introducción que enganche al lector.
             *   Al menos 3-4 secciones con subtítulos (usando etiquetas <h2>).

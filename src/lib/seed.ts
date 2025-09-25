@@ -3,8 +3,7 @@ import TestimonialModel from '@/models/Testimonial';
 import placeholderImages from './placeholder-images.json';
 
 // It's recommended to load environment variables from your execution environment
-// For local development, you can use a .env file and a script in package.json
-// e.g., "seed": "ts-node -r dotenv/config src/lib/seed.ts"
+// Vercel handles environment variables automatically.
 
 const fallbackTestimonials = [
   {
