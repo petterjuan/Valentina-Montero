@@ -25,6 +25,8 @@ async function connectToDb() {
   if (!cached.promise) {
     const MONGODB_URI = process.env.MONGODB_URI;
     if (!MONGODB_URI) {
+      // Throwing an error here is appropriate because the app cannot function without it.
+      // This will be caught by functions calling connectToDb.
       throw new Error(
         'Please define the MONGODB_URI environment variable inside .env'
       );
@@ -42,6 +44,7 @@ async function connectToDb() {
   try {
     cached.conn = await cached.promise;
   } catch (e) {
+    // If the promise fails, reset it so a new connection attempt can be made.
     cached.promise = null;
     throw e;
   }

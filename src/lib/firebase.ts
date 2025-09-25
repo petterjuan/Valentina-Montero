@@ -46,18 +46,20 @@ function initializeFirebaseAdmin(): admin.firestore.Firestore | null {
             initError = new Error(String(error));
         }
         firestoreInstance = null;
+        // We throw here to be caught by getFirestore, which will handle it gracefully.
         throw initError;
     }
 }
 
 export const getFirestore = (): admin.firestore.Firestore | null => {
     try {
+        // This will either return the initialized instance or attempt to initialize it.
         return initializeFirebaseAdmin();
     } catch(e) {
-        // We log here to provide visibility during development but prevent server crashes.
-        if (process.env.NODE_ENV === 'development') {
-            console.error("Could not initialize Firebase Admin SDK. Firestore will be unavailable.", e);
-        }
+        // This catch block handles initialization errors.
+        // We log the error to the console for visibility during development
+        // but return null to prevent the application from crashing.
+        console.error("CRITICAL: Firebase Admin SDK initialization failed.", e);
         return null;
     }
 }
