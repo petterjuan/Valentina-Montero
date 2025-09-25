@@ -352,11 +352,11 @@ export async function handleLeadSubmission(formData: { email: string }) {
 
 // --- Shopify Data Fetching ---
 async function fetchShopify(query: string, variables: Record<string, any> = {}) {
-    const domain = process.env.SHOPIFY_STORE_DOMAIN || 'valentmontero.myshopify.com';
+    const domain = process.env.SHOPIFY_STORE_DOMAIN;
     const token = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN;
 
     if (!domain || !token) {
-        const errorMsg = "Shopify domain or token not configured for Storefront API.";
+        const errorMsg = "Shopify domain or token not configured. Please set SHOPIFY_STORE_DOMAIN and SHOPIFY_STOREFRONT_ACCESS_TOKEN in your environment variables.";
         logEvent('Shopify Storefront API Error', { message: errorMsg }, 'error');
         throw new Error(errorMsg);
     }
@@ -847,3 +847,6 @@ export async function logConversion(variationId: string) {
     
 
 
+
+
+    
