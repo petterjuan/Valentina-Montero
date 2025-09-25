@@ -45,18 +45,16 @@ function initializeFirebaseAdmin(): admin.firestore.Firestore | null {
         } else {
             initError = new Error(String(error));
         }
+        console.error("Critical Firebase Initialization Error:", initError);
         firestoreInstance = null;
         throw initError;
     }
 }
 
 export const getFirestore = (): admin.firestore.Firestore | null => {
-    if (isInitialized) {
-        if (initError) {
-             throw initError;
-        }
-        return firestoreInstance;
-    }
+    // This function is designed to throw an error on failure, which will be caught by Next.js's error handling.
+    // If it returns, it's either the instance or null if it couldn't initialize but didn't throw.
+    // In a server action context, we want to fail loudly if the core DB connection isn't there.
     return initializeFirebaseAdmin();
 }
     
