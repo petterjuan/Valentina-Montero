@@ -28,7 +28,7 @@ const nextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'valentmontero.myshopify.com',
+        hostname: 'valentinamontero.myshopify.com',
         port: '',
         pathname: '/**',
       }
@@ -37,5 +37,3 @@ const nextConfig = {
 };
 
 module.exports = nextConfig;
-
-    
