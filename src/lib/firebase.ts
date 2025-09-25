@@ -45,7 +45,7 @@ function initializeFirebaseAdmin(): admin.firestore.Firestore | null {
         } else {
             initError = new Error(String(error));
         }
-        console.error("Critical Firebase Initialization Error:", initError);
+        // Do not log here to prevent circular dependency
         firestoreInstance = null;
         throw initError;
     }

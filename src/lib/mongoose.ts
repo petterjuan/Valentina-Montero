@@ -43,7 +43,7 @@ async function connectToDb() {
     cached.conn = await cached.promise;
   } catch (e) {
     cached.promise = null;
-    console.error("MongoDB connection failed:", e);
+    // Do not log here to prevent circular dependency
     throw e;
   }
   
