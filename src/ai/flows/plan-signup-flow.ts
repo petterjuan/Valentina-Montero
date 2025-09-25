@@ -12,6 +12,7 @@ import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { getFirestore } from '@/lib/firebase';
 import { stripe } from '@/lib/stripe';
+import { logEvent } from '@/lib/logger';
 
 const PlanSignupInputSchema = z.object({
   fullName: z.string().describe('Nombre completo del cliente.'),
@@ -49,16 +50,26 @@ const planSignupFlow = ai.defineFlow(
       // Flujo para producto digital (ej. PDF "Muscle Bites")
       const firestore = getFirestore();
       if(firestore) {
-          const leadRef = firestore.collection('leads').doc();
-          await leadRef.set({
-            email: input.email,
-            fullName: input.fullName,
-            productName: input.planName,
-            status: 'initiated',
-            createdAt: registrationDate,
-          });
+          try {
+            const leadRef = firestore.collection('leads').doc();
+            await leadRef.set({
+              email: input.email,
+              fullName: input.fullName,
+              productName: input.planName,
+              status: 'initiated',
+              createdAt: registrationDate,
+            });
+          } catch (e) {
+            logEvent('Firestore Write Error', { message: 'Failed to create lead during digital purchase', error: e instanceof Error ? e.message : String(e) }, 'warn');
+          }
       }
 
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+      if (!appUrl) {
+        logEvent('Stripe Payment Error', { error: 'NEXT_PUBLIC_APP_URL is not set in environment variables' }, 'error');
+        throw new Error('Server configuration error: NEXT_PUBLIC_APP_URL is not defined.');
+      }
+      
       const customer = await stripe.customers.create({
         email: input.email,
         name: input.fullName,
@@ -80,12 +91,13 @@ const planSignupFlow = ai.defineFlow(
           },
         ],
         mode: 'payment',
-        success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002'}?payment_success=true&session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002'}?payment_cancelled=true`,
+        success_url: `${appUrl}?payment_success=true&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${appUrl}?payment_cancelled=true`,
         customer: customer.id,
       });
       
       if (!checkoutSession.url) {
+        logEvent('Stripe Checkout Error', { message: 'Stripe failed to return a checkout URL.', input: input }, 'error');
         throw new Error('Could not create Stripe Checkout session.');
       }
 

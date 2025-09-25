@@ -86,21 +86,26 @@ export async function handleAiGeneration(
 export async function handlePlanSignup(input: PlanSignupInput) {
   try {
     if (!input) {
+      logEvent('Stripe Payment Error', { error: 'Input data is missing for handlePlanSignup' }, 'error');
       return { data: null, error: "Los datos de entrada son requeridos." };
     }
     const result = await processPlanSignup(input);
     return { data: result, error: null };
   } catch (error) {
     console.error("Error in handlePlanSignup:", error);
+    const errorMessage = error instanceof Error ? error.message : "Error desconocido";
+    logEvent('Stripe Payment Error', { error: errorMessage, input: input }, 'error');
     
-    let errorMessage = "Ocurrió un error al procesar tu solicitud. Por favor, inténtalo de nuevo.";
-    if (error instanceof Error && error.message.includes('STRIPE_SECRET_KEY')) {
-      errorMessage = "El sistema de pagos no está configurado correctamente. Por favor, contacta al administrador.";
+    let userErrorMessage = "Ocurrió un error al procesar tu pago. Por favor, inténtalo de nuevo.";
+    if (errorMessage.includes('STRIPE_SECRET_KEY')) {
+      userErrorMessage = "El sistema de pagos no está configurado. Por favor, contacta al administrador.";
+    } else if (errorMessage.includes('NEXT_PUBLIC_APP_URL')) {
+        userErrorMessage = "Error de configuración del servidor. Por favor, contacta al administrador.";
     }
     
     return { 
       data: null, 
-      error: errorMessage,
+      error: userErrorMessage,
     };
   }
 }
