@@ -1,41 +1,15 @@
 
 "use server";
 
-import { generatePersonalizedWorkout, GeneratePersonalizedWorkoutOutput } from "@/ai/flows/generate-personalized-workout";
-import { processPlanSignup, PlanSignupInput } from "@/ai/flows/plan-signup-flow";
 import { z } from "zod";
 import { Post, Testimonial, Lead, LogEntry, PostDocument } from "@/types";
 import { getFirestore } from "@/lib/firebase";
-import { Program } from "@/components/sections/CoachingProgramsSection";
 import connectToDb from "@/lib/mongoose";
 import TestimonialModel from "@/models/Testimonial";
 import PostModel from "@/models/Post";
-import crypto from 'crypto';
 import { logEvent } from "@/lib/logger";
+import { Program } from "@/components/sections/CoachingProgramsSection";
 
-// Schemas
-const leadSchema = z.object({
-  email: z.string().email({ message: "Por favor, introduce un email válido." }),
-});
-
-const aiGeneratorClientSchema = z.object({
-  fitnessGoal: z.string().min(1, "El objetivo de fitness es requerido"),
-  experienceLevel: z.string().min(1, "El nivel de experiencia es requerido"),
-  equipment: z.string().min(1, "El equipo disponible es requerido"),
-  workoutFocus: z.string().min(1, "El enfoque es requerido"),
-  duration: z.coerce.number().min(1, "La duración debe ser mayor a 0"),
-  frequency: z.coerce.number().min(1, "La frecuencia debe ser mayor a 0"),
-  email: z.string().email({ message: "Por favor, introduce un email válido." }).optional().or(z.literal('')),
-});
-type AiGeneratorFormData = z.infer<typeof aiGeneratorClientSchema>;
-
-// Types
-export type AiGeneratorFormState = {
-  data?: GeneratePersonalizedWorkoutOutput;
-  error?: string;
-  inputs?: AiGeneratorFormData;
-  isFullPlan?: boolean;
-};
 
 // GraphQL Queries for Shopify
 const PRODUCTS_IN_COLLECTION_QUERY = /* GraphQL */`
@@ -237,117 +211,6 @@ const transformShopifyProducts = (products: ShopifyProduct[]): Program[] => {
     };
   });
 };
-
-
-// Server Actions
-export async function handleAiGeneration(
-  validatedInput: AiGeneratorFormData,
-  existingData?: GeneratePersonalizedWorkoutOutput
-): Promise<AiGeneratorFormState> {
-  
-  try {
-    // This is the "unlock" flow. We have the user's email and the existing plan.
-    // We just log the lead and return the existing data as a "full plan".
-    if (existingData && validatedInput.email) {
-      const firestore = getFirestore();
-      if (firestore) {
-        const now = new Date();
-        const safeId = crypto.createHash("sha256").update(validatedInput.email.toLowerCase()).digest("hex");
-        const leadRef = firestore.collection("leads").doc(safeId);
-
-        const leadData = {
-          email: validatedInput.email,
-          source: "IA Workout - Full Plan",
-          status: "subscribed",
-          tags: {
-            goal: validatedInput.fitnessGoal,
-            level: validatedInput.experienceLevel,
-            focus: validatedInput.workoutFocus,
-          },
-          updatedAt: now,
-        };
-        
-        await leadRef.set(leadData, { merge: true });
-      }
-      return { data: existingData, inputs: validatedInput, isFullPlan: true };
-    }
-
-    // This is the "preview" generation flow.
-    const { email, ...workoutInput } = validatedInput;
-    const result = await generatePersonalizedWorkout(workoutInput);
-    if (!result) {
-      throw new Error("The AI failed to return any content for the workout plan.");
-    }
-    return { data: result, inputs: validatedInput, isFullPlan: false };
-
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "Un error desconocido ocurrió.";
-    logEvent('AI Workout Generation Failed', { error: errorMessage }, 'error');
-    return { 
-      error: "No se pudo generar el contenido. Por favor, inténtalo de nuevo más tarde." 
-    };
-  }
-}
-
-
-export async function handlePlanSignup(input: PlanSignupInput) {
-  try {
-    if (!input) {
-      return { data: null, error: "Los datos de entrada son requeridos." };
-    }
-    const result = await processPlanSignup(input);
-    return { data: result, error: null };
-  } catch (error) {
-    console.error("Error in handlePlanSignup:", error);
-    
-    let errorMessage = "Ocurrió un error al procesar tu solicitud. Por favor, inténtalo de nuevo.";
-    if (error instanceof Error && error.message.includes('STRIPE_SECRET_KEY')) {
-      errorMessage = "El sistema de pagos no está configurado correctamente. Por favor, contacta al administrador.";
-    }
-    
-    return { 
-      data: null, 
-      error: errorMessage,
-    };
-  }
-}
-
-export async function handleLeadSubmission(formData: { email: string }) {
-  try {
-    const { email } = leadSchema.parse(formData);
-
-    const firestore = getFirestore();
-    if (!firestore) {
-      console.error("Firestore not configured");
-      return { success: false, message: "Servicio temporalmente no disponible. Por favor, inténtalo más tarde." };
-    }
-
-    const now = new Date();
-    const safeId = crypto.createHash("sha256").update(email.toLowerCase()).digest("hex");
-    const leadRef = firestore.collection("leads").doc(safeId);
-
-    const leadData = {
-      email,
-      source: "Guía Gratuita - 10k Pasos",
-      status: "subscribed",
-      updatedAt: now,
-      createdAt: now,
-    };
-    
-    await leadRef.set(leadData, { merge: true });
-
-    return {
-      success: true,
-      message: "¡Éxito! Tu guía está en camino.",
-    };
-  } catch (error) {
-    console.error("Error in handleLeadSubmission:", error instanceof Error ? error.stack : String(error));
-    if (error instanceof z.ZodError) {
-      return { success: false, message: error.errors[0]?.message || "Email inválido." };
-    }
-    return { success: false, message: "Hubo un problema con tu solicitud. Por favor, inténtalo de nuevo." };
-  }
-}
 
 
 // --- Shopify Data Fetching ---
@@ -817,40 +680,3 @@ export async function getSystemStatuses(): Promise<SystemStatus> {
         mongoData: mongoDataStatus,
     };
 }
-
-export async function logConversion(variationId: string) {
-    'use server';
-    try {
-        const firestore = getFirestore();
-        if (!firestore) {
-            throw new Error("Firestore not available");
-        }
-
-        const conversionData = {
-            variationId,
-            clickedAt: new Date(),
-        };
-
-        await firestore.collection('conversions').add(conversionData);
-
-        return { success: true };
-    } catch (error) {
-        console.error('Failed to log conversion:', error);
-        logEvent('Conversion Logging Failed', { variationId, error: error instanceof Error ? error.message : String(error) }, 'error');
-        return { success: false, error: 'Failed to log conversion.' };
-    }
-}
-    
-
-    
-
-    
-
-
-
-
-    
-
-    
-
-    

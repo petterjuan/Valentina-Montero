@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useForm, type SubmitHandler } from "react-hook-form";
@@ -15,7 +16,7 @@ import {
 } from "@/components/ui/form";
 import { useState } from "react";
 import { Check, Gift, Loader2, Sparkles } from "lucide-react";
-import { handleLeadSubmission } from "@/app/actions";
+import { handleLeadSubmission } from "@/app/ai-actions";
 import PlanSignupDialog from "./PlanSignupDialog";
 import type { Program } from "./CoachingProgramsSection";
 
