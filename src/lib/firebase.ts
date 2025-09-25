@@ -45,23 +45,19 @@ function initializeFirebaseAdmin(): admin.firestore.Firestore | null {
         } else {
             initError = new Error(String(error));
         }
-        // Do not log here to prevent circular dependency
         firestoreInstance = null;
         throw initError;
     }
 }
 
 export const getFirestore = (): admin.firestore.Firestore | null => {
-    // This function is designed to throw an error on failure, which will be caught by Next.js's error handling.
-    // If it returns, it's either the instance or null if it couldn't initialize but didn't throw.
-    // In a server action context, we want to fail loudly if the core DB connection isn't there.
     try {
         return initializeFirebaseAdmin();
     } catch(e) {
-        // We catch and log here, but getFirestore will return null, allowing the app to run
-        // but indicating a failure state for functions that use it.
-        // This prevents server crashes on startup.
-        console.error("FATAL: Could not initialize Firebase Admin SDK. Firestore will be unavailable.", e);
+        // We log here to provide visibility during development but prevent server crashes.
+        if (process.env.NODE_ENV === 'development') {
+            console.error("Could not initialize Firebase Admin SDK. Firestore will be unavailable.", e);
+        }
         return null;
     }
 }
