@@ -352,7 +352,7 @@ export async function handleLeadSubmission(formData: { email: string }) {
 
 // --- Shopify Data Fetching ---
 async function fetchShopify(query: string, variables: Record<string, any> = {}) {
-    const domain = process.env.SHOPIFY_STORE_DOMAIN;
+    const domain = process.env.SHOPIFY_STORE_DOMAIN || 'valentmontero.myshopify.com';
     const token = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN;
 
     if (!domain || !token) {
@@ -845,3 +845,4 @@ export async function logConversion(variationId: string) {
     
 
     
+
