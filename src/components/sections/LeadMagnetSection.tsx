@@ -53,16 +53,27 @@ export default function LeadMagnetSection() {
     },
   });
 
+  const triggerDownload = (url: string) => {
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", url.split("/").pop() || "guia-fitness.pdf");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+  };
+
   const onSubmit: SubmitHandler<FormData> = async (data) => {
     setStatus('submitting');
     const result = await handleLeadSubmission(data);
     
-    if (result.success) {
+    if (result.success && result.downloadUrl) {
         setStatus('success');
         toast({
             title: "¡Guía en camino!",
-            description: "Revisa tu bandeja de entrada y aprovecha la oferta especial.",
+            description: "Tu descarga ha comenzado. ¡Revisa la oferta especial de agradecimiento!",
         });
+        
+        triggerDownload(result.downloadUrl);
         form.reset();
 
         setTimeout(() => {
@@ -84,7 +95,7 @@ export default function LeadMagnetSection() {
         case 'submitting':
             return <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Enviando...</>;
         case 'success':
-            return <><Check className="mr-2 h-4 w-4" /> ¡Enviado!</>;
+            return <><Check className="mr-2 h-4 w-4" /> ¡Descargando!</>;
         default:
             return '¡La Quiero!';
     }
@@ -97,7 +108,7 @@ export default function LeadMagnetSection() {
           {isSubmitted ? (
             <div className="flex flex-col items-center gap-4 rounded-lg border bg-card p-8 text-card-foreground shadow-lg">
                 <Gift className="h-16 w-16 text-primary" />
-                <h2 className="text-3xl font-bold tracking-tight">¡Gracias! Tu guía está en camino.</h2>
+                <h2 className="text-3xl font-bold tracking-tight">¡Gracias! Tu guía ha sido descargada.</h2>
                 <p className="text-muted-foreground max-w-md">
                     Como agradecimiento, aquí tienes una oferta única: llévate mi guía de recetas <b className="text-foreground">"Muscle Bites"</b> con un descuento exclusivo.
                 </p>
