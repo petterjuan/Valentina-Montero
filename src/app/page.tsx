@@ -16,7 +16,7 @@ export default function Home() {
       <LeadMagnetSection />
       <CoachingProgramsSection />
       <MeetTheCoachSection />
-      <AiGeneratorSection />
+      {/* <AiGeneratorSection /> */}
       <TestimonialsSection />
       <BlogSection />
     </>
