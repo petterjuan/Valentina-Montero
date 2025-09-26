@@ -8,10 +8,27 @@
  * - GeneratePersonalizedWorkoutInput - El tipo de entrada para la función generatePersonalizedWorkout.
  * - GeneratePersonalizedWorkoutOutput - El tipo de retorno para la función generatePersonalizedWorkout.
  */
+import { z } from 'zod';
+import { google } from 'googleapis';
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+// Helper function to get Google Auth client
+async function getAuthClient() {
+    const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+    if (!serviceAccountKey) {
+        throw new Error("Firebase service account key (FIREBASE_SERVICE_ACCOUNT_KEY) is not set in environment variables.");
+    }
+    const decodedKey = Buffer.from(serviceAccountKey, 'base64').toString('utf-8');
+    const credentials = JSON.parse(decodedKey);
 
+    const auth = new google.auth.GoogleAuth({
+        credentials,
+        scopes: ['https://www.googleapis.com/auth/cloud-platform'],
+    });
+
+    return await auth.getClient();
+}
+
+// Schemas
 const GeneratePersonalizedWorkoutInputSchema = z.object({
   fitnessGoal: z.string().describe('El objetivo de fitness especificado por el usuario (p. ej., perder peso, ganar músculo).'),
   experienceLevel: z.string().describe('El nivel de experiencia del usuario (principiante, intermedio, avanzado).'),
@@ -44,46 +61,81 @@ const GeneratePersonalizedWorkoutOutputSchema = z.object({
 });
 export type GeneratePersonalizedWorkoutOutput = z.infer<typeof GeneratePersonalizedWorkoutOutputSchema>;
 
+// Main exported function
 export async function generatePersonalizedWorkout(
   input: GeneratePersonalizedWorkoutInput
 ): Promise<GeneratePersonalizedWorkoutOutput> {
-  return generatePersonalizedWorkoutFlow(input);
-}
-
-const generatePersonalizedWorkoutPrompt = ai.definePrompt({
-  name: 'generatePersonalizedWorkoutPrompt',
-  input: {schema: GeneratePersonalizedWorkoutInputSchema},
-  output: {schema: GeneratePersonalizedWorkoutOutputSchema},
-  system: "Responde únicamente con el objeto JSON solicitado, sin texto adicional, explicaciones o formato markdown.",
-  prompt: `Eres una entrenadora personal experta llamada Valentina Montero. Tu tono es motivador, cercano y profesional. Crea un plan de entrenamiento detallado y estructurado en español basado en las siguientes especificaciones.
-
-- **Objetivo de Fitness:** {{{fitnessGoal}}}
-- **Nivel de Experiencia:** {{{experienceLevel}}}
-- **Equipo Disponible:** {{{equipment}}}
-- **Enfoque Principal:** {{{workoutFocus}}}
-- **Duración por Sesión:** {{{duration}}} minutos
-- **Frecuencia Semanal:** {{{frequency}}} veces por semana
-
-**Instrucciones de formato de salida (MUY IMPORTANTE):**
-- **overview:** Escribe una frase corta y motivadora sobre el plan.
-- **fullWeekWorkout:** Crea un plan de entrenamiento completo para la cantidad de días especificada en 'frequency'. El enfoque de cada día debe variar y estar alineado con el 'workoutFocus' general.
-- **nutritionTips:** Proporciona 3 consejos de nutrición accionables y relevantes para el objetivo.
-- **mindsetTips:** Proporciona 2 consejos de mentalidad o motivación para el éxito a largo plazo.
-- Los ejercicios deben ser una lista de objetos, cada uno con 'name', 'sets' y 'reps'. Sé específica con las series y repeticiones (ej. "3 series", "10-12 reps").`,
-});
-
-const generatePersonalizedWorkoutFlow = ai.defineFlow(
-  {
-    name: 'generatePersonalizedWorkoutFlow',
-    inputSchema: GeneratePersonalizedWorkoutInputSchema,
-    outputSchema: GeneratePersonalizedWorkoutOutputSchema,
-  },
-  async input => {
-    const {output} = await generatePersonalizedWorkoutPrompt(input);
-    if (!output) {
-      throw new Error('La respuesta de la IA no tuvo contenido.');
-    }
-    const parsedOutput = GeneratePersonalizedWorkoutOutputSchema.parse(output);
-    return parsedOutput;
+  const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+  if (!serviceAccountKey) {
+      throw new Error("Firebase service account key not configured.");
   }
-);
+  const decodedKey = Buffer.from(serviceAccountKey, 'base64').toString('utf-8');
+  const credentials = JSON.parse(decodedKey);
+  const projectId = credentials.project_id;
+    
+  if(!projectId) {
+      throw new Error("Could not determine project_id from service account key.");
+  }
+
+  const promptText = `
+    Eres una entrenadora personal experta llamada Valentina Montero. Tu tono es motivador, cercano y profesional. 
+    Crea un plan de entrenamiento detallado y estructurado en español basado en las siguientes especificaciones.
+
+    - **Objetivo de Fitness:** ${input.fitnessGoal}
+    - **Nivel de Experiencia:** ${input.experienceLevel}
+    - **Equipo Disponible:** ${input.equipment}
+    - **Enfoque Principal:** ${input.workoutFocus}
+    - **Duración por Sesión:** ${input.duration} minutos
+    - **Frecuencia Semanal:** ${input.frequency} veces por semana
+
+    Tu única respuesta debe ser un objeto JSON válido que se ajuste al siguiente schema. No incluyas ningún texto, explicación o formato markdown adicional.
+
+    Schema:
+    ${JSON.stringify(GeneratePersonalizedWorkoutOutputSchema.describe('El plan de entrenamiento completo'), null, 2)}
+  `;
+
+  try {
+    const auth = await getAuthClient();
+    const accessToken = (await auth.getAccessToken()).token;
+
+    const endpoint = `https://us-central1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/us-central1/publishers/google/models/gemini-pro:generateContent`;
+
+    const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            contents: [{
+                parts: [{ text: promptText }]
+            }],
+            generationConfig: {
+                responseMimeType: "application/json",
+            }
+        })
+    });
+    
+    if (!response.ok) {
+        const errorBody = await response.text();
+        throw new Error(`Google AI API request failed with status ${response.status}: ${errorBody}`);
+    }
+
+    const responseData = await response.json();
+
+    const candidate = responseData.candidates?.[0];
+    if (!candidate || !candidate.content || !candidate.content.parts || !candidate.content.parts[0].text) {
+      throw new Error('Invalid response structure from Google AI API');
+    }
+    
+    const jsonText = candidate.content.parts[0].text;
+    const parsedOutput = JSON.parse(jsonText);
+    
+    return GeneratePersonalizedWorkoutOutputSchema.parse(parsedOutput);
+
+  } catch (error) {
+    console.error('Error in generatePersonalizedWorkout:', error);
+    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred during AI plan generation.";
+    throw new Error(errorMessage);
+  }
+}
