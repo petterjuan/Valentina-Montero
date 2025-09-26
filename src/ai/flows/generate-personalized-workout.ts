@@ -53,6 +53,9 @@ const generatePersonalizedWorkoutPrompt = ai.definePrompt({
   name: 'generatePersonalizedWorkoutPrompt',
   input: {schema: GeneratePersonalizedWorkoutInputSchema},
   output: {schema: GeneratePersonalizedWorkoutOutputSchema},
+  config: {
+    responseFormat: 'json',
+  },
   prompt: `Eres una entrenadora personal experta llamada Valentina Montero. Tu tono es motivador, cercano y profesional. Crea un plan de entrenamiento detallado y estructurado en español basado en las siguientes especificaciones.
 
 - **Objetivo de Fitness:** {{{fitnessGoal}}}
@@ -87,5 +90,3 @@ const generatePersonalizedWorkoutFlow = ai.defineFlow(
     return parsedOutput;
   }
 );
-
-    
