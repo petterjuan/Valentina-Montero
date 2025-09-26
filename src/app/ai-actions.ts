@@ -75,7 +75,14 @@ export async function handleAiGeneration(
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Un error desconocido ocurrió.";
-    logEvent('AI Workout Generation Failed', { error: errorMessage }, 'error');
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    
+    logEvent('AI Workout Generation Failed', { 
+        error: errorMessage, 
+        stack: errorStack,
+        input: validatedInput
+    }, 'error');
+    
     return { 
       error: "No se pudo generar el contenido. Por favor, inténtalo de nuevo más tarde." 
     };
@@ -94,13 +101,18 @@ export async function handlePlanSignup(input: PlanSignupInput) {
   } catch (error) {
     console.error("Error in handlePlanSignup:", error);
     const errorMessage = error instanceof Error ? error.message : "Error desconocido";
-    logEvent('Stripe Payment Error', { error: errorMessage, input: input }, 'error');
     
     let userErrorMessage = "Ocurrió un error al procesar tu pago. Por favor, inténtalo de nuevo.";
+    
+    // Log more detailed error for admin, but show user-friendly message
     if (errorMessage.includes('STRIPE_SECRET_KEY') || errorMessage.includes('Invalid API Key')) {
-      userErrorMessage = "El sistema de pagos no está configurado correctamente. Por favor, contacta al administrador.";
+        userErrorMessage = "El sistema de pagos no está configurado correctamente. Por favor, contacta al administrador.";
+        logEvent('Stripe Payment Failed', { error: 'Stripe secret key is invalid or missing.', input: input }, 'error');
     } else if (errorMessage.includes('NEXT_PUBLIC_APP_URL')) {
         userErrorMessage = "Error de configuración del servidor. Por favor, contacta al administrador.";
+        logEvent('Stripe Payment Failed', { error: 'NEXT_PUBLIC_APP_URL is not set.', input: input }, 'error');
+    } else {
+        logEvent('Stripe Payment Failed', { error: errorMessage, input: input }, 'error');
     }
     
     return { 

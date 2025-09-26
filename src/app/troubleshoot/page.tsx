@@ -2,13 +2,21 @@
 'use client';
 
 import * as React from "react";
-import { CheckCircle, XCircle, FileText, Loader2, RefreshCw } from "lucide-react";
+import { CheckCircle, XCircle, FileText, Loader2, RefreshCw, ZoomIn } from "lucide-react";
 import { getLogs, getSystemStatuses, SystemStatus } from "@/app/actions";
 import { type LogEntry } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 const StatusCheck = ({
   title,
@@ -123,6 +131,7 @@ export default function TroubleshootPage() {
                                                 <TableHead>Evento</TableHead>
                                                 <TableHead>Nivel</TableHead>
                                                 <TableHead className="text-right">Fecha</TableHead>
+                                                <TableHead className="text-right">Detalles</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
@@ -141,11 +150,33 @@ export default function TroubleshootPage() {
                                                                 hour: '2-digit', minute: '2-digit', second: '2-digit'
                                                             })}
                                                         </TableCell>
+                                                        <TableCell className="text-right">
+                                                            {log.metadata && Object.keys(log.metadata).length > 0 && (
+                                                                <Dialog>
+                                                                    <DialogTrigger asChild>
+                                                                        <Button variant="ghost" size="icon">
+                                                                            <ZoomIn className="h-4 w-4" />
+                                                                        </Button>
+                                                                    </DialogTrigger>
+                                                                    <DialogContent className="max-w-2xl">
+                                                                        <DialogHeader>
+                                                                            <DialogTitle>Detalles del Evento</DialogTitle>
+                                                                            <DialogDescription>
+                                                                                A continuación se muestran los metadatos completos del evento.
+                                                                            </DialogDescription>
+                                                                        </DialogHeader>
+                                                                        <pre className="mt-4 bg-slate-100 dark:bg-slate-800 p-4 rounded-md text-xs overflow-auto max-h-[60vh]">
+                                                                            {JSON.stringify(log.metadata, null, 2)}
+                                                                        </pre>
+                                                                    </DialogContent>
+                                                                </Dialog>
+                                                            )}
+                                                        </TableCell>
                                                     </TableRow>
                                                 ))
                                             ) : (
                                                 <TableRow>
-                                                    <TableCell colSpan={3} className="h-24 text-center">
+                                                    <TableCell colSpan={4} className="h-24 text-center">
                                                         No hay registros de eventos para mostrar.
                                                     </TableCell>
                                                 </TableRow>
@@ -165,5 +196,3 @@ export default function TroubleshootPage() {
         </div>
     );
 }
-
-    
