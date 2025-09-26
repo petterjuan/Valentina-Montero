@@ -10,8 +10,9 @@
  */
 import { z } from 'zod';
 import { logEvent } from '@/lib/logger';
+import { VertexAI } from '@google-cloud/vertexai';
 
-// Schemas (los mismos que antes)
+// Schemas
 const GeneratePersonalizedWorkoutInputSchema = z.object({
   fitnessGoal: z.string().describe('El objetivo de fitness especificado por el usuario (p. ej., perder peso, ganar músculo).'),
   experienceLevel: z.string().describe('El nivel de experiencia del usuario (principiante, intermedio, avanzado).'),
@@ -44,21 +45,48 @@ const GeneratePersonalizedWorkoutOutputSchema = z.object({
 });
 export type GeneratePersonalizedWorkoutOutput = z.infer<typeof GeneratePersonalizedWorkoutOutputSchema>;
 
-
-// Nueva función que llama directamente a la API de Google
+// Función que llama a la API de Vertex AI
 export async function generatePersonalizedWorkout(
   input: GeneratePersonalizedWorkoutInput
 ): Promise<GeneratePersonalizedWorkoutOutput> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error("La clave de API de Gemini (GEMINI_API_KEY) no está configurada en las variables de entorno.");
+
+  let serviceAccount;
+  try {
+    const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+    if (!serviceAccountKey) {
+        throw new Error("FIREBASE_SERVICE_ACCOUNT_KEY not set.");
+    }
+    const decodedKey = Buffer.from(serviceAccountKey, 'base64').toString('utf-8');
+    serviceAccount = JSON.parse(decodedKey);
+  } catch (e) {
+    logEvent('Vertex AI Auth Error', { error: 'Failed to parse service account key.' }, 'error');
+    throw new Error('Server authentication configuration is invalid.');
   }
 
-  // Usamos un modelo que sabemos que es accesible y gratuito para este tipo de uso.
-  const model = 'gemini-1.5-flash-latest';
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  const vertexAI = new VertexAI({
+    project: serviceAccount.project_id,
+    location: 'us-central1', // O la región que estés usando
+    googleAuthOptions: {
+        credentials: {
+            client_email: serviceAccount.client_email,
+            private_key: serviceAccount.private_key,
+        },
+        scopes:[
+          'https://www.googleapis.com/auth/cloud-platform',
+        ],
+    }
+  });
 
-  const systemPrompt = "Actúa como una entrenadora personal experta llamada Valentina Montero. Tu tono es motivador, cercano y profesional. Tu única respuesta debe ser un objeto JSON válido que se ajuste al schema proporcionado. No incluyas ningún texto, explicación o formato markdown adicional, solo el JSON.";
+  const generativeModel = vertexAI.getGenerativeModel({
+    model: 'gemini-1.5-flash-preview-0514', // Modelo que sabemos que está disponible en la capa gratuita
+    generationConfig: {
+      responseMimeType: "application/json",
+    },
+    systemInstruction: {
+        role: 'system',
+        parts: [{ text: "Actúa como una entrenadora personal experta llamada Valentina Montero. Tu tono es motivador, cercano y profesional. Tu única respuesta debe ser un objeto JSON válido que se ajuste al schema proporcionado. No incluyas ningún texto, explicación o formato markdown adicional, solo el JSON."}]
+    },
+  });
 
   const userPrompt = `Crea un plan de entrenamiento detallado y estructurado en español basado en las siguientes especificaciones:
     - **Objetivo de Fitness:** ${input.fitnessGoal}
@@ -67,88 +95,39 @@ export async function generatePersonalizedWorkout(
     - **Enfoque Principal:** ${input.workoutFocus}
     - **Duración por Sesión:** ${input.duration} minutos
     - **Frecuencia Semanal:** ${input.frequency} veces por semana`;
-
-  const requestBody = {
-    contents: [
-      {
-        role: "user",
-        parts: [{ text: userPrompt }],
-      },
-    ],
-    systemInstruction: {
-      role: "system",
-      parts: [{ text: systemPrompt }],
-    },
-    generationConfig: {
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: "OBJECT",
-        properties: {
-          overview: { type: "STRING" },
-          fullWeekWorkout: {
-            type: "ARRAY",
-            items: {
-              type: "OBJECT",
-              properties: {
-                day: { type: "STRING" },
-                focus: { type: "STRING" },
-                warmup: { type: "STRING" },
-                exercises: {
-                  type: "ARRAY",
-                  items: {
-                    type: "OBJECT",
-                    properties: {
-                      name: { type: "STRING" },
-                      sets: { type: "STRING" },
-                      reps: { type: "STRING" },
-                    },
-                    required: ["name", "sets", "reps"],
-                  },
-                },
-                cooldown: { type: "STRING" },
-              },
-              required: ["day", "focus", "warmup", "exercises", "cooldown"],
-            },
-          },
-          nutritionTips: { type: "ARRAY", items: { type: "STRING" } },
-          mindsetTips: { type: "ARRAY", items: { type: "STRING" } },
-        },
-        required: ["overview", "fullWeekWorkout", "nutritionTips", "mindsetTips"],
-      },
-    },
+  
+  const request = {
+    contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
   };
 
   try {
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(requestBody),
-    });
-
-    if (!response.ok) {
-        const errorBody = await response.text();
-        const errorMessage = `La solicitud a la API de Google AI falló con estado ${response.status}: ${errorBody}`;
-        logEvent('Google AI API Error', { status: response.status, body: errorBody, request: requestBody }, 'error');
-        throw new Error(errorMessage);
+    const resp = await generativeModel.generateContent(request);
+    const jsonText = resp.response.candidates?.[0]?.content?.parts?.[0]?.text;
+    
+    if (!jsonText) {
+        logEvent('Vertex AI Error', { message: 'Empty response from model', response: resp.response }, 'error');
+        throw new Error("La IA no devolvió contenido.");
     }
 
-    const data = await response.json();
-    
-    // El contenido JSON real está dentro de `candidates[0].content.parts[0].text`
-    const jsonText = data.candidates[0].content.parts[0].text;
     const parsedOutput = JSON.parse(jsonText);
-    
-    // Validar con Zod para asegurar la estructura
     return GeneratePersonalizedWorkoutOutputSchema.parse(parsedOutput);
 
   } catch (error) {
-    if (error instanceof Error) {
-        logEvent('AI Workout Generation Failed', { error: error.message, stack: error.stack }, 'error');
-    } else {
-        logEvent('AI Workout Generation Failed', { error: String(error) }, 'error');
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    logEvent('AI Workout Generation Failed', { error: errorMessage, stack: error instanceof Error ? error.stack : undefined, input: input }, 'error');
+    
+    if (errorMessage.includes('PERMISSION_DENIED') || errorMessage.includes('403')) {
+        if (errorMessage.includes('BILLING_DISABLED')) {
+            throw new Error("La API de IA requiere que la facturación esté habilitada en el proyecto de Google Cloud. Esto es un requisito de Google para usar las APIs de IA, pero el uso del generador debería permanecer dentro de la capa gratuita.");
+        }
+        if (errorMessage.includes('API has not been used')) {
+             throw new Error("La API de Vertex AI necesita ser habilitada en el proyecto de Google Cloud. Por favor, habilítala en la consola de Google Cloud y espera unos minutos.");
+        }
     }
-    throw error; // Re-lanzar el error para que sea manejado por el llamador
+     if (errorMessage.includes('NOT_FOUND') || errorMessage.includes('404')) {
+        throw new Error("El modelo de IA solicitado no está disponible. Es posible que tu proyecto no tenga acceso a este modelo. Contacta al soporte.");
+     }
+
+    throw new Error(`Error al generar el entrenamiento: ${errorMessage}`);
   }
 }
