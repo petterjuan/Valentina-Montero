@@ -39,11 +39,12 @@ const generateBlogPostPrompt = ai.definePrompt({
     name: 'generateBlogPostPrompt',
     input: { schema: GenerateBlogPostInputSchema },
     output: { schema: GenerateBlogPostOutputSchema },
+    system: "Responde únicamente con el objeto JSON solicitado, sin texto adicional, explicaciones o formato markdown.",
     prompt: `
         Actúa como Valentina Montero, una experta en fitness, nutrición y coach personal con un tono cercano, motivador y profesional. Tu tarea es escribir un artículo de blog completo para su sitio web.
 
         **Instrucciones Clave:**
-        1.  **Originalidad:** Elige un tema NUEVO y relevante sobre fitness, nutrición, mentalidad o bienestar para mujeres que NO esté en esta lista de títulos existentes: {{existingTitles}}.
+        1.  **Originalidad:** Elige un tema NUEVO y relevante sobre fitness, nutrición, mentalidad o bienestar para mujeres que NO esté en esta lista de títulos existentes: {{{existingTitles}}}.
         2.  **Longitud y Estructura:** Escribe un artículo de entre 800 y 1200 palabras. Debe tener una estructura clara:
             *   Una introducción que enganche al lector.
             *   Al menos 3-4 secciones con subtítulos (usando etiquetas <h2>).
@@ -52,14 +53,6 @@ const generateBlogPostPrompt = ai.definePrompt({
         3.  **Formato HTML:** El campo 'content' DEBE estar en formato HTML válido.
         4.  **Tono y Voz:** Mantén siempre la voz de Valentina: empoderadora, conocedora pero accesible.
         5.  **Imagen:** Genera una URL de imagen de picsum.photos (ej. https://picsum.photos/seed/algun-seed/1200/800) y dos palabras clave en inglés para el 'aiHint'.
-
-        **Formato de Salida (JSON):**
-        -   **title:** Un título atractivo y optimizado para SEO.
-        -   **slug:** Generado a partir del título.
-        -   **excerpt:** Un resumen conciso y llamativo de 2-3 frases.
-        -   **content:** El artículo completo en HTML.
-        -   **imageUrl:** URL de la imagen.
-        -   **aiHint:** Palabras clave de la imagen.
     `,
 });
 

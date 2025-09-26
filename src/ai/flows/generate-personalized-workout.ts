@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -53,9 +54,7 @@ const generatePersonalizedWorkoutPrompt = ai.definePrompt({
   name: 'generatePersonalizedWorkoutPrompt',
   input: {schema: GeneratePersonalizedWorkoutInputSchema},
   output: {schema: GeneratePersonalizedWorkoutOutputSchema},
-  config: {
-    responseFormat: 'json',
-  },
+  system: "Responde únicamente con el objeto JSON solicitado, sin texto adicional, explicaciones o formato markdown.",
   prompt: `Eres una entrenadora personal experta llamada Valentina Montero. Tu tono es motivador, cercano y profesional. Crea un plan de entrenamiento detallado y estructurado en español basado en las siguientes especificaciones.
 
 - **Objetivo de Fitness:** {{{fitnessGoal}}}
@@ -66,13 +65,11 @@ const generatePersonalizedWorkoutPrompt = ai.definePrompt({
 - **Frecuencia Semanal:** {{{frequency}}} veces por semana
 
 **Instrucciones de formato de salida (MUY IMPORTANTE):**
-- Debes devolver la respuesta únicamente en el formato JSON especificado.
 - **overview:** Escribe una frase corta y motivadora sobre el plan.
 - **fullWeekWorkout:** Crea un plan de entrenamiento completo para la cantidad de días especificada en 'frequency'. El enfoque de cada día debe variar y estar alineado con el 'workoutFocus' general.
 - **nutritionTips:** Proporciona 3 consejos de nutrición accionables y relevantes para el objetivo.
 - **mindsetTips:** Proporciona 2 consejos de mentalidad o motivación para el éxito a largo plazo.
-- Los ejercicios deben ser una lista de objetos, cada uno con 'name', 'sets' y 'reps'. Sé específica con las series y repeticiones (ej. "3 series", "10-12 reps").
-- No incluyas saludos, despedidas ni ningún texto fuera de la estructura JSON.`,
+- Los ejercicios deben ser una lista de objetos, cada uno con 'name', 'sets' y 'reps'. Sé específica con las series y repeticiones (ej. "3 series", "10-12 reps").`,
 });
 
 const generatePersonalizedWorkoutFlow = ai.defineFlow(
