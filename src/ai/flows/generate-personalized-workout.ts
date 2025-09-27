@@ -10,7 +10,6 @@
  */
 import { z } from 'zod';
 import { ai } from '@/ai/genkit';
-import { googleAI } from '@genkit-ai/googleai';
 import { logEvent } from '@/lib/logger';
 
 // Schemas
@@ -57,7 +56,8 @@ const generateWorkoutPrompt = ai.definePrompt({
     name: 'generateWorkoutPrompt',
     input: { schema: GeneratePersonalizedWorkoutInputSchema },
     output: { schema: GeneratePersonalizedWorkoutOutputSchema },
-    model: googleAI.model('gemini-1.5-flash-preview-0514'),
+    // El modelo se especifica aquí. Genkit lo buscará en el proyecto de Vertex AI configurado.
+    model: 'gemini-1.5-flash-preview-0514', 
     system: "Actúa como una entrenadora personal experta llamada Valentina Montero. Tu tono es motivador, cercano y profesional. Tu única respuesta debe ser un objeto JSON válido que se ajuste al schema proporcionado. No incluyas ningún texto, explicación o formato markdown adicional, solo el JSON. TODO el texto de tu respuesta DEBE estar en español.",
     prompt: `Crea un plan de entrenamiento detallado y estructurado en español basado en las siguientes especificaciones:
     - **Objetivo de Fitness:** {{{fitnessGoal}}}
@@ -87,15 +87,15 @@ const generatePersonalizedWorkoutFlow = ai.defineFlow(
         logEvent('AI Workout Generation Failed', { error: errorMessage, stack: error instanceof Error ? error.stack : undefined, input: input }, 'error');
         
         if (errorMessage.includes('PERMISSION_DENIED') || errorMessage.includes('403')) {
-            if (errorMessage.includes('BILLING_DISABLED')) {
-                throw new Error("La API de IA requiere que la facturación esté habilitada en el proyecto de Google Cloud. Esto es un requisito de Google para usar las APIs de IA, pero el uso del generador debería permanecer dentro de la capa gratuita.");
+            if (errorMessage.includes('billing is not enabled')) {
+                return Promise.reject(new Error("La API de IA requiere que la facturación esté habilitada en el proyecto de Google Cloud. Esto es un requisito de Google para usar las APIs de IA, pero el uso del generador debería permanecer dentro de la capa gratuita."));
             }
             if (errorMessage.includes('API has not been used')) {
-                 throw new Error("La API de Vertex AI necesita ser habilitada en el proyecto de Google Cloud. Por favor, habilítala en la consola de Google Cloud y espera unos minutos.");
+                 return Promise.reject(new Error("La API de Vertex AI necesita ser habilitada en el proyecto de Google Cloud. Por favor, habilítala en la consola de Google Cloud y espera unos minutos."));
             }
         }
          if (errorMessage.includes('NOT_FOUND') || errorMessage.includes('404')) {
-            throw new Error("El modelo de IA solicitado no está disponible. Es posible que tu proyecto no tenga acceso a este modelo. Contacta al soporte.");
+            return Promise.reject(new Error("El modelo de IA solicitado no está disponible. Es posible que tu proyecto no tenga acceso a este modelo. Contacta al soporte."));
          }
 
         throw new Error(`Error al generar el entrenamiento: ${errorMessage}`);
