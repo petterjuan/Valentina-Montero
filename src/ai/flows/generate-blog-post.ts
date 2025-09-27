@@ -22,7 +22,7 @@ export type GenerateBlogPostInput = z.infer<typeof GenerateBlogPostInputSchema>;
 const GenerateBlogPostOutputSchema = z.object({
   title: z.string().describe('El título del artículo, optimizado para SEO y atractivo.'),
   slug: z.string().describe('La versión del título para la URL, en minúsculas y separada por guiones.'),
-  excerpt: z.string().describe('Un resumen corto (2-3 frases) del artículo para previsualizaciones.'),
+  excerpt: z.string().describe('Un resumen muy corto y atractivo (2-3 frases) del artículo para previsualizaciones, que incite a hacer clic.'),
   content: z.string().describe('El contenido completo del artículo, en formato HTML (usando etiquetas <p>, <h2>, <ul>, <li>, etc.).'),
   imageUrl: z.string().url().describe('La URL de una imagen de stock relevante para el artículo.'),
   aiHint: z.string().describe('Dos palabras clave en inglés para la imagen (ej. "fitness woman").'),
@@ -53,6 +53,7 @@ const generateBlogPostPrompt = ai.definePrompt({
         3.  **Formato HTML:** El campo 'content' DEBE estar en formato HTML válido.
         4.  **Tono y Voz:** Mantén siempre la voz de Valentina: empoderadora, conocedora pero accesible.
         5.  **Imagen:** Genera una URL de imagen de picsum.photos (ej. https://picsum.photos/seed/algun-seed/1200/800) y dos palabras clave en inglés para el 'aiHint'.
+        6.  **Resumen Corto:** El 'excerpt' debe ser muy breve y directo (2-3 frases) para generar curiosidad.
     `,
 });
 

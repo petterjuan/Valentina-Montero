@@ -40,8 +40,8 @@ const DailyWorkoutSchema = z.object({
 const GeneratePersonalizedWorkoutOutputSchema = z.object({
   overview: z.string().describe('Un resumen corto y motivador del plan.'),
   fullWeekWorkout: z.array(DailyWorkoutSchema).describe('El plan de entrenamiento semanal completo, dividido por días.'),
-  nutritionTips: z.array(z.string()).describe('Una lista de 3 consejos de nutrición prácticos y alineados con el objetivo del usuario.'),
-  mindsetTips: z.array(z.string()).describe('Una lista de 2 consejos de mentalidad o motivación para ayudar al usuario a mantenerse en el camino.'),
+  nutritionTips: z.array(z.string()).describe('Una lista de 3 consejos de nutrición prácticos y alineados con el objetivo del usuario. DEBEN ESTAR EN ESPAÑOL.'),
+  mindsetTips: z.array(z.string()).describe('Una lista de 2 consejos de mentalidad o motivación para ayudar al usuario a mantenerse en el camino. DEBEN ESTAR EN ESPAÑOL.'),
 });
 export type GeneratePersonalizedWorkoutOutput = z.infer<typeof GeneratePersonalizedWorkoutOutputSchema>;
 
@@ -84,7 +84,7 @@ export async function generatePersonalizedWorkout(
     },
     systemInstruction: {
         role: 'system',
-        parts: [{ text: "Actúa como una entrenadora personal experta llamada Valentina Montero. Tu tono es motivador, cercano y profesional. Tu única respuesta debe ser un objeto JSON válido que se ajuste al schema proporcionado. No incluyas ningún texto, explicación o formato markdown adicional, solo el JSON."}]
+        parts: [{ text: "Actúa como una entrenadora personal experta llamada Valentina Montero. Tu tono es motivador, cercano y profesional. Tu única respuesta debe ser un objeto JSON válido que se ajuste al schema proporcionado. No incluyas ningún texto, explicación o formato markdown adicional, solo el JSON. TODO el texto de tu respuesta DEBE estar en español."}]
     },
   });
 
@@ -94,7 +94,7 @@ export async function generatePersonalizedWorkout(
     - **Equipo Disponible:** ${input.equipment}
     - **Enfoque Principal:** ${input.workoutFocus}
     - **Duración por Sesión:** ${input.duration} minutos
-    - **Frecuencia Semanal:** ${input.frequency} veces por semana`;
+    - **Frecuencia Semanal:** ${input.frequency} veces por semana}`;
   
   const request = {
     contents: [{ role: 'user', parts: [{ text: userPrompt }] }],

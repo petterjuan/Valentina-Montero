@@ -131,7 +131,7 @@ export default function LeadMagnetSection() {
           ) : (
             <>
               <h2 className="text-3xl font-bold tracking-tight sm:text-4xl font-headline">
-                Consigue tu Guía Gratuita
+                Transforma tu rutina: descarga tu guía gratis
               </h2>
               <p className="mt-4 text-lg text-muted-foreground">
                 Descarga mi guía{" "}
