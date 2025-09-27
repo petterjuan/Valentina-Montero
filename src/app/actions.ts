@@ -1,3 +1,4 @@
+
 "use server";
 
 import { z } from "zod";
@@ -265,7 +266,7 @@ async function fetchShopify(query: string, variables: Record<string, any> = {}) 
 // Data Fetching Actions
 async function fetchShopifyBlogPosts(limit: number): Promise<Post[]> {
   try {
-    const response: ShopifyArticleResponse = await fetchShopify(ARTICLES_QUERY, { first: limit, blogHandle: "news" });
+    const response: ShopifyArticleResponse = await fetchShopify(ARTICLES_QUERY, { first: limit, blogHandle: "blog-de-fitness-y-bienestar" });
     const articles = response.data.blog.articles.nodes;
 
     if (!articles) return [];
@@ -344,7 +345,7 @@ export async function getBlogPosts(limit: number = 20): Promise<Post[]> {
 }
 
 export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
-    const blogHandle = 'news';
+    const blogHandle = 'blog-de-fitness-y-bienestar';
 
     // 1. Try to fetch from Shopify first, as it's the priority source.
     try {
@@ -679,3 +680,5 @@ export async function getSystemStatuses(): Promise<SystemStatus> {
         mongoData: mongoDataStatus,
     };
 }
+
+    
