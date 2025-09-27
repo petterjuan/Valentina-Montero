@@ -34,7 +34,7 @@ Welcome to the GitHub repository for the VM Fitness Hub, a modern, feature-rich 
 - **Framework**: [Next.js](https://nextjs.org/) (App Router)
 - **Language**: [TypeScript](https://www.typescriptlang.org/)
 - **Styling**: [Tailwind CSS](https://tailwindcss.com/) & [ShadCN UI](https://ui.shadcn.com/)
-- **AI Engine**: [Google Genkit](https://firebase.google.com/docs/genkit) (with Gemini)
+- **AI Engine**: [Google Genkit](https://firebase.google.com/docs/genkit) (with Gemini via Vertex AI)
 - **Databases & Content**: 
     - [Shopify Storefront API](https://shopify.dev/docs/api/storefront) (for products & manual blog posts)
     - [MongoDB](https://www.mongodb.com/) (for AI-generated blog posts & testimonials)
@@ -70,6 +70,8 @@ npm install
 
 Create a file named `.env` in the root of your project and add the following variables. These should also be configured in your hosting provider (e.g., Vercel).
 
+**Important:** The AI features (Workout Generator, AI Blog Posts) require access to Google's AI APIs via Vertex AI. To use these, you must **enable billing** on the associated Google Cloud project (`vm-fitness-hub`). While usage will likely fall within the free tier, this is a platform requirement for API access.
+
 ```env
 # MongoDB Connection (for AI posts & testimonials)
 # Example: mongodb+srv://<user>:<password>@<cluster-url>/<db-name>?retryWrites=true&w=majority
@@ -79,6 +81,10 @@ MONGODB_DB_NAME=
 # Firebase (for Firestore leads & logs)
 # A base64-encoded JSON string of your Firebase service account key
 FIREBASE_SERVICE_ACCOUNT_KEY=
+
+# Google AI (Genkit & Vertex AI)
+# This key is required for Genkit to authenticate with Google's AI services.
+GEMINI_API_KEY=
 
 # Stripe (for payments)
 STRIPE_SECRET_KEY=
