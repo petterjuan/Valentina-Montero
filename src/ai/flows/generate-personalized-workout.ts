@@ -57,7 +57,7 @@ const generateWorkoutPrompt = ai.definePrompt({
     input: { schema: GeneratePersonalizedWorkoutInputSchema },
     output: { schema: GeneratePersonalizedWorkoutOutputSchema },
     // El modelo se especifica aquí. Genkit lo buscará en el proyecto de Vertex AI configurado.
-    model: 'gemini-1.5-flash-preview-0514', 
+    model: 'gemini-1.5-flash', 
     system: "Actúa como una entrenadora personal experta llamada Valentina Montero. Tu tono es motivador, cercano y profesional. Tu única respuesta debe ser un objeto JSON válido que se ajuste al schema proporcionado. No incluyas ningún texto, explicación o formato markdown adicional, solo el JSON. TODO el texto de tu respuesta DEBE estar en español.",
     prompt: `Crea un plan de entrenamiento detallado y estructurado en español basado en las siguientes especificaciones:
     - **Objetivo de Fitness:** {{{fitnessGoal}}}
@@ -94,7 +94,7 @@ const generatePersonalizedWorkoutFlow = ai.defineFlow(
                  return Promise.reject(new Error("La API de Vertex AI necesita ser habilitada en el proyecto de Google Cloud. Por favor, habilítala en la consola de Google Cloud y espera unos minutos."));
             }
         }
-         if (errorMessage.includes('NOT_FOUND') || errorMessage.includes('404')) {
+         if (errorMessage.includes('NOT_FOUND') || errorMessage.includes('404') || errorMessage.includes('does not exist')) {
             return Promise.reject(new Error("El modelo de IA solicitado no está disponible. Es posible que tu proyecto no tenga acceso a este modelo. Contacta al soporte."));
          }
 
@@ -102,3 +102,4 @@ const generatePersonalizedWorkoutFlow = ai.defineFlow(
     }
   }
 );
+
