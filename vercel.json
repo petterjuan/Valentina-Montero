@@ -1,7 +1,17 @@
 {
+  "build": {
+    "env": {
+      "FIREBASE_SERVICE_ACCOUNT_KEY": "@firebase_service_account_key",
+      "MONGODB_URI": "@mongodb_uri",
+      "SHOPIFY_STOREFRONT_ACCESS_TOKEN": "@shopify_storefront_access_token",
+      "SHOPIFY_STORE_DOMAIN": "@shopify_store_domain",
+      "CRON_SECRET": "@cron_secret",
+      "GEMINI_API_KEY": "@gemini_api_key"
+    }
+  },
   "crons": [
     {
-      "path": "/api/cron/generate-post?secret=M9!rF2z#Q7k@pX1vL8d%J6n^H4s&W3y*",
+      "path": "/api/cron/generate-post?secret=${CRON_SECRET}",
       "schedule": "0 10 * * 1"
     }
   ]
