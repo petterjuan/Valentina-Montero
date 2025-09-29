@@ -1,19 +1,45 @@
+// pages/admin/leads.tsx
 import React, { useEffect, useState } from 'react';
-import { getLeadsForAdmin } from '../../app/actions';
+import { getFirestore } from '../../lib/firebase'; // Assuming getFirestore is correctly set up
 import { type Lead } from "@/types";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Users } from "lucide-react";
 
-export default function AdminLeadsPage() {
+// This function should now be defined here or imported from a standard lib file (NOT a server action file)
+async function getLeadsForAdmin(): Promise<Lead[]> {
+  const firestore = getFirestore();
+  if (!firestore) {
+    console.error("Firestore not configured, cannot fetch leads.");
+    return [];
+  }
+  
+  try {
+    const leadsSnapshot = await firestore.collection('leads')
+        .orderBy('createdAt', 'desc')
+        .get();
+        
+    if (leadsSnapshot.empty) {
+      return [];
+    }
+    
+    const leads = leadsSnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        email: data.email,
+        source: data.source || 'N/A',
+        status: data.status || 'N/A',
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+      } as Lead;
+    });
+
+    return leads;
+  } catch (error) {
+    console.error("Error fetching leads from Firestore:", error);
+    return [];
+  }
+}
+
+
+export default function AdminLeads() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -31,79 +57,22 @@ export default function AdminLeadsPage() {
     fetchLeads();
   }, []);
 
-  if (loading) {
-      return (
-          <div className="flex justify-center items-center min-h-screen">
-              <p>Cargando leads...</p>
-          </div>
-      )
-  }
+  if (loading) return <p>Cargando leads...</p>;
 
   return (
-    <section className="py-12 sm:py-16 bg-gray-50/50 min-h-screen">
-      <div className="container mx-auto px-4 md:px-6">
-        <div className="max-w-4xl mx-auto">
-          <header className="mb-8">
-            <h1 className="text-4xl font-bold font-headline text-gray-800">
-              Administración
-            </h1>
-            <p className="mt-2 text-lg text-gray-500">
-              Gestiona los prospectos y las tareas automáticas del sitio.
-            </p>
-          </header>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Lista de Suscriptores
-              </CardTitle>
-              <CardDescription>
-                { leads.length > 0 
-                  ? `Mostrando ${leads.length} prospecto(s) ordenados por fecha de registro.`
-                  : "Aún no hay prospectos registrados."
-                }
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Origen</TableHead>
-                    <TableHead>Estado</TableHead>
-                    <TableHead className="text-right">Fecha de Registro</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {leads.length > 0 ? (
-                    leads.map((lead) => (
-                      <TableRow key={lead.id}>
-                        <TableCell className="font-medium">{lead.email}</TableCell>
-                        <TableCell>{lead.source}</TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">{lead.status}</Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {new Date(lead.createdAt).toLocaleDateString("es-ES", {
-                            year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
-                          })}
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={4} className="h-24 text-center">
-                        No hay prospectos para mostrar.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    </section>
+    <div>
+      <h1>Leads</h1>
+      {leads.length > 0 ? (
+        <ul>
+            {leads.map((lead) => (
+            <li key={lead.id}>
+                {lead.email} - {lead.source} - {new Date(lead.createdAt).toLocaleDateString()}
+            </li>
+            ))}
+        </ul>
+      ) : (
+        <p>No hay leads para mostrar.</p>
+      )}
+    </div>
   );
 }
