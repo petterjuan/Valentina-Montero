@@ -19,17 +19,17 @@ function initializeFirebaseAdmin(): admin.firestore.Firestore | null {
             return firestoreInstance;
         }
 
-        const serviceAccountKeyBase64 = process.env.FIREBASE_SERVICE_ACCOUNT_KEY_BASE64;
-        if (!serviceAccountKeyBase64) {
-            throw new Error("Firebase service account key (FIREBASE_SERVICE_ACCOUNT_KEY_BASE64) is not set in environment variables.");
+        const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+        if (!serviceAccountKey) {
+            throw new Error("Firebase service account key (FIREBASE_SERVICE_ACCOUNT_KEY) is not set in environment variables.");
         }
 
         let serviceAccount: admin.ServiceAccount;
         try {
-            const decodedKey = Buffer.from(serviceAccountKeyBase64, 'base64').toString('utf-8');
-            serviceAccount = JSON.parse(decodedKey);
+            // Directly parse the JSON string from the environment variable
+            serviceAccount = JSON.parse(serviceAccountKey);
         } catch (e) {
-            throw new Error("Failed to parse Firebase service account key. It is not valid Base64-encoded JSON.");
+            throw new Error("Failed to parse Firebase service account key. The environment variable does not contain valid JSON.");
         }
         
         admin.initializeApp({
