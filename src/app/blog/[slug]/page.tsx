@@ -1,5 +1,5 @@
 
-import { getBlogPostBySlug, getBlogPosts } from "@/app/actions";
+import { getBlogPostBySlug } from "@/app/actions";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, Download, Eye, Bot, Building } from "lucide-react";
@@ -12,14 +12,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 
 export const revalidate = 60; // Revalidate every 60 seconds
-
-export async function generateStaticParams() {
-  const posts = await getBlogPosts(20); // Get recent posts to generate static pages
-  if (!posts) return [];
-  return posts.map((post) => ({
-    slug: post.slug,
-  }));
-}
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const post = await getBlogPostBySlug(params.slug);
