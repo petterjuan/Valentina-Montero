@@ -3,7 +3,7 @@
 
 import { useForm, Controller } from "react-hook-form";
 import { Button } from "@/components/ui/button";
-import { generatePersonalizedWorkout, GeneratePersonalizedWorkoutInput, GeneratePersonalizedWorkoutOutput } from "@/ai/flows/generate-personalized-workout";
+import type { GeneratePersonalizedWorkoutInput, GeneratePersonalizedWorkoutOutput } from "@/ai/flows/generate-personalized-workout";
 import { logEvent } from "@/lib/logger";
 import { useState, useTransition } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -71,7 +71,16 @@ export default function AiGeneratorSection() {
         let workoutData = formResult.data;
 
         if (!workoutData || !isUnlocking) {
-            workoutData = await generatePersonalizedWorkout(data);
+            const response = await fetch('/api/generate-workout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+            });
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to generate workout.');
+            }
+            workoutData = await response.json();
         }
         
         if (isUnlocking && data.email) {

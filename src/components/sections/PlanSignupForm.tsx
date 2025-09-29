@@ -4,7 +4,6 @@
 import { useForm, SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { processPlanSignup } from "@/ai/flows/plan-signup-flow";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -51,44 +50,34 @@ export default function PlanSignupForm({ plan, onSubmitted }: PlanSignupFormProp
         ...data,
         planName: plan.title,
         planPrice: plan.price,
+        isDigital: plan.isDigital,
       };
 
-      // For digital products, we still use the AI flow which handles Stripe
-      if (plan.isDigital) {
-        const result = await processPlanSignup({
-            ...planData,
-            isDigital: plan.isDigital,
-        });
+      const response = await fetch('/api/process-signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(planData),
+      });
 
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'No se pudo procesar la solicitud.');
+      }
+      
+      const result = await response.json();
+
+      if (plan.isDigital) {
         if (result.stripeCheckoutUrl) {
-            window.location.href = result.stripeCheckoutUrl;
+          window.location.href = result.stripeCheckoutUrl;
         } else {
-            // This case should ideally not happen for digital products
-            setIsSubmitting(false);
-            setIsSubmitted(true);
-            toast({
-                title: "¡Solicitud Recibida!",
-                description: "Procesando tu compra.",
-            });
+          setIsSubmitting(false);
+          setIsSubmitted(true);
+          toast({ title: "¡Solicitud Recibida!", description: "Procesando tu compra." });
         }
       } else {
-        // For coaching plans, call the new API route to save to Firestore
-        const response = await fetch('/api/signups', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(planData),
-        });
-
-        if (!response.ok) {
-            throw new Error('No se pudo procesar la inscripción.');
-        }
-
         setIsSubmitting(false);
         setIsSubmitted(true);
-        toast({
-            title: "¡Solicitud Recibida!",
-            description: "Revisa tu correo para los siguientes pasos.",
-        });
+        toast({ title: "¡Solicitud Recibida!", description: "Revisa tu correo para los siguientes pasos." });
       }
     } catch(error: any) {
         setIsSubmitting(false);
