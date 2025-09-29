@@ -39,6 +39,7 @@ const generateBlogPostPrompt = ai.definePrompt({
     name: 'generateBlogPostPrompt',
     input: { schema: GenerateBlogPostInputSchema },
     output: { schema: GenerateBlogPostOutputSchema },
+    model: 'gemini-1.5-flash',
     system: "Responde únicamente con el objeto JSON solicitado, sin texto adicional, explicaciones o formato markdown.",
     prompt: `
         Actúa como Valentina Montero, una experta en fitness, nutrición y coach personal con un tono cercano, motivador y profesional. Tu tarea es escribir un artículo de blog completo para su sitio web.
