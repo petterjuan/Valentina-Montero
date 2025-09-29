@@ -9,7 +9,7 @@ import optimizationCopy from '@/lib/optimization-copy.json';
 import placeholderImages from '@/lib/placeholder-images.json';
 import PlanSignupDialog from '@/components/sections/PlanSignupDialog';
 import type { Program } from '@/components/sections/CoachingProgramsSection';
-import { logConversion } from '@/app/ai-actions';
+import { logConversion } from '@/ai-actions';
 
 const productOffer: Program = {
   title: 'Guía PDF "Muscle Bites"',
