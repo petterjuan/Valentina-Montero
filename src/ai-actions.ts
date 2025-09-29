@@ -56,6 +56,7 @@ export async function handleAiGeneration(
             focus: validatedInput.workoutFocus,
           },
           updatedAt: now,
+          createdAt: now,
         };
         
         await leadRef.set(leadData, { merge: true });

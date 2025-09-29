@@ -6,7 +6,6 @@ import { processPlanSignup, PlanSignupInput } from "@/ai/flows/plan-signup-flow"
 import { z } from "zod";
 import { getFirestore } from "@/lib/firebase";
 import { logEvent } from "@/lib/logger";
-import crypto from 'crypto';
 
 // Schemas
 const leadSchema = z.object({
@@ -45,8 +44,7 @@ export async function handleAiGeneration(
       const firestore = getFirestore();
       if (firestore) {
         const now = new Date();
-        const safeId = crypto.createHash("sha256").update(validatedInput.email.toLowerCase()).digest("hex");
-        const leadRef = firestore.collection("leads").doc(safeId);
+        const leadRef = firestore.collection("leads").doc(validatedInput.email.toLowerCase());
 
         const leadData = {
           email: validatedInput.email,
@@ -58,7 +56,6 @@ export async function handleAiGeneration(
             focus: validatedInput.workoutFocus,
           },
           updatedAt: now,
-          createdAt: now,
         };
         
         await leadRef.set(leadData, { merge: true });
@@ -134,8 +131,7 @@ export async function handleLeadSubmission(formData: { email: string }) {
     }
 
     const now = new Date();
-    const safeId = crypto.createHash("sha256").update(email.toLowerCase()).digest("hex");
-    const leadRef = firestore.collection("leads").doc(safeId);
+    const leadRef = firestore.collection("leads").doc(email.toLowerCase());
 
     const leadData = {
       email,
