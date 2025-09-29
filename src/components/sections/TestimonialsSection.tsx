@@ -1,7 +1,11 @@
+
+"use client";
+
 import { getTestimonials } from "@/app/actions";
 import type { Testimonial } from "@/types";
 import TestimonialsCarousel from "./TestimonialsCarousel";
 import placeholderImages from "@/lib/placeholder-images.json";
+import { useEffect, useState } from "react";
 
 const fallbackTestimonials: Omit<Testimonial, "_id" | "id">[] = [
   {
@@ -27,22 +31,25 @@ const fallbackTestimonials: Omit<Testimonial, "_id" | "id">[] = [
   },
 ];
 
-export default async function TestimonialsSection() {
-    let testimonials: (Testimonial | Omit<Testimonial, "id" | "_id">)[] = [];
+export default function TestimonialsSection() {
+    const [testimonials, setTestimonials] = useState<(Testimonial | Omit<Testimonial, "id" | "_id">)[]>([]);
 
-    try {
-        const fetchedTestimonials = await getTestimonials();
-        if (fetchedTestimonials && fetchedTestimonials.length > 0) {
-            testimonials = fetchedTestimonials;
-        } else {
-            // This case can mean empty collection or an issue, we rely on fallback
-            testimonials = fallbackTestimonials;
+    useEffect(() => {
+      async function fetchTestimonials() {
+        try {
+            const fetchedTestimonials = await getTestimonials();
+            if (fetchedTestimonials && fetchedTestimonials.length > 0) {
+                setTestimonials(fetchedTestimonials);
+            } else {
+                setTestimonials(fallbackTestimonials);
+            }
+        } catch(e) {
+            console.error(`[TestimonialsSection] Could not fetch testimonials, will use fallback data.`);
+            setTestimonials(fallbackTestimonials);
         }
-    } catch(e) {
-        // Errors are logged in the action, here we just ensure fallback.
-        console.error(`[TestimonialsSection] Could not fetch testimonials, will use fallback data.`);
-        testimonials = fallbackTestimonials;
-    }
+      }
+      fetchTestimonials();
+    }, []);
 
   return (
     <section id="testimonials" className="py-16 sm:py-24 bg-secondary">

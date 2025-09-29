@@ -1,9 +1,10 @@
+
 "use client";
 
 import { useForm, SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { handlePlanSignup } from "@/ai-actions";
+import { processPlanSignup } from "@/ai/flows/plan-signup-flow";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -46,33 +47,31 @@ export default function PlanSignupForm({ plan, onSubmitted }: PlanSignupFormProp
 
   const onSubmit: SubmitHandler<SignupFormData> = async (data) => {
     setIsSubmitting(true);
-    const result = await handlePlanSignup({
-      ...data,
-      planName: plan.title,
-      planPrice: plan.price,
-      isDigital: plan.isDigital,
-    });
-    
-
-    if (result.error) {
-      setIsSubmitting(false);
-      
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: result.error,
-      });
-    } else {
-      if(result.data?.stripeCheckoutUrl){
-        window.location.href = result.data.stripeCheckoutUrl;
-      } else {
-        setIsSubmitting(false);
-        setIsSubmitted(true);
-        toast({
-            title: "¡Solicitud Recibida!",
-            description: "Revisa tu correo para los siguientes pasos.",
+    try {
+        const result = await processPlanSignup({
+            ...data,
+            planName: plan.title,
+            planPrice: plan.price,
+            isDigital: plan.isDigital,
         });
-      }
+
+        if (result.stripeCheckoutUrl) {
+            window.location.href = result.stripeCheckoutUrl;
+        } else {
+            setIsSubmitting(false);
+            setIsSubmitted(true);
+            toast({
+                title: "¡Solicitud Recibida!",
+                description: "Revisa tu correo para los siguientes pasos.",
+            });
+        }
+    } catch(error: any) {
+        setIsSubmitting(false);
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: error.message || "No se pudo procesar la solicitud.",
+        });
     }
   };
   

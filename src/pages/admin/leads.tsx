@@ -1,14 +1,25 @@
-// pages/admin/leads.tsx
-import React, { useEffect, useState } from 'react';
-import { getFirestore } from '../../lib/firebase'; // Assuming getFirestore is correctly set up
-import { type Lead } from "@/types";
 
-// This function should now be defined here or imported from a standard lib file (NOT a server action file)
+import React, { useEffect, useState } from 'react';
+import { getFirestore } from '../../lib/firebase';
+import { type Lead } from "@/types";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Users } from "lucide-react";
+
+
 async function getLeadsForAdmin(): Promise<Lead[]> {
   const firestore = getFirestore();
   if (!firestore) {
     console.error("Firestore not configured, cannot fetch leads.");
-    return [];
+    throw new Error("La base de datos de Firestore no está disponible.");
   }
   
   try {
@@ -34,22 +45,24 @@ async function getLeadsForAdmin(): Promise<Lead[]> {
     return leads;
   } catch (error) {
     console.error("Error fetching leads from Firestore:", error);
-    return [];
+    throw new Error("No se pudieron cargar los prospectos desde la base de datos.");
   }
 }
 
 
-export default function AdminLeads() {
+export default function AdminLeadsPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchLeads() {
       try {
+        setLoading(true);
         const data = await getLeadsForAdmin();
         setLeads(data);
-      } catch (err) {
-        console.error(err);
+      } catch (err: any) {
+        setError(err.message || 'Ocurrió un error desconocido.');
       } finally {
         setLoading(false);
       }
@@ -57,22 +70,77 @@ export default function AdminLeads() {
     fetchLeads();
   }, []);
 
-  if (loading) return <p>Cargando leads...</p>;
-
   return (
-    <div>
-      <h1>Leads</h1>
-      {leads.length > 0 ? (
-        <ul>
-            {leads.map((lead) => (
-            <li key={lead.id}>
-                {lead.email} - {lead.source} - {new Date(lead.createdAt).toLocaleDateString()}
-            </li>
-            ))}
-        </ul>
-      ) : (
-        <p>No hay leads para mostrar.</p>
-      )}
-    </div>
+    <section className="py-12 sm:py-16 bg-gray-50/50 min-h-screen">
+      <div className="container mx-auto px-4 md:px-6">
+        <div className="max-w-4xl mx-auto">
+          <header className="mb-8">
+            <h1 className="text-4xl font-bold font-headline text-gray-800">
+              Administración
+            </h1>
+            <p className="mt-2 text-lg text-gray-500">
+              Gestiona los prospectos y las tareas automáticas del sitio.
+            </p>
+          </header>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Lista de Suscriptores
+              </CardTitle>
+              <CardDescription>
+                { loading
+                  ? "Cargando prospectos..."
+                  : `${leads.length} prospecto(s) ordenados por fecha de registro.`
+                }
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="h-24 text-center flex items-center justify-center">Cargando...</div>
+              ) : error ? (
+                <div className="h-24 text-center flex items-center justify-center text-destructive">{error}</div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Origen</TableHead>
+                      <TableHead>Estado</TableHead>
+                      <TableHead className="text-right">Fecha de Registro</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {leads.length > 0 ? (
+                      leads.map((lead) => (
+                        <TableRow key={lead.id}>
+                          <TableCell className="font-medium">{lead.email}</TableCell>
+                          <TableCell>{lead.source}</TableCell>
+                          <TableCell>
+                            <Badge variant="secondary">{lead.status}</Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {new Date(lead.createdAt).toLocaleDateString("es-ES", {
+                              year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                            })}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={4} className="h-24 text-center">
+                          No hay prospectos para mostrar.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </section>
   );
 }

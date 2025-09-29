@@ -1,3 +1,6 @@
+
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -11,17 +14,22 @@ import {
 import { Button } from "@/components/ui/button";
 import { getBlogPosts } from "@/app/actions";
 import { Post } from "@/types";
+import { useEffect, useState } from "react";
 
-export default async function BlogSection() {
-  let displayPosts: Post[] = [];
+export default function BlogSection() {
+  const [displayPosts, setDisplayPosts] = useState<Post[]>([]);
 
-  try {
-    // Fetch the 3 most recent posts from Shopify
-    displayPosts = await getBlogPosts(3);
-  } catch (e) {
-     // Errors are logged in the action, here we just ensure the section doesn't crash.
-     console.error(`[BlogSection] Could not fetch posts from Shopify, section will be empty.`);
-  }
+  useEffect(() => {
+    async function fetchPosts() {
+      try {
+        const posts = await getBlogPosts(3);
+        setDisplayPosts(posts);
+      } catch (e) {
+        console.error(`[BlogSection] Could not fetch posts, section will be empty.`, e);
+      }
+    }
+    fetchPosts();
+  }, []);
 
   return (
     <section id="blog" className="py-16 sm:py-24 bg-background">

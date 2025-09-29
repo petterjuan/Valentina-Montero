@@ -1,4 +1,6 @@
 
+"use client";
+
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -14,6 +16,7 @@ import Image from "next/image";
 import { getPrograms } from "@/app/actions";
 import placeholderImages from "@/lib/placeholder-images.json";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 export interface Program {
   title: string;
@@ -74,23 +77,33 @@ interface CoachingProgramsSectionProps {
   maxProducts?: number;
 }
 
-export default async function CoachingProgramsSection({
+export default function CoachingProgramsSection({
   collectionHandle = "coaching-programs",
   title = "¿Lista para Comprometerte?",
   description = "Elige el plan que mejor se adapte a tus metas. Empecemos este viaje juntas.",
   maxProducts = 10,
 }: CoachingProgramsSectionProps) {
   
-  let fetchedPrograms: Program[] | null = null;
-  
-  try {
-    fetchedPrograms = await getPrograms(collectionHandle, maxProducts);
-  } catch (e) {
-    console.error(`[CoachingProgramsSection] Error fetching programs, using fallback. Error: ${e instanceof Error ? e.message : String(e)}`);
-  }
-  
-  const displayPrograms = (fetchedPrograms && fetchedPrograms.length > 0) ? fetchedPrograms : fallbackPrograms;
-  const connectionFailed = fetchedPrograms === null;
+  const [displayPrograms, setDisplayPrograms] = useState<Program[]>([]);
+  const [connectionFailed, setConnectionFailed] = useState(false);
+
+  useEffect(() => {
+    async function fetchPrograms() {
+      try {
+        const fetchedPrograms = await getPrograms(collectionHandle, maxProducts);
+        if (fetchedPrograms && fetchedPrograms.length > 0) {
+          setDisplayPrograms(fetchedPrograms);
+        } else {
+          setDisplayPrograms(fallbackPrograms);
+        }
+      } catch (e) {
+        console.error(`[CoachingProgramsSection] Error fetching programs, using fallback. Error: ${e instanceof Error ? e.message : String(e)}`);
+        setDisplayPrograms(fallbackPrograms);
+        setConnectionFailed(true);
+      }
+    }
+    fetchPrograms();
+  }, [collectionHandle, maxProducts]);
 
 
   return (

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useForm, type SubmitHandler } from "react-hook-form";
@@ -15,9 +16,9 @@ import {
 } from "@/components/ui/form";
 import { useState } from "react";
 import { Check, Gift, Loader2, Sparkles } from "lucide-react";
-import { handleLeadSubmission } from "@/ai-actions";
 import PlanSignupDialog from "./PlanSignupDialog";
 import type { Program } from "./CoachingProgramsSection";
+import { getFirestore } from "@/lib/firebase";
 
 const FormSchema = z.object({
   email: z.string().email({ message: "Por favor, introduce un email válido." }),
@@ -63,28 +64,43 @@ export default function LeadMagnetSection() {
 
   const onSubmit: SubmitHandler<FormData> = async (data) => {
     setStatus('submitting');
-    const result = await handleLeadSubmission(data);
-    
-    if (result.success && result.downloadUrl) {
+    try {
+        const firestore = getFirestore();
+        if (firestore) {
+            const leadRef = firestore.collection('leads').doc(data.email);
+            await leadRef.set({
+                email: data.email,
+                source: "Guía Gratuita - 10k Pasos",
+                status: 'subscribed',
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            }, { merge: true });
+        }
+        
+        // This is a public URL to a placeholder PDF.
+        // In a real application, this would be a signed URL from a secure storage bucket.
+        const downloadUrl = "/Estrategias-para-lograr-10k-pasos-al-dia.pdf";
+
         setStatus('success');
         toast({
             title: "¡Guía en camino!",
             description: "Tu descarga ha comenzado. ¡Revisa la oferta especial de agradecimiento!",
         });
         
-        triggerDownload(result.downloadUrl);
+        triggerDownload(downloadUrl);
         form.reset();
 
         setTimeout(() => {
             setIsSubmitted(true);
             setStatus('idle');
         }, 1500); // Wait 1.5 seconds to show success state before showing tripwire
-    } else {
+    } catch (error) {
         setStatus('idle');
+        const message = error instanceof Error ? error.message : "No se pudo completar la solicitud.";
         toast({
             variant: "destructive",
             title: "¡Uy! Algo salió mal.",
-            description: result.message,
+            description: message,
         });
     }
   };

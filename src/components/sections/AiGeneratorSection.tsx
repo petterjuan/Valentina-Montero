@@ -1,8 +1,10 @@
+
 "use client";
 
 import { useForm, Controller } from "react-hook-form";
 import { Button } from "@/components/ui/button";
-import { handleAiGeneration, type AiGeneratorFormState } from "@/ai-actions";
+import { generatePersonalizedWorkout, GeneratePersonalizedWorkoutInput, GeneratePersonalizedWorkoutOutput } from "@/ai/flows/generate-personalized-workout";
+import { logEvent } from "@/lib/logger";
 import { useState, useTransition } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Wand2, AlertTriangle, Dumbbell, Calendar, Brain, Utensils, Lock, Sparkles, Loader2, Target, Flame, Activity, Shield, CheckCircle } from "lucide-react";
@@ -16,6 +18,7 @@ import { Form, FormControl, FormField, FormItem, FormMessage } from "@/component
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
+import { getFirestore } from "@/lib/firebase";
 
 const aiGeneratorClientSchema = z.object({
   fitnessGoal: z.string().min(1, "El objetivo de fitness es requerido"),
@@ -29,10 +32,15 @@ const aiGeneratorClientSchema = z.object({
 
 type AiGeneratorFormData = z.infer<typeof aiGeneratorClientSchema>;
 
+interface AiGeneratorFormState {
+    data?: GeneratePersonalizedWorkoutOutput;
+    error?: string;
+    isFullPlan: boolean;
+}
+
 const initialState: AiGeneratorFormState = {
     data: undefined,
     error: undefined,
-    inputs: undefined,
     isFullPlan: false,
 };
 
@@ -59,21 +67,38 @@ export default function AiGeneratorSection() {
 
   const handleFormSubmit = (data: AiGeneratorFormData) => {
     startTransition(async () => {
-      // This is the "unlock" flow. We have the user's email and the existing plan.
-      // We pass the new form data (which includes the email) and the existing workout data back to the action.
-      if (formResult.data && !formResult.isFullPlan && data.email) {
-        const result = await handleAiGeneration(data, formResult.data);
-        if (result.error) {
-           toast({ variant: "destructive", title: "Error", description: result.error });
+      try {
+        const isUnlocking = formResult.data && !formResult.isFullPlan && data.email;
+        let workoutData = formResult.data;
+
+        if (!workoutData || !isUnlocking) {
+            workoutData = await generatePersonalizedWorkout(data);
         }
-        setFormResult(result);
-      } else {
-        // This is the "preview" generation flow.
-        const result = await handleAiGeneration(data);
-        if (result.error) {
-           toast({ variant: "destructive", title: "Error", description: result.error });
+        
+        if (isUnlocking && data.email) {
+            const firestore = getFirestore();
+            if (firestore) {
+                const leadRef = firestore.collection('leads').doc(data.email);
+                await leadRef.set({
+                    email: data.email,
+                    source: 'Generador IA',
+                    status: 'subscribed',
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                }, { merge: true });
+            }
         }
-        setFormResult(result);
+
+        setFormResult({
+            data: workoutData,
+            isFullPlan: !!data.email,
+            error: undefined
+        });
+
+      } catch (error: any) {
+        const errorMessage = error.message || 'Ocurrió un error al generar tu plan.';
+        toast({ variant: "destructive", title: "Error", description: errorMessage });
+        setFormResult({ ...initialState, error: errorMessage });
       }
     });
   };
@@ -479,3 +504,4 @@ export default function AiGeneratorSection() {
     </section>
   );
 }
+
