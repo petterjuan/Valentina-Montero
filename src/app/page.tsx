@@ -1,3 +1,4 @@
+
 import AiGeneratorSection from "@/components/sections/AiGeneratorSection";
 import BlogSection from "@/components/sections/BlogSection";
 import CoachingProgramsSection from "@/components/sections/CoachingProgramsSection";
