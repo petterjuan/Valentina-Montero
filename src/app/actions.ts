@@ -534,15 +534,21 @@ type Status = {
     
 async function checkFirebase(): Promise<Status> {
   try {
+    console.log("[Troubleshoot] Attempting to get Firestore instance...");
     const firestore = getFirestore();
+    console.log("[Troubleshoot] getFirestore() called.");
+    
     if (!firestore) {
+       console.error("[Troubleshoot] getFirestore() returned null.");
        return {
             status: "error" as const,
             message: `La inicialización de Firebase falló. Revisa los logs del servidor para ver el error. Asegúrate de que <b>FIREBASE_SERVICE_ACCOUNT_KEY</b> esté configurada correctamente.`,
         };
     }
     
+    console.log("[Troubleshoot] Firestore instance received. Pinging collections...");
     await firestore.listCollections();
+    console.log("[Troubleshoot] Firestore ping successful.");
     
     // This is a roundabout way to get the project ID from the service account
     // if it's not available in the environment directly.
@@ -550,16 +556,22 @@ async function checkFirebase(): Promise<Status> {
     try {
         const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
         if (serviceAccountKey) {
-            const decodedKey = Buffer.from(serviceAccountKey, 'base64').toString('utf-8');
-            const serviceAccount = JSON.parse(decodedKey);
-            projectId = serviceAccount.project_id || projectId;
+            // Attempt to parse as JSON or Base64-decoded JSON
+            let decodedKey;
+            try {
+                decodedKey = JSON.parse(serviceAccountKey);
+            } catch (e) {
+                decodedKey = JSON.parse(Buffer.from(serviceAccountKey, 'base64').toString('utf-8'));
+            }
+            projectId = decodedKey.project_id || projectId;
         }
     } catch (e) {
-      console.warn("Could not determine Firebase project ID for display.");
+      console.warn("[Troubleshoot] Could not determine Firebase project ID for display.");
     }
 
     return { status: "success" as const, message: `Conectado exitosamente al proyecto de Firebase: <b>${projectId}</b>.` };
   } catch (error: any) {
+    console.error("[Troubleshoot] checkFirebase() caught an error:", error);
     let errorMessage = `Falló la conexión a Firestore. Error: ${error.message}`;
     if (error.code === 'ENOTFOUND' || (error.message && error.message.includes('ENOTFOUND'))) {
        errorMessage = `No se pudo conectar al host de Firestore. Revisa tu conexión a internet o la configuración de red.`;

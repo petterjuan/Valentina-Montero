@@ -6,6 +6,7 @@ import * as admin from 'firebase-admin';
 
 if (!admin.apps.length) {
   try {
+    console.log("Initializing Firebase Admin SDK...");
     const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
     if (!serviceAccountKey) {
       throw new Error("Firebase service account key (FIREBASE_SERVICE_ACCOUNT_KEY) is not set in environment variables.");
@@ -28,6 +29,7 @@ if (!admin.apps.length) {
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
     });
+    console.log("Firebase Admin SDK initialized successfully.");
   } catch (error) {
     // Log the error for debugging but don't prevent the app from running if Firebase is not needed for a specific page.
     console.error('Firebase admin initialization error:', error);
