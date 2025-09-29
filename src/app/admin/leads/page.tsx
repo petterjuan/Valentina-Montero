@@ -1,4 +1,3 @@
-
 import { getLeadsForAdmin } from "@/app/actions";
 import {
   Table,
@@ -12,6 +11,11 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Users } from "lucide-react";
 import { type Lead } from "@/types";
+
+// Force this page to be rendered dynamically on the server for every request.
+// This prevents Next.js from trying to statically generate it at build time,
+// which would fail because it needs runtime environment variables for Firebase.
+export const dynamic = 'force-dynamic';
 
 // This page is now a Server Component for enhanced security.
 // It fetches data on the server and renders the page, preventing client-side data exposure.
@@ -86,7 +90,3 @@ export default async function AdminLeadsPage() {
     </section>
   );
 }
-
-    
-
-    
