@@ -165,20 +165,26 @@ export async function logConversion(variationId: string) {
     try {
         const firestore = getFirestore();
         if (!firestore) {
-            throw new Error("Firestore not available");
+            // Log to console if Firestore isn't available, but don't throw an error to the client.
+            console.warn('Logger: Firestore not available. Could not log conversion.', { variationId });
+            return { success: false, error: 'Logging service unavailable.' };
         }
 
         const conversionData = {
             variationId,
             clickedAt: new Date(),
+            page: '/muscle-bites',
         };
 
         await firestore.collection('conversions').add(conversionData);
 
         return { success: true };
     } catch (error) {
-        console.error('Failed to log conversion:', error);
+        // Log the detailed error on the server for debugging
+        console.error('Failed to log conversion to Firestore:', error);
         logEvent('Conversion Logging Failed', { variationId, error: error instanceof Error ? error.message : String(error) }, 'error');
-        return { success: false, error: 'Failed to log conversion.' };
+        
+        // Return a generic error to the client
+        return { success: false, error: 'Failed to log conversion event.' };
     }
 }
