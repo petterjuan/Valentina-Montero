@@ -1,6 +1,5 @@
 
 import React, { useEffect, useState } from 'react';
-import { getFirestore } from '../../lib/firebase';
 import { type Lead } from "@/types";
 import {
   Table,
@@ -14,42 +13,6 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Users } from "lucide-react";
 
-
-async function getLeadsForAdmin(): Promise<Lead[]> {
-  const firestore = getFirestore();
-  if (!firestore) {
-    console.error("Firestore not configured, cannot fetch leads.");
-    throw new Error("La base de datos de Firestore no está disponible.");
-  }
-  
-  try {
-    const leadsSnapshot = await firestore.collection('leads')
-        .orderBy('createdAt', 'desc')
-        .get();
-        
-    if (leadsSnapshot.empty) {
-      return [];
-    }
-    
-    const leads = leadsSnapshot.docs.map(doc => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        email: data.email,
-        source: data.source || 'N/A',
-        status: data.status || 'N/A',
-        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
-      } as Lead;
-    });
-
-    return leads;
-  } catch (error) {
-    console.error("Error fetching leads from Firestore:", error);
-    throw new Error("No se pudieron cargar los prospectos desde la base de datos.");
-  }
-}
-
-
 export default function AdminLeadsPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
@@ -59,7 +22,12 @@ export default function AdminLeadsPage() {
     async function fetchLeads() {
       try {
         setLoading(true);
-        const data = await getLeadsForAdmin();
+        const response = await fetch('/api/leads');
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to fetch leads');
+        }
+        const data = await response.json();
         setLeads(data);
       } catch (err: any) {
         setError(err.message || 'Ocurrió un error desconocido.');
