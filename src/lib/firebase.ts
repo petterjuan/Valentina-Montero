@@ -29,7 +29,7 @@ function initializeFirebaseAdmin(): admin.firestore.Firestore | null {
             // Directly parse the JSON string from the environment variable
             serviceAccount = JSON.parse(serviceAccountKey);
         } catch (e) {
-            throw new Error("Failed to parse Firebase service account key. The environment variable does not contain valid JSON.");
+            throw new Error("Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY. The environment variable does not contain valid JSON.");
         }
         
         admin.initializeApp({

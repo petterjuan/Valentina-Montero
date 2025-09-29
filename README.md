@@ -79,7 +79,7 @@ MONGODB_URI=
 MONGODB_DB_NAME=
 
 # Firebase (for Firestore leads & logs)
-# The complete JSON content of your Firebase service account key
+# The complete JSON content of your Firebase service account key, as a single-line string.
 FIREBASE_SERVICE_ACCOUNT_KEY=
 
 # Google AI (Genkit & Vertex AI)
