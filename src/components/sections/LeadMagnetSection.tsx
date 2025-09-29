@@ -17,8 +17,7 @@ import {
 import { useState } from "react";
 import { Check, Gift, Loader2, Sparkles } from "lucide-react";
 import PlanSignupDialog from "./PlanSignupDialog";
-import type { Program } from "./CoachingProgramsSection";
-import { getFirestore } from "@/lib/firebase";
+import type { Program } from "@/types";
 
 const FormSchema = z.object({
   email: z.string().email({ message: "Por favor, introduce un email válido." }),
@@ -65,17 +64,19 @@ export default function LeadMagnetSection() {
   const onSubmit: SubmitHandler<FormData> = async (data) => {
     setStatus('submitting');
     try {
-        const firestore = getFirestore();
-        if (firestore) {
-            const leadRef = firestore.collection('leads').doc(data.email);
-            await leadRef.set({
-                email: data.email,
-                source: "Guía Gratuita - 10k Pasos",
-                status: 'subscribed',
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            }, { merge: true });
-        }
+      // Call the new API route instead of using firebase-admin on the client
+      const response = await fetch('/api/leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: data.email,
+          source: 'Guía Gratuita - 10k Pasos',
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('No se pudo registrar el correo.');
+      }
         
         // This is a public URL to a placeholder PDF.
         // In a real application, this would be a signed URL from a secure storage bucket.
@@ -191,3 +192,5 @@ export default function LeadMagnetSection() {
     </section>
   );
 }
+
+    

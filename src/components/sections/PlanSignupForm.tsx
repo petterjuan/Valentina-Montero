@@ -13,8 +13,7 @@ import { CheckCircle, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import type { Program } from "./CoachingProgramsSection";
-
+import type { Program } from "@/types";
 
 const signupSchema = z.object({
   fullName: z.string().min(3, { message: "El nombre debe tener al menos 3 caracteres." }),
@@ -48,23 +47,49 @@ export default function PlanSignupForm({ plan, onSubmitted }: PlanSignupFormProp
   const onSubmit: SubmitHandler<SignupFormData> = async (data) => {
     setIsSubmitting(true);
     try {
+      const planData = {
+        ...data,
+        planName: plan.title,
+        planPrice: plan.price,
+      };
+
+      // For digital products, we still use the AI flow which handles Stripe
+      if (plan.isDigital) {
         const result = await processPlanSignup({
-            ...data,
-            planName: plan.title,
-            planPrice: plan.price,
+            ...planData,
             isDigital: plan.isDigital,
         });
 
         if (result.stripeCheckoutUrl) {
             window.location.href = result.stripeCheckoutUrl;
         } else {
+            // This case should ideally not happen for digital products
             setIsSubmitting(false);
             setIsSubmitted(true);
             toast({
                 title: "¡Solicitud Recibida!",
-                description: "Revisa tu correo para los siguientes pasos.",
+                description: "Procesando tu compra.",
             });
         }
+      } else {
+        // For coaching plans, call the new API route to save to Firestore
+        const response = await fetch('/api/signups', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(planData),
+        });
+
+        if (!response.ok) {
+            throw new Error('No se pudo procesar la inscripción.');
+        }
+
+        setIsSubmitting(false);
+        setIsSubmitted(true);
+        toast({
+            title: "¡Solicitud Recibida!",
+            description: "Revisa tu correo para los siguientes pasos.",
+        });
+      }
     } catch(error: any) {
         setIsSubmitting(false);
         toast({
@@ -187,3 +212,5 @@ export default function PlanSignupForm({ plan, onSubmitted }: PlanSignupFormProp
     </>
   );
 }
+
+    

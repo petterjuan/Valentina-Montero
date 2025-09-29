@@ -18,7 +18,6 @@ import { Form, FormControl, FormField, FormItem, FormMessage } from "@/component
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
-import { getFirestore } from "@/lib/firebase";
 
 const aiGeneratorClientSchema = z.object({
   fitnessGoal: z.string().min(1, "El objetivo de fitness es requerido"),
@@ -76,17 +75,15 @@ export default function AiGeneratorSection() {
         }
         
         if (isUnlocking && data.email) {
-            const firestore = getFirestore();
-            if (firestore) {
-                const leadRef = firestore.collection('leads').doc(data.email);
-                await leadRef.set({
-                    email: data.email,
-                    source: 'Generador IA',
-                    status: 'subscribed',
-                    createdAt: new Date(),
-                    updatedAt: new Date(),
-                }, { merge: true });
-            }
+            // Call the API route to save the lead
+            await fetch('/api/leads', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                email: data.email,
+                source: 'Generador IA',
+              }),
+            });
         }
 
         setFormResult({
@@ -505,3 +502,4 @@ export default function AiGeneratorSection() {
   );
 }
 
+    
