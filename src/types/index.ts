@@ -25,12 +25,25 @@ export interface Testimonial {
     rating?: number;
 }
 
+export interface Program {
+  title: string;
+  price: number;
+  features: string[];
+  image?: {
+    src: string;
+    alt: string;
+  };
+  isPopular?: boolean;
+  isDigital?: boolean;
+  handle?: string;
+}
+
 export interface Lead {
     id: string;
     email: string;
     source: string;
     status: string;
-    createdAt: Date;
+    createdAt: string; // Changed to string to ensure serializability
 }
 
 export interface LogEntry {
@@ -42,5 +55,7 @@ export interface LogEntry {
 }
 
 // Mongoose document interfaces
-export interface PostDocument extends Omit<Post, 'id' | 'source'>, Document {}
+export interface PostDocument extends Omit<Post, 'id' | 'source' | 'createdAt'>, Document {
+    createdAt: Date;
+}
 export interface TestimonialDocument extends Omit<Testimonial, '_id' | 'id'>, Document {}

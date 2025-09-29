@@ -1,7 +1,6 @@
 
 import { useRouter } from 'next/router';
 import React, { useEffect, useState } from 'react';
-import { getBlogPostBySlug, getBlogPosts } from '../../app/actions';
 import { type Post } from '@/types';
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -23,9 +22,20 @@ export default function BlogPostPage() {
     
     async function fetchPost() {
       setLoading(true);
-      const data = await getBlogPostBySlug(slug as string);
-      setPost(data);
-      setLoading(false);
+      try {
+        const res = await fetch(`/api/posts/${slug}`);
+        if (!res.ok) {
+            setPost(null);
+        } else {
+            const data = await res.json();
+            setPost(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch post", error);
+        setPost(null);
+      } finally {
+        setLoading(false);
+      }
     }
     
     fetchPost();

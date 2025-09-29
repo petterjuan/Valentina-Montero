@@ -12,7 +12,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { getBlogPosts } from "@/app/actions";
 import { Post } from "@/types";
 import { useEffect, useState } from "react";
 
@@ -22,7 +21,11 @@ export default function BlogSection() {
   useEffect(() => {
     async function fetchPosts() {
       try {
-        const posts = await getBlogPosts(3);
+        const response = await fetch('/api/posts?limit=3');
+        if (!response.ok) {
+            throw new Error('Failed to fetch posts');
+        }
+        const posts = await response.json();
         setDisplayPosts(posts);
       } catch (e) {
         console.error(`[BlogSection] Could not fetch posts, section will be empty.`, e);

@@ -1,7 +1,6 @@
 
 "use client";
 
-import { getBlogPosts } from "@/app/actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Post } from "@/types";
@@ -17,7 +16,11 @@ export default function BlogIndexPage() {
     useEffect(() => {
         async function fetchPosts() {
             try {
-                const fetchedPosts = await getBlogPosts(20);
+                const response = await fetch('/api/posts?limit=20');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch posts');
+                }
+                const fetchedPosts = await response.json();
                 setPosts(fetchedPosts);
             } catch(e) {
                 console.error("[BlogIndexPage] Error fetching posts, page will show empty state.", e);

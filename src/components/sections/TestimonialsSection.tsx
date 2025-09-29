@@ -1,7 +1,6 @@
 
 "use client";
 
-import { getTestimonials } from "@/app/actions";
 import type { Testimonial } from "@/types";
 import TestimonialsCarousel from "./TestimonialsCarousel";
 import placeholderImages from "@/lib/placeholder-images.json";
@@ -37,7 +36,12 @@ export default function TestimonialsSection() {
     useEffect(() => {
       async function fetchTestimonials() {
         try {
-            const fetchedTestimonials = await getTestimonials();
+            const response = await fetch('/api/testimonials');
+            if (!response.ok) {
+                throw new Error('Failed to fetch testimonials');
+            }
+            const fetchedTestimonials = await response.json();
+
             if (fetchedTestimonials && fetchedTestimonials.length > 0) {
                 setTestimonials(fetchedTestimonials);
             } else {

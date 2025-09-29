@@ -13,23 +13,10 @@ import {
 import { Check, Clock } from "lucide-react";
 import PlanSignupDialog from "@/components/sections/PlanSignupDialog";
 import Image from "next/image";
-import { getPrograms } from "@/app/actions";
 import placeholderImages from "@/lib/placeholder-images.json";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-
-export interface Program {
-  title: string;
-  price: number;
-  features: string[];
-  image?: {
-    src: string;
-    alt: string;
-  };
-  isPopular?: boolean;
-  isDigital?: boolean;
-  handle?: string;
-}
+import type { Program } from "@/types";
 
 const fallbackPrograms: Program[] = [
     {
@@ -90,7 +77,12 @@ export default function CoachingProgramsSection({
   useEffect(() => {
     async function fetchPrograms() {
       try {
-        const fetchedPrograms = await getPrograms(collectionHandle, maxProducts);
+        const response = await fetch(`/api/programs/${collectionHandle}?maxProducts=${maxProducts}`);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch programs: ${response.statusText}`);
+        }
+        const fetchedPrograms = await response.json();
+        
         if (fetchedPrograms && fetchedPrograms.length > 0) {
           setDisplayPrograms(fetchedPrograms);
         } else {
