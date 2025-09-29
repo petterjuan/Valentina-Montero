@@ -1,17 +1,15 @@
 {
-  "build": {
-    "env": {
-      "FIREBASE_SERVICE_ACCOUNT_KEY": "@firebase_service_account_key",
-      "MONGODB_URI": "@mongodb_uri",
-      "SHOPIFY_STOREFRONT_ACCESS_TOKEN": "@shopify_storefront_access_token",
-      "SHOPIFY_STORE_DOMAIN": "@shopify_store_domain",
-      "CRON_SECRET": "@cron_secret",
-      "GEMINI_API_KEY": "@gemini_api_key"
+  "version": 2,
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/next"
     }
-  },
+  ],
+  "buildCommand": "npm run build",
   "crons": [
     {
-      "path": "/api/cron/generate-post?secret=${CRON_SECRET}",
+      "path": "/api/cron/generate-post?secret=YOUR_CRON_SECRET_HERE",
       "schedule": "0 10 * * 1"
     }
   ]
