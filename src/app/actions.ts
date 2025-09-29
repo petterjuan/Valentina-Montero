@@ -232,3 +232,135 @@ export async function getTestimonials(): Promise<Testimonial[]> {
         return [];
     }
 }
+
+export async function getLeadsForAdmin(): Promise<Lead[]> {
+    const firestore = getFirestore();
+    if (!firestore) {
+      console.error("Firestore not configured, cannot fetch leads.");
+      throw new Error("La base de datos de Firestore no está disponible.");
+    }
+    
+    try {
+      const leadsSnapshot = await firestore.collection('leads')
+          .orderBy('createdAt', 'desc')
+          .get();
+          
+      if (leadsSnapshot.empty) {
+        return [];
+      }
+      
+      const leads = leadsSnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          email: data.email,
+          source: data.source || 'N/A',
+          status: data.status || 'N/A',
+          createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : new Date().toISOString(),
+        } as Lead;
+      });
+  
+      return leads;
+    } catch (error) {
+      console.error("Error fetching leads from Firestore:", error);
+      throw new Error("No se pudieron cargar los prospectos desde la base de datos.");
+    }
+}
+
+export interface SystemStatus {
+  firebase?: { status: 'success' | 'error'; message: string };
+  mongo?: { status: 'success' | 'error'; message: string };
+  mongoData?: { status: 'success' | 'error'; message: string };
+  shopify?: { status: 'success' | 'error'; message: string };
+}
+
+export async function getSystemStatuses(): Promise<SystemStatus> {
+    const statuses: SystemStatus = {};
+
+    // Check Firebase
+    try {
+        const firestore = getFirestore();
+        if (!firestore) {
+            throw new Error("El SDK de Firebase Admin no está inicializado.");
+        }
+        await firestore.collection('system-check').limit(1).get();
+        statuses.firebase = { status: 'success', message: 'Conexión a Firestore exitosa.' };
+    } catch (error: any) {
+        statuses.firebase = { status: 'error', message: `Error de conexión a Firestore: ${error.message}` };
+    }
+
+    // Check MongoDB Connection
+    try {
+        await connectToDb();
+        statuses.mongo = { status: 'success', message: 'Conexión a MongoDB exitosa.' };
+    } catch (error: any) {
+        statuses.mongo = { status: 'error', message: `Error de conexión a MongoDB: ${error.message}` };
+    }
+
+    // Check MongoDB Data Reading
+    if (statuses.mongo?.status === 'success') {
+        try {
+            await TestimonialModel.findOne();
+            statuses.mongoData = { status: 'success', message: 'Lectura de datos de MongoDB exitosa (colección de testimonios).' };
+        } catch (error: any) {
+            statuses.mongoData = { status: 'error', message: `Error al leer datos de MongoDB: ${error.message}` };
+        }
+    } else {
+        statuses.mongoData = { status: 'error', message: 'No se puede intentar la lectura de datos porque la conexión a MongoDB falló.' };
+    }
+
+    // Check Shopify
+    try {
+        const { shop } = await shopifyStorefront.request(`query { shop { name } }`);
+        statuses.shopify = { status: 'success', message: `Conexión a la tienda de Shopify "${shop.name}" exitosa.` };
+    } catch (error: any) {
+        let errorMessage = error instanceof Error ? error.message : String(error);
+        if (errorMessage.includes('Failed to fetch')) {
+          errorMessage = 'No se pudo conectar al API de Shopify. Verifica el dominio de la tienda y el token de acceso.';
+        } else if (errorMessage.includes('401')) {
+          errorMessage = 'No autorizado. El token de acceso de Shopify Storefront es inválido.';
+        }
+        statuses.shopify = { status: 'error', message: `Error de conexión a Shopify: ${errorMessage}` };
+    }
+
+    return statuses;
+}
+
+export async function getLogs(limit: number = 25): Promise<LogEntry[]> {
+    const firestore = getFirestore();
+    if (!firestore) {
+        console.error("Firestore not available, cannot fetch logs.");
+        return [{
+            id: 'local-error',
+            message: 'Firestore no está disponible para obtener los registros.',
+            level: 'error',
+            timestamp: new Date(),
+        }];
+    }
+
+    try {
+        const logsSnapshot = await firestore.collection('logs')
+            .orderBy('timestamp', 'desc')
+            .limit(limit)
+            .get();
+
+        return logsSnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                message: data.message,
+                level: data.level,
+                timestamp: data.timestamp.toDate(),
+                metadata: data.metadata,
+            };
+        });
+    } catch (error: any) {
+        console.error("Error fetching logs from Firestore:", error.message);
+        return [{
+            id: 'fetch-error',
+            message: 'Error al obtener registros de Firestore: ' + error.message,
+            level: 'error',
+            timestamp: new Date(),
+        }];
+    }
+}
