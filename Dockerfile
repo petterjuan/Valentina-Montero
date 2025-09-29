@@ -1,23 +1,24 @@
-# Stage 1: Install dependencies and build
-FROM node:20-alpine AS builder
+# Use Node.js 20
+FROM node:20-alpine
+
+# Set working directory
 WORKDIR /app
+
+# Copy package files and install dependencies
 COPY package*.json ./
-RUN npm install --frozen-lockfile
+RUN npm install
+
+# Copy build-time environment variables
+COPY .env.build .env
+
+# Copy app files
 COPY . .
+
+# Build Next.js app
 RUN npm run build
 
-# Stage 2: Production image
-FROM node:20-alpine AS runner
-WORKDIR /app
-COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/node_modules ./node_modules
-ENV NODE_ENV=production
-ENV PORT=8080
-EXPOSE 8080
+# Start app
 CMD ["npm", "start"]
-
 
 
 
