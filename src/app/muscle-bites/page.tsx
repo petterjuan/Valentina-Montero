@@ -4,7 +4,6 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Flame, Star, Zap, Clock, Shield } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import optimizationCopy from '@/lib/optimization-copy.json';
 import placeholderImages from '@/lib/placeholder-images.json';
 import PlanSignupDialog from '@/components/sections/PlanSignupDialog';
@@ -37,12 +36,7 @@ export default function MuscleBitesPage() {
 
   const copy = optimizationCopy.hero;
   const microcopy = optimizationCopy.microcopy[0];
-  const stickyText = optimizationCopy.stickyCTA[0].text;
   
-  // NOTE: A/B testing and personalization logic has been temporarily disabled 
-  // to ensure a stable build. It can be re-enabled later.
-  const isStickyVisible = false;
-
   const handleCtaClick = (variationId: string) => {
     if (!hasLoggedConversion) {
       logConversion(variationId);
@@ -52,21 +46,6 @@ export default function MuscleBitesPage() {
 
   return (
     <div className="bg-background text-foreground">
-      {/* Sticky Header */}
-      <div className={cn(
-        "fixed top-0 left-0 right-0 z-40 bg-background/80 backdrop-blur-sm shadow-md transition-transform duration-300",
-        isStickyVisible ? "translate-y-0" : "-translate-y-full"
-      )}>
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <span className="font-bold text-lg hidden sm:inline">{stickyText}</span>
-          <PlanSignupDialog program={productOffer}>
-            <Button onClick={() => handleCtaClick(optimizationCopy.stickyCTA[0].id)} className="font-bold w-full sm:w-auto">
-              {copy.cta} {copy.emoji}
-            </Button>
-          </PlanSignupDialog>
-        </div>
-      </div>
-
       {/* Hero Section */}
       <section id="hero-offer" className="relative py-20 md:py-32 text-center">
         <div
