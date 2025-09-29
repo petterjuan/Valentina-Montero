@@ -1,62 +1,42 @@
 {
-  "hero": {
-    "headline": "Esculpe Tu Cuerpo Desde la Cocina",
-    "subheadline": "Únete a 1,500+ personas que usan recetas deliciosas y rápidas para transformar su físico sin sacrificar sabor.",
-    "cta": "¡Quiero Mi Guía Ahora!",
-    "emoji": "💪"
-  },
-  "microcopy": [
-    {
-      "id": "micro_trust_1",
-      "text": "Compra única, acceso de por vida. Resultados garantizados para transformar tu alimentación."
+    "hero": {
+        "headline": "DESBLOQUEA TU POTENCIAL CON 'MUSCLE BITES'",
+        "subheadline": "La guía definitiva de recetas altas en proteína para transformar tu cuerpo, maximizar tu energía y simplificar tu vida.",
+        "cta": "¡OBTÉN MI GUÍA AHORA!",
+        "emoji": "💪"
     },
-    {
-      "id": "micro_social_1",
-      "text": "Únete a más de 1,500 clientes que ya están transformando su cuerpo con estas recetas."
-    },
-    {
-      "id": "micro_urgency_1",
-      "text": "Oferta especial por tiempo limitado. ¡No te quedes fuera y empieza hoy mismo tu cambio!"
-    },
-    {
-      "id": "micro_reassurance_1",
-      "text": "Recetas deliciosas y fáciles de preparar en menos de 20 minutos, perfectas para tu estilo de vida."
+    "microcopy": [
+        {
+            "id": "urgency_1",
+            "text": "¡Oferta especial por tiempo limitado!"
+        },
+        {
+            "id": "social_proof_1",
+            "text": "Únete a cientos que ya están viendo resultados."
+        },
+        {
+            "id": "benefit_1",
+            "text": "Gana músculo, pierde grasa y siéntete increíble."
+        }
+    ],
+    "stickyCTA": [
+        {
+            "id": "sticky_cta_1",
+            "text": "¡Tu transformación empieza aquí!"
+        },
+        {
+            "id": "sticky_cta_2",
+            "text": "No esperes más, consigue tu guía."
+        }
+    ],
+    "personalization": {
+        "time30s": {
+            "microcopy_id": "urgency_1",
+            "text_override": "¿Aún lo estás pensando? ¡Esta oferta no durará!"
+        },
+        "scroll50": {
+            "microcopy_id": "social_proof_1",
+            "text_override": "Ya has visto la mitad. ¡Imagina los resultados!"
+        }
     }
-  ],
-  "stickyCTA": [
-    {
-      "id": "sticky_cta_1",
-      "text": "¡Consigue Tus Recetas!"
-    },
-    {
-      "id": "sticky_cta_2",
-      "text": "Transforma Tu Cuerpo Hoy"
-    }
-  ],
-  "personalization": {
-    "firstTime": {
-      "hero": {
-        "id": "hero_first_time",
-        "headline": "El Secreto Para un Cuerpo Atlético",
-        "subheadline": "Accede a recetas exclusivas que potencian tu energía y definen tus músculos. Come delicioso, entrena potente.",
-        "cta": "Descubrir Muscle Bites"
-      }
-    },
-    "returning": {
-      "hero": {
-        "id": "hero_returning",
-        "headline": "¡Qué Bueno Verte de Nuevo!",
-        "subheadline": "¿Lista para dar el siguiente paso con Muscle Bites y acelerar tus resultados? Tu plan te espera.",
-        "cta": "Finalizar Mi Compra"
-      }
-    },
-    "scroll50": {
-      "microcopy_id": "micro_reassurance_1",
-      "text_override": "Ya viste cómo funciona. Es hora de dejar de leer y empezar a cocinar tu cambio."
-    },
-    "time30s": {
-      "microcopy_id": "micro_urgency_1",
-      "text_override": "Estás a un clic de cambiar tu físico. ¡Aprovecha la oferta ahora!"
-    }
-  }
 }
