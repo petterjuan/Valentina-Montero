@@ -5,8 +5,8 @@ import { generatePersonalizedWorkout, GeneratePersonalizedWorkoutInput, Generate
 import { processPlanSignup, PlanSignupInput } from "@/ai/flows/plan-signup-flow";
 import { z } from "zod";
 import { getFirestore } from "@/lib/firebase";
-import crypto from 'crypto';
 import { logEvent } from "@/lib/logger";
+import crypto from 'crypto';
 
 // Schemas
 const leadSchema = z.object({
@@ -58,6 +58,7 @@ export async function handleAiGeneration(
             focus: validatedInput.workoutFocus,
           },
           updatedAt: now,
+          createdAt: now,
         };
         
         await leadRef.set(leadData, { merge: true });
