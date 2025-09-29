@@ -1,6 +1,6 @@
 import type { AppProps } from 'next/app';
 import { Poppins, Roboto_Mono } from 'next/font/google';
-import '../app/globals.css';
+import '../styles/globals.css';
 import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster';
 import Header from '@/components/layout/Header';
