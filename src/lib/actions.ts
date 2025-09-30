@@ -9,8 +9,6 @@ import { type Lead, type LogEntry, type SystemStatus, type Post, type Program, t
 import { generateBlogPost } from '@/ai/flows/generate-blog-post';
 import { generatePersonalizedWorkout } from '@/ai/flows/generate-personalized-workout';
 import { processPlanSignup } from '@/ai/flows/plan-signup-flow';
-import type { GeneratePersonalizedWorkoutInput, GeneratePersonalizedWorkoutOutput } from '@/ai/flows/generate-personalized-workout';
-import type { PlanSignupInput, PlanSignupOutput } from '@/ai/flows/plan-signup-flow';
 import PostModel from '@/models/Post';
 import TestimonialModel from '@/models/Testimonial';
 import connectToDb from '@/lib/mongoose';
@@ -334,11 +332,6 @@ export async function saveWorkoutLead(
 }
 
 
-export { generatePersonalizedWorkout };
-
-
-export { processPlanSignup };
-
 export async function generateNewBlogPost(): Promise<{ success: boolean, title?: string, slug?: string, error?: string }> {
     try {
         // We get existing titles from both Shopify and MongoDB to avoid duplicates
@@ -485,5 +478,5 @@ export async function getLogs(limit: number = 15): Promise<LogEntry[]> {
         return [];
     }
 }
-
     
+export { generatePersonalizedWorkout, processPlanSignup };
