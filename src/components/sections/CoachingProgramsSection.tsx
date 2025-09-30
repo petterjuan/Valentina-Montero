@@ -1,11 +1,8 @@
 
-"use client";
-
 import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
@@ -15,8 +12,8 @@ import PlanSignupDialog from "@/components/sections/PlanSignupDialog";
 import Image from "next/image";
 import placeholderImages from "@/lib/placeholder-images.json";
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import type { Program } from "@/types";
+import { getPrograms } from "@/app/actions";
 
 const fallbackPrograms: Program[] = [
     {
@@ -64,39 +61,28 @@ interface CoachingProgramsSectionProps {
   maxProducts?: number;
 }
 
-export default function CoachingProgramsSection({
+export default async function CoachingProgramsSection({
   collectionHandle = "coaching-programs",
   title = "¿Lista para Comprometerte?",
   description = "Elige el plan que mejor se adapte a tus metas. Empecemos este viaje juntas.",
   maxProducts = 10,
 }: CoachingProgramsSectionProps) {
   
-  const [displayPrograms, setDisplayPrograms] = useState<Program[]>([]);
-  const [connectionFailed, setConnectionFailed] = useState(false);
+  let displayPrograms: Program[] = [];
+  let connectionFailed = false;
 
-  useEffect(() => {
-    async function fetchPrograms() {
-      try {
-        const response = await fetch(`/api/programs/${collectionHandle}?maxProducts=${maxProducts}`);
-        if (!response.ok) {
-            throw new Error(`Failed to fetch programs: ${response.statusText}`);
-        }
-        const fetchedPrograms = await response.json();
-        
-        if (fetchedPrograms && fetchedPrograms.length > 0) {
-          setDisplayPrograms(fetchedPrograms);
-        } else {
-          setDisplayPrograms(fallbackPrograms);
-        }
-      } catch (e) {
-        console.error(`[CoachingProgramsSection] Error fetching programs, using fallback. Error: ${e instanceof Error ? e.message : String(e)}`);
-        setDisplayPrograms(fallbackPrograms);
-        setConnectionFailed(true);
-      }
+  try {
+    const fetchedPrograms = await getPrograms(collectionHandle, maxProducts);
+    if (fetchedPrograms && fetchedPrograms.length > 0) {
+      displayPrograms = fetchedPrograms;
+    } else {
+      displayPrograms = fallbackPrograms;
     }
-    fetchPrograms();
-  }, [collectionHandle, maxProducts]);
-
+  } catch (e) {
+    console.error(`[CoachingProgramsSection] Error fetching programs, using fallback. Error: ${e instanceof Error ? e.message : String(e)}`);
+    displayPrograms = fallbackPrograms;
+    connectionFailed = true;
+  }
 
   return (
     <section id="programs" className="py-16 sm:py-24 bg-background">

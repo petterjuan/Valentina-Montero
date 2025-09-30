@@ -1,10 +1,8 @@
 
-"use client";
-
 import type { Testimonial } from "@/types";
 import TestimonialsCarousel from "./TestimonialsCarousel";
 import placeholderImages from "@/lib/placeholder-images.json";
-import { useEffect, useState } from "react";
+import { getTestimonials } from "@/app/actions";
 
 const fallbackTestimonials: Omit<Testimonial, "_id" | "id">[] = [
   {
@@ -30,30 +28,20 @@ const fallbackTestimonials: Omit<Testimonial, "_id" | "id">[] = [
   },
 ];
 
-export default function TestimonialsSection() {
-    const [testimonials, setTestimonials] = useState<(Testimonial | Omit<Testimonial, "id" | "_id">)[]>([]);
+export default async function TestimonialsSection() {
+    let testimonials: (Testimonial | Omit<Testimonial, "id" | "_id">)[] = [];
 
-    useEffect(() => {
-      async function fetchTestimonials() {
-        try {
-            const response = await fetch('/api/testimonials');
-            if (!response.ok) {
-                throw new Error('Failed to fetch testimonials');
-            }
-            const fetchedTestimonials = await response.json();
-
-            if (fetchedTestimonials && fetchedTestimonials.length > 0) {
-                setTestimonials(fetchedTestimonials);
-            } else {
-                setTestimonials(fallbackTestimonials);
-            }
-        } catch(e) {
-            console.error(`[TestimonialsSection] Could not fetch testimonials, will use fallback data.`);
-            setTestimonials(fallbackTestimonials);
+    try {
+        const fetchedTestimonials = await getTestimonials();
+        if (fetchedTestimonials && fetchedTestimonials.length > 0) {
+            testimonials = fetchedTestimonials;
+        } else {
+            testimonials = fallbackTestimonials;
         }
-      }
-      fetchTestimonials();
-    }, []);
+    } catch(e) {
+        console.error(`[TestimonialsSection] Could not fetch testimonials, will use fallback data.`);
+        testimonials = fallbackTestimonials;
+    }
 
   return (
     <section id="testimonials" className="py-16 sm:py-24 bg-secondary">

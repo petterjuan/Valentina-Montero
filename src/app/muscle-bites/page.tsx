@@ -1,14 +1,13 @@
+
 'use client';
 
 import { useState } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Flame, Star, Zap, Clock, Shield } from 'lucide-react';
-import optimizationCopy from '@/lib/optimization-copy.json';
 import placeholderImages from '@/lib/placeholder-images.json';
 import PlanSignupDialog from '@/components/sections/PlanSignupDialog';
-import type { Program } from '@/components/sections/CoachingProgramsSection';
-import { logConversion } from '@/ai-actions';
+import type { Program } from '@/types';
 
 const productOffer: Program = {
   title: 'Guía PDF "Muscle Bites"',
@@ -30,20 +29,7 @@ const features = [
   { icon: Shield, text: 'Optimiza la Recuperación Muscular' },
 ];
 
-
 export default function MuscleBitesPage() {
-  const [hasLoggedConversion, setHasLoggedConversion] = useState(false);
-
-  const copy = optimizationCopy.hero;
-  const microcopy = optimizationCopy.microcopy[0];
-  
-  const handleCtaClick = (variationId: string) => {
-    if (!hasLoggedConversion) {
-      logConversion(variationId);
-      setHasLoggedConversion(true);
-    }
-  };
-
   return (
     <div className="bg-background text-foreground">
       {/* Hero Section */}
@@ -54,18 +40,18 @@ export default function MuscleBitesPage() {
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-3xl mx-auto">
             <h1 className="text-4xl md:text-6xl font-headline font-black tracking-tight uppercase text-foreground drop-shadow-lg">
-              {copy.headline}
+              Recetas Fáciles, Resultados Visibles
             </h1>
             <p className="mt-4 max-w-2xl mx-auto text-lg md:text-xl text-muted-foreground drop-shadow-md">
-              {copy.subheadline}
+              Desbloquea el poder de la nutrición con "Muscle Bites", tu guía definitiva de recetas altas en proteína que son tan deliciosas como efectivas.
             </p>
             <div className="mt-8 flex flex-col items-center gap-4">
               <PlanSignupDialog program={productOffer}>
-                  <Button onClick={() => handleCtaClick(microcopy.id)} size="lg" className="font-bold text-lg h-14 px-10">
-                    {copy.cta} {copy.emoji}
+                  <Button size="lg" className="font-bold text-lg h-14 px-10">
+                    Comprar Mi Guía Ahora 💪
                   </Button>
               </PlanSignupDialog>
-              <p className="text-sm text-muted-foreground h-8">{microcopy.text}</p>
+              <p className="text-sm text-muted-foreground h-8">Pago seguro con Stripe. Acceso instantáneo.</p>
             </div>
           </div>
         </div>
@@ -114,7 +100,7 @@ export default function MuscleBitesPage() {
                   <p className="text-4xl font-bold font-code">${productOffer.price}</p>
                 </div>
                 <PlanSignupDialog program={productOffer}>
-                    <Button onClick={() => handleCtaClick('main_content_cta')} size="lg" className="w-full mt-4 font-bold">
+                    <Button size="lg" className="w-full mt-4 font-bold">
                         ¡Quiero Mi Guía Ahora!
                     </Button>
                 </PlanSignupDialog>

@@ -13,6 +13,8 @@ import { useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import type { Program } from "@/types";
+import { processPlanSignup } from "@/ai/flows/plan-signup-flow";
+import { logEvent } from "@/lib/logger";
 
 const signupSchema = z.object({
   fullName: z.string().min(3, { message: "El nombre debe tener al menos 3 caracteres." }),
@@ -53,18 +55,7 @@ export default function PlanSignupForm({ plan, onSubmitted }: PlanSignupFormProp
         isDigital: plan.isDigital,
       };
 
-      const response = await fetch('/api/process-signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(planData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'No se pudo procesar la solicitud.');
-      }
-      
-      const result = await response.json();
+      const result = await processPlanSignup(planData);
 
       if (plan.isDigital) {
         if (result.stripeCheckoutUrl) {
@@ -80,6 +71,7 @@ export default function PlanSignupForm({ plan, onSubmitted }: PlanSignupFormProp
         toast({ title: "¡Solicitud Recibida!", description: "Revisa tu correo para los siguientes pasos." });
       }
     } catch(error: any) {
+        logEvent('Plan Signup Failed', { error: error.message, plan: plan.title }, 'error');
         setIsSubmitting(false);
         toast({
             variant: "destructive",

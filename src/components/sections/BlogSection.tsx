@@ -1,8 +1,6 @@
 
-"use client";
-
-import Image from "next/image";
-import Link from "next/link";
+import { getBlogPosts } from "@/app/actions";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -11,28 +9,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Post } from "@/types";
-import { useEffect, useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
 
-export default function BlogSection() {
-  const [displayPosts, setDisplayPosts] = useState<Post[]>([]);
-
-  useEffect(() => {
-    async function fetchPosts() {
-      try {
-        const response = await fetch('/api/posts?limit=3');
-        if (!response.ok) {
-            throw new Error('Failed to fetch posts');
-        }
-        const posts = await response.json();
-        setDisplayPosts(posts);
-      } catch (e) {
-        console.error(`[BlogSection] Could not fetch posts, section will be empty.`, e);
-      }
-    }
-    fetchPosts();
-  }, []);
+export default async function BlogSection() {
+  const displayPosts = await getBlogPosts(3);
 
   return (
     <section id="blog" className="py-16 sm:py-24 bg-background">
