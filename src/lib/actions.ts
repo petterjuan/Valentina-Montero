@@ -4,17 +4,18 @@
 import { z } from 'zod';
 import { getFirestore } from "@/lib/firebase";
 import { logEvent } from '@/lib/logger';
-import { type Lead, type LogEntry, type SystemStatus, type Post, type Program, type Testimonial, PostDocument, TestimonialDocument } from "@/types";
+import { type Lead, type LogEntry, type SystemStatus, type Post, type Program, type Testimonial } from "@/types";
 import { generateBlogPost } from '@/ai/flows/generate-blog-post';
 import { generatePersonalizedWorkout as genkitGeneratePersonalizedWorkout } from '@/ai/flows/generate-personalized-workout';
 import { processPlanSignup as genkitProcessPlanSignup } from '@/ai/flows/plan-signup-flow';
 import type { GeneratePersonalizedWorkoutInput, GeneratePersonalizedWorkoutOutput } from '@/ai/flows/generate-personalized-workout';
 import type { PlanSignupInput, PlanSignupOutput } from '@/ai/flows/plan-signup-flow';
-import PostModel from '@/models/Post';
-import TestimonialModel from '@/models/Testimonial';
+import PostModel, { type IPost } from '@/models/Post';
+import TestimonialModel, { type ITestimonial } from '@/models/Testimonial';
 import connectToDb from '@/lib/mongoose';
 import { getShopifyStorefront } from '@/lib/shopify';
 import { revalidatePath } from 'next/cache';
+import type { LeanDocument } from 'mongoose';
 
 //========================================================================
 //  DATA FETCHING FUNCTIONS (Called from Server Components)
@@ -93,7 +94,6 @@ export async function getPrograms(collectionHandle: string, maxProducts: number)
     } catch (error) {
         console.error(`Error fetching Shopify programs for collection "${collectionHandle}":`, error);
         logEvent('Shopify API Error', { message: `Failed to fetch collection: ${collectionHandle}`, error: error instanceof Error ? error.message : String(error) }, 'error');
-        // Return empty array to allow fallback to work gracefully
         return [];
     }
 }
@@ -101,7 +101,6 @@ export async function getPrograms(collectionHandle: string, maxProducts: number)
 export async function getBlogPosts(limit: number = 10): Promise<Post[]> {
     let shopifyPosts: Post[] = [];
     let mongoPosts: Post[] = [];
-    let allPosts: Post[] = [];
     const shopify = getShopifyStorefront();
 
     const fetchShopifyPosts = async () => {
@@ -157,10 +156,10 @@ export async function getBlogPosts(limit: number = 10): Promise<Post[]> {
         if (!db) return;
 
         try {
-            const postsFromDb: PostDocument[] = await PostModel.find({})
+            const postsFromDb: LeanDocument<IPost>[] = await PostModel.find({})
                 .sort({ createdAt: -1 })
                 .limit(limit)
-                .lean() as PostDocument[];
+                .lean();
 
             mongoPosts = postsFromDb.map(doc => ({
                 id: doc._id.toString(),
@@ -181,7 +180,7 @@ export async function getBlogPosts(limit: number = 10): Promise<Post[]> {
     
     await Promise.all([fetchShopifyPosts(), fetchMongoPosts()]);
 
-    allPosts = [...shopifyPosts, ...mongoPosts];
+    const allPosts: Post[] = [...shopifyPosts, ...mongoPosts];
     allPosts.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
     return allPosts.slice(0, limit);
@@ -196,7 +195,7 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
     const db = await connectToDb();
     if (db) {
         try {
-            const mongoPost = await PostModel.findOne({ slug: slug }).lean().exec() as PostDocument | null;
+            const mongoPost: LeanDocument<IPost> | null = await PostModel.findOne({ slug }).lean();
             if (mongoPost) {
                 return {
                     id: mongoPost._id.toString(),
@@ -220,7 +219,7 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
     if (!shopify) {
         return null;
     }
-    // Fallback to Shopify for manual posts
+    
     try {
         const { blog } = await shopify.request(
             `query getArticleByHandle($handle: String!) {
@@ -271,11 +270,16 @@ export async function getTestimonials(): Promise<Testimonial[]> {
     if (!db) return [];
 
     try {
-        const testimonials = await TestimonialModel.find({}).sort({ order: 1 }).lean() as TestimonialDocument[];
+        const testimonials: LeanDocument<ITestimonial>[] = await TestimonialModel.find({}).sort({ order: 1 }).lean();
         return testimonials.map(doc => ({
-            ...doc,
             id: doc._id.toString(),
             _id: doc._id.toString(),
+            name: doc.name,
+            story: doc.story,
+            image: doc.image,
+            aiHint: doc.aiHint,
+            order: doc.order,
+            rating: doc.rating,
         }));
     } catch (error) {
         console.error("Error fetching testimonials:", error);
@@ -348,7 +352,6 @@ export async function generateNewBlogPost(): Promise<{ success: boolean, title?:
     }
 
     try {
-        // We get existing titles from both Shopify and MongoDB to avoid duplicates
         const recentPosts = await getBlogPosts(10);
         const existingTitles = recentPosts.map(p => p.title);
         
@@ -403,7 +406,7 @@ export async function getLeadsForAdmin(): Promise<Lead[]> {
         });
 
         return leads;
-    } catch (error)_ {
+    } catch (error) {
         console.error("Error fetching leads from Firestore:", error);
         logEvent('Firestore Read Error', { message: 'Failed to get leads for admin', error: error instanceof Error ? error.message : String(error) }, 'error');
         return [];
@@ -413,7 +416,6 @@ export async function getLeadsForAdmin(): Promise<Lead[]> {
 export async function getSystemStatuses(): Promise<SystemStatus> {
     const statuses: SystemStatus = {};
 
-    // Check Firebase
     try {
         const firestore = getFirestore();
         if (firestore) {
@@ -426,7 +428,6 @@ export async function getSystemStatuses(): Promise<SystemStatus> {
         statuses.firebase = { status: 'error', message: `Falló la conexión a Firestore: ${error instanceof Error ? error.message : String(error)}` };
     }
 
-    // Check MongoDB
     try {
         const db = await connectToDb();
         if (db) {
@@ -446,7 +447,6 @@ export async function getSystemStatuses(): Promise<SystemStatus> {
         statuses.mongoData = { status: 'error', message: 'No se pudo intentar leer datos de MongoDB porque la conexión falló.' };
     }
 
-    // Check Shopify
     const shopify = getShopifyStorefront();
     if (shopify) {
         try {
@@ -466,7 +466,6 @@ export async function getLogs(limit: number = 15): Promise<LogEntry[]> {
     const firestore = getFirestore();
     if (!firestore) {
         console.error("Firestore is not available for fetching logs.");
-        logEvent('Admin Area Error', { message: 'getLogs failed, Firestore not initialized' }, 'error');
         return [];
     }
 

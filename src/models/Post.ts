@@ -1,18 +1,29 @@
 
-import { PostDocument } from '@/types';
-import mongoose, { Schema } from 'mongoose';
+import mongoose, { Schema, Document, Model } from "mongoose";
 
-const PostSchema = new Schema<PostDocument>({
-  title: { type: String, required: true },
-  slug: { type: String, required: true, unique: true },
-  excerpt: { type: String, required: true },
-  content: { type: String, required: true },
-  imageUrl: { type: String },
-  aiHint: { type: String },
-  createdAt: { type: Date, default: Date.now },
-});
+export interface IPost extends Document {
+  title: string;
+  content: string;
+  excerpt: string;
+  slug: string;
+  imageUrl?: string;
+  aiHint?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
-// To prevent re-registering the model on hot reloads
-const PostModel = mongoose.models.Post || mongoose.model<PostDocument>('Post', PostSchema);
+const PostSchema = new Schema<IPost>(
+  {
+    title: { type: String, required: true },
+    content: { type: String, required: true },
+    excerpt: { type: String, required: true },
+    slug: { type: String, required: true, unique: true },
+    imageUrl: { type: String },
+    aiHint: { type: String },
+  },
+  { timestamps: true }
+);
+
+const PostModel = (mongoose.models.Post as Model<IPost>) || mongoose.model<IPost>("Post", PostSchema);
 
 export default PostModel;

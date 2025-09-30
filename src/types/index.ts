@@ -1,5 +1,5 @@
 
-import { Document } from 'mongoose';
+import { type IPost, type ITestimonial } from '@/models/Testimonial';
 
 // Represents a blog post, now fetched from Shopify or MongoDB
 export interface Post {
@@ -60,10 +60,3 @@ export interface SystemStatus {
   mongoData?: { status: 'success' | 'error'; message: string };
   shopify?: { status: 'success' | 'error'; message: string };
 }
-
-
-// Mongoose document interfaces
-export interface PostDocument extends Omit<Post, 'id' | 'source' | 'createdAt'>, Document {
-    createdAt: Date;
-}
-export interface TestimonialDocument extends Omit<Testimonial, '_id' | 'id'>, Document {}
