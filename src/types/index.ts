@@ -1,5 +1,5 @@
 
-import { type IPost as PostModelType, type ITestimonial as TestimonialModelType } from '@/models/Testimonial';
+import { type Document } from 'mongoose';
 
 // Represents a blog post, now fetched from Shopify or MongoDB
 export interface Post {
@@ -14,8 +14,26 @@ export interface Post {
     createdAt: Date;
 }
 
-export interface IPost extends PostModelType {}
-export interface ITestimonial extends TestimonialModelType {}
+export interface IPost extends Document {
+  title: string;
+  content: string;
+  excerpt: string;
+  slug: string;
+  imageUrl?: string;
+  aiHint?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ITestimonial extends Document {
+  name: string;
+  story: string;
+  image: string;
+  aiHint?: string;
+  order?: number;
+  rating?: number;
+  createdAt: Date;
+}
 
 
 export interface Testimonial {
@@ -64,3 +82,5 @@ export interface SystemStatus {
   mongoData?: { status: 'success' | 'error'; message: string };
   shopify?: { status: 'success' | 'error'; message: string };
 }
+
+    

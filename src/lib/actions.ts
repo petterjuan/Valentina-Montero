@@ -10,12 +10,13 @@ import { generatePersonalizedWorkout as genkitGeneratePersonalizedWorkout } from
 import { processPlanSignup as genkitProcessPlanSignup } from '@/ai/flows/plan-signup-flow';
 import type { GeneratePersonalizedWorkoutInput, GeneratePersonalizedWorkoutOutput } from '@/ai/flows/generate-personalized-workout';
 import type { PlanSignupInput, PlanSignupOutput } from '@/ai/flows/plan-signup-flow';
-import PostModel, { type IPost } from '@/models/Post';
-import TestimonialModel, { type ITestimonial } from '@/models/Testimonial';
+import PostModel from '@/models/Post';
+import TestimonialModel from '@/models/Testimonial';
 import connectToDb from '@/lib/mongoose';
 import { getShopifyStorefront } from '@/lib/shopify';
 import { revalidatePath } from 'next/cache';
 import type { LeanDocument } from 'mongoose';
+import type { IPost, ITestimonial } from '@/types';
 
 //========================================================================
 //  DATA FETCHING FUNCTIONS (Called from Server Components)
@@ -495,3 +496,5 @@ export async function getLogs(limit: number = 15): Promise<LogEntry[]> {
         return [];
     }
 }
+
+    
