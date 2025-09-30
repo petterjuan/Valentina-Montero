@@ -3,7 +3,7 @@
 
 import { useForm, Controller } from "react-hook-form";
 import { Button } from "@/components/ui/button";
-import { generatePersonalizedWorkout, type GeneratePersonalizedWorkoutInput, type GeneratePersonalizedWorkoutOutput } from "@/ai/flows/generate-personalized-workout";
+import { type GeneratePersonalizedWorkoutOutput } from "@/ai/flows/generate-personalized-workout";
 import { useState, useTransition } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Wand2, AlertTriangle, Dumbbell, Calendar, Brain, Utensils, Lock, Sparkles, Loader2, Target, Flame, Activity, Shield, CheckCircle } from "lucide-react";
@@ -17,7 +17,6 @@ import { Form, FormControl, FormField, FormItem, FormMessage } from "@/component
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
-import { logEvent } from "@/lib/logger";
 
 const aiGeneratorClientSchema = z.object({
   fitnessGoal: z.string().min(1, "El objetivo de fitness es requerido"),
@@ -42,21 +41,6 @@ const initialState: AiGeneratorFormState = {
     error: undefined,
     isFullPlan: false,
 };
-
-async function saveLead(email: string, source: string) {
-    'use server';
-    const firestore = getFirestore();
-    if (firestore) {
-        const leadRef = firestore.collection('leads').doc(email);
-        await leadRef.set({
-            email,
-            source,
-            status: 'subscribed',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        }, { merge: true });
-    }
-}
 
 export default function AiGeneratorSection() {
   const { toast } = useToast();
@@ -86,22 +70,34 @@ export default function AiGeneratorSection() {
         let workoutData = formResult.data;
 
         if (!workoutData || !isUnlocking) {
-            workoutData = await generatePersonalizedWorkout(data);
+            const response = await fetch('/api/generate-workout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+            });
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Error en el servidor');
+            }
+            workoutData = await response.json();
         }
         
         if (isUnlocking && data.email) {
-            await saveLead(data.email, 'Generador IA');
+            await fetch('/api/leads', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: data.email, source: 'Generador IA' }),
+            });
         }
 
         setFormResult({
             data: workoutData,
-            isFullPlan: !!data.email,
+            isFullPlan: !!data.email || isUnlocking,
             error: undefined
         });
 
       } catch (error: any) {
         const errorMessage = error.message || 'Ocurrió un error al generar tu plan.';
-        logEvent('AI Workout Generation Failed', { error: errorMessage, input: data }, 'error');
         toast({ variant: "destructive", title: "Error", description: errorMessage });
         setFormResult({ ...initialState, error: errorMessage });
       }
@@ -509,3 +505,5 @@ export default function AiGeneratorSection() {
     </section>
   );
 }
+
+    

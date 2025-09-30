@@ -18,28 +18,12 @@ import { useState } from "react";
 import { Check, Gift, Loader2, Sparkles } from "lucide-react";
 import PlanSignupDialog from "./PlanSignupDialog";
 import type { Program } from "@/types";
-import { getFirestore } from "@/lib/firebase";
 
 const FormSchema = z.object({
   email: z.string().email({ message: "Por favor, introduce un email válido." }),
 });
 
 type FormData = z.infer<typeof FormSchema>;
-
-async function saveLead(email: string, source: string) {
-    'use server';
-    const firestore = getFirestore();
-    if (firestore) {
-        const leadRef = firestore.collection('leads').doc(email);
-        await leadRef.set({
-            email,
-            source,
-            status: 'subscribed',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        }, { merge: true });
-    }
-}
 
 const tripwireProduct: Program = {
   title: 'Guía PDF "Muscle Bites"',
@@ -80,7 +64,16 @@ export default function LeadMagnetSection() {
   const onSubmit: SubmitHandler<FormData> = async (data) => {
     setStatus('submitting');
     try {
-      await saveLead(data.email, 'Guía Gratuita - 10k Pasos');
+        const response = await fetch('/api/leads', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: data.email, source: 'Guía Gratuita - 10k Pasos' }),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Error al registrar el correo.');
+        }
         
         const downloadUrl = "/Estrategias-para-lograr-10k-pasos-al-dia.pdf";
 
@@ -194,3 +187,5 @@ export default function LeadMagnetSection() {
     </section>
   );
 }
+
+    

@@ -74,3 +74,5 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({ message: 'La tarea CRON falló inesperadamente.' }, { status: 500 });
 }
+
+    
