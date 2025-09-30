@@ -63,7 +63,11 @@ const workoutPrompt = ai.definePrompt({
 export async function generatePersonalizedWorkout(
   input: GeneratePersonalizedWorkoutInput
 ): Promise<GeneratePersonalizedWorkoutOutput> {
-  return await generatePersonalizedWorkoutFlow(input);
+  const workoutData = await generatePersonalizedWorkoutFlow(input);
+  if (!workoutData) {
+    throw new Error("El flujo de generación de entrenamiento no devolvió ningún resultado.");
+  }
+  return workoutData;
 }
 
 const generatePersonalizedWorkoutFlow = ai.defineFlow(

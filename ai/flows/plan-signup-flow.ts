@@ -34,7 +34,11 @@ const PlanSignupOutputSchema = z.object({
 export type PlanSignupOutput = z.infer<typeof PlanSignupOutputSchema>;
 
 export async function processPlanSignup(input: PlanSignupInput): Promise<PlanSignupOutput> {
-  return await planSignupFlow(input);
+  const result = await planSignupFlow(input);
+  if (!result) {
+    throw new Error('El flujo de inscripción no devolvió un resultado.');
+  }
+  return result;
 }
 
 const planSignupFlow = ai.defineFlow(

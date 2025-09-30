@@ -31,13 +31,15 @@ export type GenerateBlogPostOutput = z.infer<typeof GenerateBlogPostOutputSchema
 
 export async function generateBlogPost(input: GenerateBlogPostInput): Promise<GenerateBlogPostOutput> {
   const blogPost = await generateBlogPostFlow(input);
+  if (!blogPost) {
+    throw new Error("El flujo de generación de blog no devolvió ningún resultado.");
+  }
   const slug = slugify(blogPost.title, { lower: true, strict: true });
   return {
     ...blogPost,
     slug,
   };
 }
-
 
 const generateBlogPostPrompt = ai.definePrompt(
     {

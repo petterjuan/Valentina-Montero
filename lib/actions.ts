@@ -333,7 +333,7 @@ export async function saveWorkoutLead(
 }
 
 
-export async function generatePersonalizedWorkout(input: GeneratePersonalizedWorkoutInput): Promise<GeneratePersonalizedWorkoutOutput> {
+export async function generatePersonalizedWorkoutAction(input: GeneratePersonalizedWorkoutInput): Promise<GeneratePersonalizedWorkoutOutput> {
     try {
         const workoutData = await generatePersonalizedWorkout(input);
         return workoutData;
@@ -353,7 +353,7 @@ const planSignupServerSchema = z.object({
   isDigital: z.coerce.boolean(),
 });
 
-export async function processPlanSignup(input: PlanSignupInput): Promise<PlanSignupOutput> {
+export async function processPlanSignupAction(input: PlanSignupInput): Promise<PlanSignupOutput> {
     const validated = planSignupServerSchema.safeParse(input);
 
     if (!validated.success) {
