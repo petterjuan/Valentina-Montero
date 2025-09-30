@@ -5,21 +5,256 @@ import { z } from 'zod';
 import { getFirestore } from "@/lib/firebase";
 import { logEvent } from '@/lib/logger';
 import { stripe } from '@/lib/stripe';
-import { type Lead, type LogEntry, type SystemStatus } from "@/types";
+import { type Lead, type LogEntry, type SystemStatus, type Post, type Program, type Testimonial } from "@/types";
 import { generateBlogPost as generateBlogPostFlow } from '@/ai/flows/generate-blog-post';
 import { generatePersonalizedWorkout as generatePersonalizedWorkoutFlow, type GeneratePersonalizedWorkoutInput, type GeneratePersonalizedWorkoutOutput } from '@/ai/flows/generate-personalized-workout';
 import { planSignupFlow, type PlanSignupInput, type PlanSignupOutput } from '@/ai/flows/plan-signup-flow';
-import { getBlogPosts as getBlogPostsData } from './data';
 import PostModel from '@/models/Post';
 import TestimonialModel from '@/models/Testimonial';
 import connectToDb from './mongoose';
 import { shopifyStorefront } from './shopify';
 
 
+//========================================================================
+//  DATA FETCHING ACTIONS (Called from Server Components)
+//========================================================================
+
+export async function getPrograms(collectionHandle: string, maxProducts: number): Promise<Program[]> {
+    try {
+        const { collection } = await shopifyStorefront.request(
+            `query getCollectionByHandle($handle: String!, $first: Int!) {
+                collection(handle: $handle) {
+                    products(first: $first) {
+                        edges {
+                            node {
+                                title
+                                handle
+                                priceRange {
+                                    minVariantPrice {
+                                        amount
+                                    }
+                                }
+                                features: metafield(namespace: "custom", key: "features") {
+                                    value
+                                }
+                                is_popular: metafield(namespace: "custom", key: "is_popular") {
+                                    value
+                                }
+                                is_digital: metafield(namespace: "custom", key: "is_digital") {
+                                    value
+                                }
+                                images(first: 1) {
+                                    edges {
+                                        node {
+                                            url
+                                            altText
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }`,
+            {
+                variables: {
+                    handle: collectionHandle,
+                    first: maxProducts,
+                },
+            }
+        );
+
+        if (!collection) {
+            console.warn(`Shopify collection with handle "${collectionHandle}" not found.`);
+            return [];
+        }
+
+        const programs: Program[] = collection.products.edges.map(({ node }: any) => ({
+            title: node.title,
+            handle: node.handle,
+            price: parseFloat(node.priceRange.minVariantPrice.amount),
+            features: node.features ? JSON.parse(node.features.value) : [],
+            isPopular: node.is_popular ? JSON.parse(node.is_popular.value) : false,
+            isDigital: node.is_digital ? JSON.parse(node.is_digital.value) : false,
+            image: node.images.edges[0] ? {
+                src: node.images.edges[0].node.url,
+                alt: node.images.edges[0].node.altText || node.title,
+            } : undefined,
+        }));
+
+        return programs;
+    } catch (error) {
+        console.error(`Error fetching Shopify programs for collection "${collectionHandle}":`, error);
+        return [];
+    }
+}
+
+export async function getBlogPosts(limit: number = 10): Promise<Post[]> {
+    let shopifyPosts: Post[] = [];
+    let mongoPosts: Post[] = [];
+
+    try {
+        const { articles } = await shopifyStorefront.request(
+            `query getBlogArticles($first: Int!) {
+                articles(first: $first, sortKey: PUBLISHED_AT, reverse: true) {
+                    edges {
+                        node {
+                            id
+                            title
+                            handle
+                            excerpt
+                            contentHtml
+                            publishedAt
+                            image {
+                                url
+                                altText
+                            }
+                        }
+                    }
+                }
+            }`,
+            {
+                variables: {
+                    first: limit,
+                },
+            }
+        );
+        shopifyPosts = articles.edges.map(({ node }: any) => ({
+            id: node.id,
+            source: 'Shopify',
+            title: node.title,
+            slug: node.handle,
+            excerpt: node.excerpt,
+            content: node.contentHtml,
+            imageUrl: node.image?.url,
+            aiHint: node.image?.altText,
+            createdAt: new Date(node.publishedAt),
+        }));
+    } catch (error) {
+        console.error("Error fetching blog posts from Shopify:", error);
+    }
+
+    try {
+        await connectToDb();
+        const postsFromDb = await PostModel.find({})
+            .sort({ createdAt: -1 })
+            .limit(limit)
+            .lean();
+
+        mongoPosts = postsFromDb.map(doc => ({
+            id: doc._id.toString(),
+            source: 'MongoDB',
+            title: doc.title,
+            slug: doc.slug,
+            excerpt: doc.excerpt,
+            content: doc.content,
+            imageUrl: doc.imageUrl,
+            aiHint: doc.aiHint,
+            createdAt: new Date(doc.createdAt),
+        }));
+    } catch (error) {
+        console.error("Error fetching posts from MongoDB:", error);
+    }
+
+    const allPosts = [...shopifyPosts, ...mongoPosts];
+    allPosts.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+    return allPosts.slice(0, limit);
+}
+
+export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
+    if (!slug) {
+        return null;
+    }
+
+    try {
+        await connectToDb();
+        const mongoPost = await PostModel.findOne({ slug: slug }).lean().exec();
+        if (mongoPost) {
+            return {
+                id: mongoPost._id.toString(),
+                source: 'MongoDB',
+                title: mongoPost.title,
+                slug: mongoPost.slug,
+                excerpt: mongoPost.excerpt,
+                content: mongoPost.content,
+                imageUrl: mongoPost.imageUrl,
+                aiHint: mongoPost.aiHint,
+                createdAt: new Date(mongoPost.createdAt),
+            };
+        }
+    } catch (error) {
+        console.error(`Error fetching post by slug "${slug}" from MongoDB:`, error);
+    }
+
+    try {
+        const { blog } = await shopifyStorefront.request(
+            `query getArticleByHandle($handle: String!) {
+                blog(handle: "news") { 
+                    articleByHandle(handle: $handle) {
+                        id
+                        title
+                        handle
+                        excerpt
+                        contentHtml
+                        publishedAt
+                        image {
+                            url
+                            altText
+                        }
+                    }
+                }
+            }`,
+            {
+                variables: { handle: slug },
+            }
+        );
+
+        if (blog && blog.articleByHandle) {
+            const node = blog.articleByHandle;
+            return {
+                id: node.id,
+                source: 'Shopify',
+                title: node.title,
+                slug: node.handle,
+                excerpt: node.excerpt,
+                content: node.contentHtml,
+                imageUrl: node.image?.url,
+                aiHint: node.image?.altText,
+                createdAt: new Date(node.publishedAt),
+            };
+        }
+    } catch (error) {
+        console.error(`Error fetching article by handle "${slug}" from Shopify:`, error);
+    }
+    
+    return null;
+}
+
+export async function getTestimonials(): Promise<Testimonial[]> {
+    try {
+        await connectToDb();
+        const testimonials = await TestimonialModel.find({}).sort({ order: 1 }).lean();
+        return testimonials.map(doc => ({
+            ...doc,
+            id: doc._id.toString(),
+            _id: doc._id.toString(),
+        }));
+    } catch (error) {
+        console.error("Error fetching testimonials:", error);
+        return [];
+    }
+}
+
+//========================================================================
+//  MUTATION & CLIENT-INVOKABLE ACTIONS (Marked with 'use server')
+//========================================================================
+
 const saveLeadSchema = z.object({
   email: z.string().email(),
   source: z.string(),
 });
+
 export async function saveLead(input: { email: string, source: string }) {
   'use server';
   const { email, source } = saveLeadSchema.parse(input);
@@ -40,6 +275,7 @@ export async function saveLead(input: { email: string, source: string }) {
 const saveWorkoutLeadSchema = z.object({
     email: z.string().email()
 });
+
 export async function saveWorkoutLead(input: { email: string }) {
     'use server';
     const { email } = saveWorkoutLeadSchema.parse(input);
@@ -86,7 +322,7 @@ export async function generateNewBlogPost(): Promise<{ success: boolean, title?:
     'use server';
     try {
         await connectToDb();
-        const recentPosts = await getBlogPostsData(10);
+        const recentPosts = await getBlogPosts(10);
         const existingTitles = recentPosts.map(p => p.title);
         console.log(`Títulos existentes enviados a la IA: ${existingTitles.join(', ')}`);
 
@@ -222,3 +458,5 @@ export async function getLogs(limit: number = 15): Promise<LogEntry[]> {
         return [];
     }
 }
+
+    

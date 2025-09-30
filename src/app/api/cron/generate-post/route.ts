@@ -1,3 +1,4 @@
+
 import { NextResponse } from 'next/server';
 import { logEvent } from '@/lib/logger';
 import { generateNewBlogPost } from '@/lib/actions';
@@ -56,3 +57,5 @@ export async function GET(req: Request) {
 
   return NextResponse.json({ message: 'La tarea CRON falló inesperadamente.' }, { status: 500 });
 }
+
+    
