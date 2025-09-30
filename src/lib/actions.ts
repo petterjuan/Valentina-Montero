@@ -13,7 +13,7 @@ import type { GeneratePersonalizedWorkoutInput, GeneratePersonalizedWorkoutOutpu
 import type { PlanSignupInput, PlanSignupOutput } from '@/ai/flows/plan-signup-flow';
 import PostModel from '@/models/Post';
 import TestimonialModel from '@/models/Testimonial';
-import connectToDb from './mongoose';
+import connectToDb from '@/lib/mongoose';
 import { getShopifyStorefront } from '@/lib/shopify';
 import { revalidatePath } from 'next/cache';
 

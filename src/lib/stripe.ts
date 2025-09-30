@@ -1,5 +1,4 @@
 
-
 import Stripe from "stripe";
 
 // This file is for BACKEND USE ONLY.
