@@ -201,5 +201,3 @@ export default function PlanSignupForm({ plan, onSubmitted }: PlanSignupFormProp
     </>
   );
 }
-
-    
