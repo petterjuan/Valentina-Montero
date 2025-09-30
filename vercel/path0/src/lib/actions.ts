@@ -1,20 +1,22 @@
 
+
 'use server';
 
 import { z } from 'zod';
 import { getFirestore } from "@/lib/firebase";
 import { logEvent } from '@/lib/logger';
-import { type Lead, type LogEntry, type SystemStatus, type Post, type Program, type Testimonial } from "@/types";
+import { type Lead, type LogEntry, type SystemStatus, type Post, type Program, type Testimonial, PostDocument, TestimonialDocument } from "@/types";
 import { generateBlogPost } from '@/ai/flows/generate-blog-post';
-import { generatePersonalizedWorkout } from '@/ai/flows/generate-personalized-workout';
-import { processPlanSignup } from '@/ai/flows/plan-signup-flow';
+import { generatePersonalizedWorkout as genkitGeneratePersonalizedWorkout } from '@/ai/flows/generate-personalized-workout';
+import { processPlanSignup as genkitProcessPlanSignup } from '@/ai/flows/plan-signup-flow';
 import type { GeneratePersonalizedWorkoutInput, GeneratePersonalizedWorkoutOutput } from '@/ai/flows/generate-personalized-workout';
 import type { PlanSignupInput, PlanSignupOutput } from '@/ai/flows/plan-signup-flow';
 import PostModel from '@/models/Post';
 import TestimonialModel from '@/models/Testimonial';
-import connectToDb from './mongoose';
-import { getShopifyStorefront } from './shopify';
+import connectToDb from '@/lib/mongoose';
+import { getShopifyStorefront } from '@/lib/shopify';
 import { revalidatePath } from 'next/cache';
+import type { LeanDocument } from 'mongoose';
 
 //========================================================================
 //  DATA FETCHING FUNCTIONS (Called from Server Components)
@@ -155,7 +157,7 @@ export async function getBlogPosts(limit: number = 10): Promise<Post[]> {
     const fetchMongoPosts = async () => {
         try {
             await connectToDb();
-            const postsFromDb = await PostModel.find({})
+            const postsFromDb: LeanDocument<PostDocument>[] = await PostModel.find({})
                 .sort({ createdAt: -1 })
                 .limit(limit)
                 .lean();
@@ -194,7 +196,7 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
     // Try MongoDB first for AI-generated posts
     try {
         await connectToDb();
-        const mongoPost = await PostModel.findOne({ slug: slug }).lean().exec();
+        const mongoPost: LeanDocument<PostDocument> | null = await PostModel.findOne({ slug: slug }).lean().exec();
         if (mongoPost) {
             return {
                 id: mongoPost._id.toString(),
@@ -266,7 +268,7 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
 export async function getTestimonials(): Promise<Testimonial[]> {
     try {
         await connectToDb();
-        const testimonials = await TestimonialModel.find({}).sort({ order: 1 }).lean();
+        const testimonials: LeanDocument<TestimonialDocument>[] = await TestimonialModel.find({}).sort({ order: 1 }).lean();
         return testimonials.map(doc => ({
             ...doc,
             id: doc._id.toString(),
@@ -326,10 +328,13 @@ export async function saveLead(
     }
 }
 
-export async function saveWorkoutLead(
-    { email }: { email: string }
-): Promise<{ success: boolean; error?: string }> {
-   return saveLead({ email, source: 'Generador IA'});
+export async function generatePersonalizedWorkout(input: GeneratePersonalizedWorkoutInput): Promise<GeneratePersonalizedWorkoutOutput> {
+    return await genkitGeneratePersonalizedWorkout(input);
+}
+
+
+export async function processPlanSignup(input: PlanSignupInput): Promise<PlanSignupOutput> {
+    return await genkitProcessPlanSignup(input);
 }
 
 
@@ -479,3 +484,5 @@ export async function getLogs(limit: number = 15): Promise<LogEntry[]> {
         return [];
     }
 }
+
+    
