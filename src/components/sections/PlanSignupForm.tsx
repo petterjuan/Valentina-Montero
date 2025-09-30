@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { DialogHeader, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import { CheckCircle, Loader2 } from "lucide-react";
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import type { Program } from "@/types";
@@ -120,7 +120,7 @@ export default function PlanSignupForm({ plan, onSubmitted }: PlanSignupFormProp
                 <FormItem>
                 <FormLabel>Nombre Completo</FormLabel>
                 <FormControl>
-                    <Input placeholder="Tu nombre y apellido" {...field} />
+                    <Input placeholder="Tu nombre y apellido" {...field} disabled={isPending} />
                 </FormControl>
                 <FormMessage />
                 </FormItem>
@@ -133,7 +133,7 @@ export default function PlanSignupForm({ plan, onSubmitted }: PlanSignupFormProp
                 <FormItem>
                 <FormLabel>Email</FormLabel>
                 <FormControl>
-                    <Input type="email" placeholder="tu.correo@ejemplo.com" {...field} />
+                    <Input type="email" placeholder="tu.correo@ejemplo.com" {...field} disabled={isPending} />
                 </FormControl>
                 <FormMessage />
                 </FormItem>
@@ -147,7 +147,7 @@ export default function PlanSignupForm({ plan, onSubmitted }: PlanSignupFormProp
                         <FormItem>
                             <FormLabel>Teléfono (Opcional)</FormLabel>
                             <FormControl>
-                                <Input {...field} />
+                                <Input {...field} disabled={isPending} />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
@@ -163,6 +163,7 @@ export default function PlanSignupForm({ plan, onSubmitted }: PlanSignupFormProp
                     <Checkbox
                         checked={field.value}
                         onCheckedChange={field.onChange}
+                        disabled={isPending}
                     />
                     </FormControl>
                     <div className="space-y-1 leading-none">
@@ -183,5 +184,3 @@ export default function PlanSignupForm({ plan, onSubmitted }: PlanSignupFormProp
     </>
   );
 }
-
-    

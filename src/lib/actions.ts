@@ -251,7 +251,7 @@ export async function getTestimonials(): Promise<Testimonial[]> {
 //  SERVER ACTIONS (Called from Client Components)
 //========================================================================
 
-export async function saveLead(input: { email: string, source: string }) {
+export async function saveLead(input: { email: string, source: string }): Promise<{ success: boolean, error?: string }> {
   'use server';
   const saveLeadSchema = z.object({
     email: z.string().email(),
@@ -288,7 +288,7 @@ export async function saveLead(input: { email: string, source: string }) {
   }
 }
 
-export async function saveWorkoutLead(input: { email: string }) {
+export async function saveWorkoutLead(input: { email: string }): Promise<{ success: boolean, error?: string }> {
     'use server';
     const saveWorkoutLeadSchema = z.object({
         email: z.string().email()
@@ -340,11 +340,8 @@ export async function processPlanSignup(input: PlanSignupInput): Promise<PlanSig
     try {
         const result = await processPlanSignupFlow(input);
         
-        if (result.stripeCheckoutUrl) {
-            revalidatePath('/admin/leads');
-        } else {
-            revalidatePath('/admin/leads');
-        }
+        // Revalidate the leads page since a new lead might have been created
+        revalidatePath('/admin/leads');
 
         return result;
     } catch (error: any) {
@@ -495,5 +492,3 @@ export async function getLogs(limit: number = 15): Promise<LogEntry[]> {
         return [];
     }
 }
-
-    
