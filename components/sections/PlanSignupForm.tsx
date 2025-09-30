@@ -13,7 +13,7 @@ import { useState, useTransition } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import type { Program } from "@/types";
-import { processPlanSignupAction } from "@/lib/actions";
+import { processPlanSignup } from "@/lib/actions";
 
 const signupSchema = z.object({
   fullName: z.string().min(3, { message: "El nombre debe tener al menos 3 caracteres." }),
@@ -54,7 +54,7 @@ export default function PlanSignupForm({ plan, onSubmitted }: PlanSignupFormProp
                 isDigital: !!plan.isDigital,
             };
 
-            const result = await processPlanSignupAction(planData);
+            const result = await processPlanSignup(planData);
 
             if (result.stripeCheckoutUrl) {
                 // For digital products, redirect to Stripe

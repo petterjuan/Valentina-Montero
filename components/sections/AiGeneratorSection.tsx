@@ -3,7 +3,7 @@
 
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
-import { generatePersonalizedWorkoutAction, saveWorkoutLead } from "@/lib/actions";
+import { generatePersonalizedWorkout, saveWorkoutLead } from "@/lib/actions";
 import { type GeneratePersonalizedWorkoutOutput } from "@/ai/flows/generate-personalized-workout";
 import { useState, useTransition } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -62,7 +62,7 @@ export default function AiGeneratorSection() {
       startGeneratingTransition(async () => {
         setError(null);
         try {
-          const newWorkout = await generatePersonalizedWorkoutAction(data);
+          const newWorkout = await generatePersonalizedWorkout(data);
           setWorkoutData(newWorkout);
           
           if (data.email) {
