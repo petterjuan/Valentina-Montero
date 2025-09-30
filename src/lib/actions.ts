@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { z } from 'zod';
@@ -154,9 +153,11 @@ export async function getBlogPosts(limit: number = 10): Promise<Post[]> {
     };
 
     const fetchMongoPosts = async () => {
+        const db = await connectToDb();
+        if (!db) return;
+
         try {
-            await connectToDb();
-            const postsFromDb = await PostModel.find({})
+            const postsFromDb: PostDocument[] = await PostModel.find({})
                 .sort({ createdAt: -1 })
                 .limit(limit)
                 .lean() as PostDocument[];
@@ -192,26 +193,27 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
         return null;
     }
 
-    // Try MongoDB first for AI-generated posts
-    try {
-        await connectToDb();
-        const mongoPost = await PostModel.findOne({ slug: slug }).lean().exec() as PostDocument | null;
-        if (mongoPost) {
-            return {
-                id: mongoPost._id.toString(),
-                source: 'MongoDB',
-                title: mongoPost.title,
-                slug: mongoPost.slug,
-                excerpt: mongoPost.excerpt,
-                content: mongoPost.content,
-                imageUrl: mongoPost.imageUrl,
-                aiHint: mongoPost.aiHint,
-                createdAt: new Date(mongoPost.createdAt),
-            };
+    const db = await connectToDb();
+    if (db) {
+        try {
+            const mongoPost = await PostModel.findOne({ slug: slug }).lean().exec() as PostDocument | null;
+            if (mongoPost) {
+                return {
+                    id: mongoPost._id.toString(),
+                    source: 'MongoDB',
+                    title: mongoPost.title,
+                    slug: mongoPost.slug,
+                    excerpt: mongoPost.excerpt,
+                    content: mongoPost.content,
+                    imageUrl: mongoPost.imageUrl,
+                    aiHint: mongoPost.aiHint,
+                    createdAt: new Date(mongoPost.createdAt),
+                };
+            }
+        } catch (error) {
+            console.error(`Error fetching post by slug "${slug}" from MongoDB:`, error);
+            logEvent('MongoDB Error', { message: `Failed to fetch post by slug: ${slug}`, error: error instanceof Error ? error.message : String(error) }, 'error');
         }
-    } catch (error) {
-        console.error(`Error fetching post by slug "${slug}" from MongoDB:`, error);
-        logEvent('MongoDB Error', { message: `Failed to fetch post by slug: ${slug}`, error: error instanceof Error ? error.message : String(error) }, 'error');
     }
 
     const shopify = getShopifyStorefront();
@@ -265,8 +267,10 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
 }
 
 export async function getTestimonials(): Promise<Testimonial[]> {
+    const db = await connectToDb();
+    if (!db) return [];
+
     try {
-        await connectToDb();
         const testimonials = await TestimonialModel.find({}).sort({ order: 1 }).lean() as TestimonialDocument[];
         return testimonials.map(doc => ({
             ...doc,
@@ -338,6 +342,11 @@ export async function processPlanSignup(input: PlanSignupInput): Promise<PlanSig
 
 
 export async function generateNewBlogPost(): Promise<{ success: boolean, title?: string, slug?: string, error?: string }> {
+    const db = await connectToDb();
+    if (!db) {
+        return { success: false, error: "La conexión con la base de datos no está disponible." };
+    }
+
     try {
         // We get existing titles from both Shopify and MongoDB to avoid duplicates
         const recentPosts = await getBlogPosts(10);
@@ -345,7 +354,6 @@ export async function generateNewBlogPost(): Promise<{ success: boolean, title?:
         
         const newPostData = await generateBlogPost({ existingTitles });
         
-        await connectToDb();
         const newPost = new PostModel({
             ...newPostData,
             createdAt: new Date(),
@@ -395,7 +403,7 @@ export async function getLeadsForAdmin(): Promise<Lead[]> {
         });
 
         return leads;
-    } catch (error) {
+    } catch (error)_ {
         console.error("Error fetching leads from Firestore:", error);
         logEvent('Firestore Read Error', { message: 'Failed to get leads for admin', error: error instanceof Error ? error.message : String(error) }, 'error');
         return [];
@@ -420,13 +428,18 @@ export async function getSystemStatuses(): Promise<SystemStatus> {
 
     // Check MongoDB
     try {
-        await connectToDb();
-        statuses.mongo = { status: 'success', message: 'Conectado a MongoDB a través de Mongoose.' };
-        try {
-            await TestimonialModel.findOne();
-            statuses.mongoData = { status: 'success', message: 'Se pudo leer la colección de testimonios en MongoDB.' };
-        } catch(e) {
-             statuses.mongoData = { status: 'error', message: `Conectado a MongoDB, pero falló la lectura de datos: ${e instanceof Error ? e.message : String(e)}` };
+        const db = await connectToDb();
+        if (db) {
+            statuses.mongo = { status: 'success', message: 'Conectado a MongoDB a través de Mongoose.' };
+            try {
+                await TestimonialModel.findOne();
+                statuses.mongoData = { status: 'success', message: 'Se pudo leer la colección de testimonios en MongoDB.' };
+            } catch(e) {
+                 statuses.mongoData = { status: 'error', message: `Conectado a MongoDB, pero falló la lectura de datos: ${e instanceof Error ? e.message : String(e)}` };
+            }
+        } else {
+            statuses.mongo = { status: 'error', message: `MONGODB_URI no está configurado. La conexión a MongoDB está deshabilitada.` };
+            statuses.mongoData = { status: 'error', message: 'No se pudo intentar leer datos de MongoDB porque la conexión está deshabilitada.' };
         }
     } catch (error) {
         statuses.mongo = { status: 'error', message: `Falló la conexión a MongoDB: ${error instanceof Error ? error.message : String(error)}` };
@@ -483,7 +496,3 @@ export async function getLogs(limit: number = 15): Promise<LogEntry[]> {
         return [];
     }
 }
-
-    
-
-    

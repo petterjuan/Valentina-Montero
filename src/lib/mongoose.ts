@@ -17,7 +17,7 @@ if (!cached) {
   cached = global.mongoose = { conn: null, promise: null };
 }
 
-async function connectToDb() {
+async function connectToDb(): Promise<typeof mongoose | null> {
   if (cached.conn) {
     return cached.conn;
   }
@@ -25,9 +25,10 @@ async function connectToDb() {
   if (!cached.promise) {
     const MONGODB_URI = process.env.MONGODB_URI;
     if (!MONGODB_URI) {
-      throw new Error(
-        'Please define the MONGODB_URI environment variable inside .env'
+      console.warn(
+        'Please define the MONGODB_URI environment variable inside .env. MongoDB features will be disabled.'
       );
+      return null;
     }
     
     const opts = {
