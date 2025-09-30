@@ -1,5 +1,5 @@
 
-import { type IPost, type ITestimonial } from '@/models/Testimonial';
+import { type IPost as PostModelType, type ITestimonial as TestimonialModelType } from '@/models/Testimonial';
 
 // Represents a blog post, now fetched from Shopify or MongoDB
 export interface Post {
@@ -13,6 +13,10 @@ export interface Post {
     aiHint?: string; // Often from image alt text
     createdAt: Date;
 }
+
+export interface IPost extends PostModelType {}
+export interface ITestimonial extends TestimonialModelType {}
+
 
 export interface Testimonial {
     _id: string;
