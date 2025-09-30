@@ -85,6 +85,7 @@ export async function getPrograms(collectionHandle: string, maxProducts: number)
         return programs;
     } catch (error) {
         console.error(`Error fetching Shopify programs for collection "${collectionHandle}":`, error);
+        logEvent('Shopify API Error', { message: `Failed to fetch collection: ${collectionHandle}`, error: error instanceof Error ? error.message : String(error) }, 'error');
         return [];
     }
 }
@@ -92,81 +93,92 @@ export async function getPrograms(collectionHandle: string, maxProducts: number)
 export async function getBlogPosts(limit: number = 10): Promise<Post[]> {
     let shopifyPosts: Post[] = [];
     let mongoPosts: Post[] = [];
+    let allPosts: Post[] = [];
 
-    try {
-        const { articles } = await shopifyStorefront.request(
-            `query getBlogArticles($first: Int!) {
-                articles(first: $first, sortKey: PUBLISHED_AT, reverse: true) {
-                    edges {
-                        node {
-                            id
-                            title
-                            handle
-                            excerpt
-                            contentHtml
-                            publishedAt
-                            image {
-                                url
-                                altText
+    const fetchShopifyPosts = async () => {
+        try {
+            const { articles } = await shopifyStorefront.request(
+                `query getBlogArticles($first: Int!) {
+                    articles(first: $first, sortKey: PUBLISHED_AT, reverse: true) {
+                        edges {
+                            node {
+                                id
+                                title
+                                handle
+                                excerpt
+                                contentHtml
+                                publishedAt
+                                image {
+                                    url
+                                    altText
+                                }
                             }
                         }
                     }
+                }`,
+                {
+                    variables: {
+                        first: limit,
+                    },
                 }
-            }`,
-            {
-                variables: {
-                    first: limit,
-                },
-            }
-        );
-        shopifyPosts = articles.edges.map(({ node }: any) => ({
-            id: node.id,
-            source: 'Shopify',
-            title: node.title,
-            slug: node.handle,
-            excerpt: node.excerpt,
-            content: node.contentHtml,
-            imageUrl: node.image?.url,
-            aiHint: node.image?.altText,
-            createdAt: new Date(node.publishedAt),
-        }));
-    } catch (error) {
-        console.error("Error fetching blog posts from Shopify:", error);
-    }
+            );
+            shopifyPosts = articles.edges.map(({ node }: any) => ({
+                id: node.id,
+                source: 'Shopify',
+                title: node.title,
+                slug: node.handle,
+                excerpt: node.excerpt,
+                content: node.contentHtml,
+                imageUrl: node.image?.url,
+                aiHint: node.image?.altText,
+                createdAt: new Date(node.publishedAt),
+            }));
+        } catch (error) {
+            console.error("Error fetching blog posts from Shopify:", error);
+            logEvent('Shopify API Error', { message: 'Failed to fetch blog posts', error: error instanceof Error ? error.message : String(error) }, 'warn');
+        }
+    };
 
-    try {
-        await connectToDb();
-        const postsFromDb = await PostModel.find({})
-            .sort({ createdAt: -1 })
-            .limit(limit)
-            .lean();
+    const fetchMongoPosts = async () => {
+        try {
+            await connectToDb();
+            const postsFromDb = await PostModel.find({})
+                .sort({ createdAt: -1 })
+                .limit(limit)
+                .lean();
 
-        mongoPosts = postsFromDb.map(doc => ({
-            id: doc._id.toString(),
-            source: 'MongoDB',
-            title: doc.title,
-            slug: doc.slug,
-            excerpt: doc.excerpt,
-            content: doc.content,
-            imageUrl: doc.imageUrl,
-            aiHint: doc.aiHint,
-            createdAt: new Date(doc.createdAt),
-        }));
-    } catch (error) {
-        console.error("Error fetching posts from MongoDB:", error);
-    }
+            mongoPosts = postsFromDb.map(doc => ({
+                id: doc._id.toString(),
+                source: 'MongoDB',
+                title: doc.title,
+                slug: doc.slug,
+                excerpt: doc.excerpt,
+                content: doc.content,
+                imageUrl: doc.imageUrl,
+                aiHint: doc.aiHint,
+                createdAt: new Date(doc.createdAt),
+            }));
+        } catch (error) {
+            console.error("Error fetching posts from MongoDB:", error);
+            logEvent('MongoDB Error', { message: 'Failed to fetch blog posts', error: error instanceof Error ? error.message : String(error) }, 'warn');
+        }
+    };
+    
+    await Promise.all([fetchShopifyPosts(), fetchMongoPosts()]);
 
-    const allPosts = [...shopifyPosts, ...mongoPosts];
+    allPosts = [...shopifyPosts, ...mongoPosts];
     allPosts.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
     return allPosts.slice(0, limit);
 }
+
 
 export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
     if (!slug) {
         return null;
     }
 
+    // Try MongoDB first for AI-generated posts
     try {
         await connectToDb();
         const mongoPost = await PostModel.findOne({ slug: slug }).lean().exec();
@@ -185,8 +197,10 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
         }
     } catch (error) {
         console.error(`Error fetching post by slug "${slug}" from MongoDB:`, error);
+        logEvent('MongoDB Error', { message: `Failed to fetch post by slug: ${slug}`, error: error instanceof Error ? error.message : String(error) }, 'error');
     }
 
+    // Fallback to Shopify for manual posts
     try {
         const { blog } = await shopifyStorefront.request(
             `query getArticleByHandle($handle: String!) {
@@ -226,6 +240,7 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
         }
     } catch (error) {
         console.error(`Error fetching article by handle "${slug}" from Shopify:`, error);
+        logEvent('Shopify API Error', { message: `Failed to fetch article by handle: ${slug}`, error: error instanceof Error ? error.message : String(error) }, 'error');
     }
     
     return null;
@@ -242,6 +257,7 @@ export async function getTestimonials(): Promise<Testimonial[]> {
         }));
     } catch (error) {
         console.error("Error fetching testimonials:", error);
+        logEvent('MongoDB Error', { message: 'Failed to fetch testimonials', error: error instanceof Error ? error.message : String(error) }, 'error');
         return [];
     }
 }
@@ -251,23 +267,31 @@ export async function getTestimonials(): Promise<Testimonial[]> {
 //  SERVER ACTIONS (Called from Client Components)
 //========================================================================
 
-export async function saveLead(input: { email: string, source: string }): Promise<{ success: boolean, error?: string }> {
+export async function saveLead(prevState: any, formData: FormData): Promise<{ success: boolean, error?: string, message?: string }> {
   'use server';
   const saveLeadSchema = z.object({
-    email: z.string().email(),
+    email: z.string().email({ message: "Por favor, introduce un email válido." }),
     source: z.string(),
   });
   
-  const validated = saveLeadSchema.safeParse(input);
+  const validated = saveLeadSchema.safeParse({
+      email: formData.get('email'),
+      source: formData.get('source'),
+  });
+
   if (!validated.success) {
-      return { success: false, error: 'Invalid input.' };
+      return { success: false, error: validated.error.errors[0].message };
   }
   
   const { email, source } = validated.data;
   const firestore = getFirestore();
+
   if (!firestore) {
-    return { success: false, error: "Firestore no está disponible." };
+    const errorMsg = "El servicio de registro no está disponible en este momento.";
+    logEvent('Firestore Error', { message: 'saveLead failed because Firestore is not initialized' }, 'error');
+    return { success: false, error: errorMsg };
   }
+
   try {
     const leadRef = firestore.collection('leads').doc(email);
     await leadRef.set({
@@ -280,47 +304,12 @@ export async function saveLead(input: { email: string, source: string }): Promis
     
     revalidatePath('/admin/leads');
     
-    return { success: true };
+    return { success: true, message: "¡Gracias por suscribirte!" };
   } catch (error) {
-    const message = error instanceof Error ? error.message : "No se pudo guardar el lead.";
-    logEvent('Firestore Write Error', { error: message }, 'error');
+    const message = "No se pudo completar el registro. Inténtalo de nuevo más tarde.";
+    logEvent('Firestore Write Error', { error: error instanceof Error ? error.message : "Unknown error saving lead", email, source }, 'error');
     return { success: false, error: message };
   }
-}
-
-export async function saveWorkoutLead(input: { email: string }): Promise<{ success: boolean, error?: string }> {
-    'use server';
-    const saveWorkoutLeadSchema = z.object({
-        email: z.string().email()
-    });
-
-    const validated = saveWorkoutLeadSchema.safeParse(input);
-    if (!validated.success) {
-        return { success: false, error: 'Invalid input.' };
-    }
-    const { email } = validated.data;
-    const firestore = getFirestore();
-    if (!firestore) {
-        return { success: false, error: "Firestore no está disponible." };
-    }
-    try {
-        const leadRef = firestore.collection('leads').doc(email);
-        await leadRef.set({
-            email,
-            source: 'Generador IA',
-            status: 'subscribed',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        }, { merge: true });
-
-        revalidatePath('/admin/leads');
-        
-        return { success: true };
-    } catch (error) {
-        const message = error instanceof Error ? error.message : "No se pudo guardar el lead del generador IA.";
-        logEvent('Firestore Write Error', { error: message }, 'error');
-        return { success: false, error: message };
-    }
 }
 
 export async function generatePersonalizedWorkout(input: GeneratePersonalizedWorkoutInput): Promise<GeneratePersonalizedWorkoutOutput> {
@@ -335,30 +324,70 @@ export async function generatePersonalizedWorkout(input: GeneratePersonalizedWor
     }
 }
 
-export async function processPlanSignup(input: PlanSignupInput): Promise<PlanSignupOutput> {
+export async function processPlanSignup(prevState: any, formData: FormData): Promise<PlanSignupOutput> {
     'use server';
+
+    const PlanSignupFormSchema = z.object({
+        fullName: z.string().min(3, "El nombre debe tener al menos 3 caracteres."),
+        email: z.string().email("Por favor, introduce un email válido."),
+        phone: z.string().optional(),
+        planName: z.string(),
+        planPrice: z.coerce.number(),
+        isDigital: z.coerce.boolean(),
+    });
+
+    const validated = PlanSignupFormSchema.safeParse({
+        fullName: formData.get('fullName'),
+        email: formData.get('email'),
+        phone: formData.get('phone'),
+        planName: formData.get('planName'),
+        planPrice: formData.get('planPrice'),
+        isDigital: formData.get('isDigital'),
+    });
+
+    if (!validated.success) {
+        return {
+            confirmationMessage: 'Datos inválidos.',
+            clientEmail: '',
+            planName: '',
+            error: validated.error.flatten().fieldErrors,
+        };
+    }
+    
+    const input = validated.data;
+
     try {
         const result = await processPlanSignupFlow(input);
         
-        revalidatePath('/admin/leads');
+        if (input.isDigital) {
+            revalidatePath('/admin/leads');
+        } else {
+            revalidatePath('/admin/signups'); // Assuming there's an admin page for signups
+        }
 
         return result;
     } catch (error: any) {
-        const errorMessage = error.message || "No se pudo procesar la solicitud.";
-        logEvent('Plan Signup Failed', { error: errorMessage, input: input }, 'error');
-        throw new Error(errorMessage);
+        const errorMessage = "No se pudo procesar la solicitud. Inténtalo de nuevo más tarde.";
+        logEvent('Plan Signup Failed', { error: error.message, input }, 'error');
+        return {
+            confirmationMessage: 'Error',
+            clientEmail: input.email,
+            planName: input.planName,
+            error: { _form: [errorMessage] },
+        };
     }
 }
 
 export async function generateNewBlogPost(): Promise<{ success: boolean, title?: string, slug?: string, error?: string }> {
     'use server';
     try {
-        await connectToDb();
+        // We get existing titles from both Shopify and MongoDB to avoid duplicates
         const recentPosts = await getBlogPosts(10);
         const existingTitles = recentPosts.map(p => p.title);
         
         const newPostData = await generateBlogPostFlow({ existingTitles });
         
+        await connectToDb();
         const newPost = new PostModel({
             ...newPostData,
             createdAt: new Date(),
@@ -372,7 +401,7 @@ export async function generateNewBlogPost(): Promise<{ success: boolean, title?:
         
         return { success: true, title: newPost.title, slug: newPost.slug };
     } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Un error desconocido ocurrió.';
+        const errorMessage = error instanceof Error ? error.message : 'Un error desconocido ocurrió al generar el post.';
         logEvent('Generate Blog Post Action Failed', { error: errorMessage }, 'error');
         return { success: false, error: errorMessage };
     }
@@ -384,6 +413,7 @@ export async function getLeadsForAdmin(): Promise<Lead[]> {
     const firestore = getFirestore();
     if (!firestore) {
         console.error("Firestore is not available.");
+        logEvent('Admin Area Error', { message: 'getLeadsForAdmin failed, Firestore not initialized' }, 'error');
         return [];
     }
 
@@ -410,6 +440,7 @@ export async function getLeadsForAdmin(): Promise<Lead[]> {
         return leads;
     } catch (error) {
         console.error("Error fetching leads from Firestore:", error);
+        logEvent('Firestore Read Error', { message: 'Failed to get leads for admin', error: error instanceof Error ? error.message : String(error) }, 'error');
         return [];
     }
 }
@@ -425,7 +456,7 @@ export async function getSystemStatuses(): Promise<SystemStatus> {
             await firestore.collection('__healthcheck__').limit(1).get();
             statuses.firebase = { status: 'success', message: 'Conectado a Firestore y autenticado correctamente.' };
         } else {
-            throw new Error("La inicialización de Firebase Admin falló.");
+            throw new Error("La inicialización de Firebase Admin falló o no se proveyó una clave.");
         }
     } catch (error) {
         statuses.firebase = { status: 'error', message: `Falló la conexión a Firestore: ${error instanceof Error ? error.message : String(error)}` };
@@ -462,6 +493,7 @@ export async function getLogs(limit: number = 15): Promise<LogEntry[]> {
     const firestore = getFirestore();
     if (!firestore) {
         console.error("Firestore is not available for fetching logs.");
+        logEvent('Admin Area Error', { message: 'getLogs failed, Firestore not initialized' }, 'error');
         return [];
     }
 
@@ -487,6 +519,7 @@ export async function getLogs(limit: number = 15): Promise<LogEntry[]> {
         });
     } catch (error) {
         console.error("Error fetching logs from Firestore:", error);
+        logEvent('Firestore Read Error', { message: 'Failed to fetch logs', error: error instanceof Error ? error.message : String(error) }, 'error');
         return [];
     }
 }
