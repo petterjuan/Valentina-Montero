@@ -1,19 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    images: {
-        remotePatterns: [
-            {
-                protocol: 'https',
-                hostname: 'cdn.shopify.com',
-                pathname: '**',
-            },
-            {
-                protocol: 'https',
-                hostname: 'picsum.photos',
-                pathname: '**',
-            }
-        ]
-    }
+  swcMinify: false, // Desactiva la minificación SWC para evitar problemas de memoria en el build
 };
 
 export default nextConfig;

@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { z } from 'zod';
@@ -6,8 +7,10 @@ import { getFirestore } from "@/lib/firebase";
 import { logEvent } from '@/lib/logger';
 import { type Lead, type LogEntry, type SystemStatus, type Post, type Program, type Testimonial } from "@/types";
 import { generateBlogPost } from '@/ai/flows/generate-blog-post';
-import { generatePersonalizedWorkout } from '@/ai/flows/generate-personalized-workout';
-import { processPlanSignup } from '@/ai/flows/plan-signup-flow';
+import { generatePersonalizedWorkout as genkitGeneratePersonalizedWorkout } from '@/ai/flows/generate-personalized-workout';
+import { processPlanSignup as genkitProcessPlanSignup } from '@/ai/flows/plan-signup-flow';
+import type { GeneratePersonalizedWorkoutInput, GeneratePersonalizedWorkoutOutput } from '@/ai/flows/generate-personalized-workout';
+import type { PlanSignupInput, PlanSignupOutput } from '@/ai/flows/plan-signup-flow';
 import PostModel from '@/models/Post';
 import TestimonialModel from '@/models/Testimonial';
 import connectToDb from '@/lib/mongoose';
@@ -324,10 +327,13 @@ export async function saveLead(
     }
 }
 
-export async function saveWorkoutLead(
-    { email }: { email: string }
-): Promise<{ success: boolean; error?: string }> {
-   return saveLead({ email, source: 'Generador IA'});
+export async function generatePersonalizedWorkout(input: GeneratePersonalizedWorkoutInput): Promise<GeneratePersonalizedWorkoutOutput> {
+    return await genkitGeneratePersonalizedWorkout(input);
+}
+
+
+export async function processPlanSignup(input: PlanSignupInput): Promise<PlanSignupOutput> {
+    return await genkitProcessPlanSignup(input);
 }
 
 
@@ -477,5 +483,3 @@ export async function getLogs(limit: number = 15): Promise<LogEntry[]> {
         return [];
     }
 }
-    
-export { generatePersonalizedWorkout, processPlanSignup };

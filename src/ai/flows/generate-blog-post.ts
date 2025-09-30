@@ -31,13 +31,15 @@ export type GenerateBlogPostOutput = z.infer<typeof GenerateBlogPostOutputSchema
 
 export async function generateBlogPost(input: GenerateBlogPostInput): Promise<GenerateBlogPostOutput> {
   const blogPost = await generateBlogPostFlow(input);
+  if (!blogPost) {
+    throw new Error("El flujo de generación de blog no devolvió ningún resultado.");
+  }
   const slug = slugify(blogPost.title, { lower: true, strict: true });
   return {
     ...blogPost,
     slug,
   };
 }
-
 
 const generateBlogPostPrompt = ai.definePrompt(
     {
@@ -62,7 +64,7 @@ const generateBlogPostPrompt = ai.definePrompt(
     },
 );
 
-export const generateBlogPostFlow = ai.defineFlow(
+const generateBlogPostFlow = ai.defineFlow(
     {
       name: 'generateBlogPostFlow',
       inputSchema: GenerateBlogPostInputSchema,
@@ -70,6 +72,9 @@ export const generateBlogPostFlow = ai.defineFlow(
     },
     async (input) => {
       const { output } = await generateBlogPostPrompt(input);
-      return output!;
+      if (!output) {
+        throw new Error('La respuesta de la IA no tuvo contenido.');
+      }
+      return output;
     }
 );

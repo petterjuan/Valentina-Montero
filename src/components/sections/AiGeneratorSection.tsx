@@ -1,9 +1,10 @@
 
+
 "use client";
 
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
-import { generatePersonalizedWorkout, saveWorkoutLead } from "@/lib/actions";
+import { generatePersonalizedWorkout, saveLead } from "@/lib/actions";
 import { type GeneratePersonalizedWorkoutOutput } from "@/ai/flows/generate-personalized-workout";
 import { useState, useTransition } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -66,7 +67,7 @@ export default function AiGeneratorSection() {
           setWorkoutData(newWorkout);
           
           if (data.email) {
-            await saveWorkoutLead({ email: data.email });
+            await saveLead({ email: data.email, source: 'Generador IA' });
             setIsFullPlan(true); // Unlock directly if email was provided initially
           }
 
@@ -80,14 +81,17 @@ export default function AiGeneratorSection() {
     }
 
     // Case 2: Unlocking the full plan with an email
-    if (workoutData && !isFullPlan && data.email) {
+    if (workoutData && !isFullPlan) {
       const emailToSave = data.email;
-      if (!emailToSave) return;
+      if (typeof emailToSave !== 'string' || emailToSave === '') {
+        form.setError("email", { type: "manual", message: "Se requiere un correo para desbloquear el plan."})
+        return;
+      }
       
       startUnlockingTransition(async () => {
         setError(null);
         try {
-          const leadResult = await saveWorkoutLead({ email: emailToSave });
+          const leadResult = await saveLead({ email: emailToSave, source: 'Generador IA' });
           if (leadResult.success) {
             setIsFullPlan(true);
             toast({ title: "¡Plan Desbloqueado!", description: "Gracias por suscribirte. Ahora tienes acceso al plan completo." });
