@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -12,7 +13,7 @@ import Image from "next/image";
 import placeholderImages from "@/lib/placeholder-images.json";
 import Link from "next/link";
 import type { Program } from "@/types";
-import { getPrograms } from "@/lib/data";
+import { getPrograms } from "@/lib/actions";
 
 const fallbackPrograms: Program[] = [
     {
@@ -178,3 +179,5 @@ export default async function CoachingProgramsSection({
     </section>
   );
 }
+
+    

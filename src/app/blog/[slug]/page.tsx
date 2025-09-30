@@ -1,4 +1,5 @@
-import { getBlogPostBySlug } from "@/lib/data";
+
+import { getBlogPostBySlug } from "@/lib/actions";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, Download, Eye, Bot, Building } from "lucide-react";
@@ -140,3 +141,5 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
     </article>
   );
 }
+
+    

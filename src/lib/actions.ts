@@ -13,7 +13,7 @@ import PostModel from '@/models/Post';
 import TestimonialModel from '@/models/Testimonial';
 import connectToDb from './mongoose';
 import { shopifyStorefront } from './shopify';
-
+import { revalidatePath } from 'next/cache';
 
 //========================================================================
 //  DATA FETCHING ACTIONS (Called from Server Components)
@@ -246,15 +246,14 @@ export async function getTestimonials(): Promise<Testimonial[]> {
     }
 }
 
-//========================================================================
-//  MUTATION & CLIENT-INVOKABLE ACTIONS (Marked with 'use server')
-//========================================================================
 
+//========================================================================
+//  SERVER ACTIONS (Called from Client Components)
+//========================================================================
 const saveLeadSchema = z.object({
   email: z.string().email(),
   source: z.string(),
 });
-
 export async function saveLead(input: { email: string, source: string }) {
   'use server';
   const { email, source } = saveLeadSchema.parse(input);
@@ -262,20 +261,29 @@ export async function saveLead(input: { email: string, source: string }) {
   if (!firestore) {
     throw new Error("Firestore no está disponible.");
   }
-  const leadRef = firestore.collection('leads').doc(email);
-  await leadRef.set({
-    email,
-    source,
-    status: 'subscribed',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  }, { merge: true });
+  try {
+    const leadRef = firestore.collection('leads').doc(email);
+    await leadRef.set({
+      email,
+      source,
+      status: 'subscribed',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }, { merge: true });
+    
+    revalidatePath('/admin/leads');
+    
+    return { success: true };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "No se pudo guardar el lead.";
+    logEvent('Firestore Write Error', { error: message }, 'error');
+    return { success: false, error: message };
+  }
 }
 
 const saveWorkoutLeadSchema = z.object({
     email: z.string().email()
 });
-
 export async function saveWorkoutLead(input: { email: string }) {
     'use server';
     const { email } = saveWorkoutLeadSchema.parse(input);
@@ -283,14 +291,24 @@ export async function saveWorkoutLead(input: { email: string }) {
     if (!firestore) {
         throw new Error("Firestore no está disponible.");
     }
-    const leadRef = firestore.collection('leads').doc(email);
-    await leadRef.set({
-        email,
-        source: 'Generador IA',
-        status: 'subscribed',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-    }, { merge: true });
+    try {
+        const leadRef = firestore.collection('leads').doc(email);
+        await leadRef.set({
+            email,
+            source: 'Generador IA',
+            status: 'subscribed',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        }, { merge: true });
+
+        revalidatePath('/admin/leads');
+        
+        return { success: true };
+    } catch (error) {
+        const message = error instanceof Error ? error.message : "No se pudo guardar el lead del generador IA.";
+        logEvent('Firestore Write Error', { error: message }, 'error');
+        return { success: false, error: message };
+    }
 }
 
 export async function generatePersonalizedWorkout(input: GeneratePersonalizedWorkoutInput): Promise<GeneratePersonalizedWorkoutOutput> {
@@ -300,7 +318,7 @@ export async function generatePersonalizedWorkout(input: GeneratePersonalizedWor
         return workoutData;
     } catch (error: any) {
         const errorMessage = error.message || 'Ocurrió un error al generar tu plan.';
-        logEvent('AI Workout Generation Failed', { error: errorMessage }, 'error');
+        logEvent('AI Workout Generation Failed', { error: errorMessage, input: input }, 'error');
         throw new Error(errorMessage);
     }
 }
@@ -310,10 +328,19 @@ export async function processPlanSignup(input: PlanSignupInput): Promise<PlanSig
     'use server';
     try {
         const result = await planSignupFlow(input);
+        
+        // Revalidate admin paths if a signup or lead was created
+        if (result.stripeCheckoutUrl) {
+            revalidatePath('/admin/leads'); // A lead is created for digital products
+        } else {
+            revalidatePath('/admin/leads'); // Future-proofing if coaching signups also become leads
+            // If you had an admin page for signups, you'd revalidate it here too
+        }
+
         return result;
     } catch (error: any) {
         const errorMessage = error.message || "No se pudo procesar la solicitud.";
-        logEvent('Plan Signup Failed', { error: errorMessage }, 'error');
+        logEvent('Plan Signup Failed', { error: errorMessage, input: input }, 'error');
         throw new Error(errorMessage);
     }
 }
@@ -337,6 +364,9 @@ export async function generateNewBlogPost(): Promise<{ success: boolean, title?:
 
         console.log(`Tarea CRON completada: Nuevo artículo guardado en MongoDB con slug: ${newPost.slug}`);
         logEvent('Cron Job Success: Blog Post Generated and Saved', { title: newPost.title, slug: newPost.slug });
+        
+        revalidatePath('/blog');
+        revalidatePath(`/blog/${newPost.slug}`);
         
         return { success: true, title: newPost.title, slug: newPost.slug };
     } catch (error) {

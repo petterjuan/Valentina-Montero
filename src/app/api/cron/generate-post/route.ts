@@ -55,7 +55,10 @@ export async function GET(req: Request) {
     }
   }
 
+  // This part should ideally not be reached, but it's a fallback.
   return NextResponse.json({ message: 'La tarea CRON falló inesperadamente.' }, { status: 500 });
 }
+
+    
 
     

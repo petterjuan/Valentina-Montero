@@ -66,9 +66,9 @@ export default function LeadMagnetSection() {
   const onSubmit = (data: FormData) => {
     startTransition(async () => {
         setStatus('submitting');
-        try {
-            await saveLead({ email: data.email, source: 'Guía Gratuita - 10k Pasos' });
-            
+        const result = await saveLead({ email: data.email, source: 'Guía Gratuita - 10k Pasos' });
+        
+        if (result.success) {
             const downloadUrl = "/Estrategias-para-lograr-10k-pasos-al-dia.pdf";
 
             setStatus('success');
@@ -84,13 +84,12 @@ export default function LeadMagnetSection() {
                 setIsSubmitted(true);
                 setStatus('idle');
             }, 1500);
-        } catch (error) {
+        } else {
             setStatus('idle');
-            const message = error instanceof Error ? error.message : "No se pudo completar la solicitud.";
             toast({
                 variant: "destructive",
                 title: "¡Uy! Algo salió mal.",
-                description: message,
+                description: result.error || "No se pudo completar la solicitud.",
             });
         }
     });

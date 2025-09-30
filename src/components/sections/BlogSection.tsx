@@ -1,4 +1,5 @@
-import { getBlogPosts } from "@/lib/data";
+
+import { getBlogPosts } from "@/lib/actions";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -71,3 +72,5 @@ export default async function BlogSection() {
     </section>
   );
 }
+
+    
