@@ -63,6 +63,7 @@ export default function PlanSignupForm({ plan, onSubmitted }: PlanSignupFormProp
                 // For coaching plans, show success message
                 setIsSubmitted(true);
                 toast({ title: "¡Solicitud Recibida!", description: result.confirmationMessage });
+                onSubmitted();
             }
         } catch(error: any) {
             toast({
