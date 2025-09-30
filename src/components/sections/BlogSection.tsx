@@ -1,5 +1,4 @@
-
-import { getBlogPosts } from "@/app/actions";
+import { getBlogPosts } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import {
   Card,

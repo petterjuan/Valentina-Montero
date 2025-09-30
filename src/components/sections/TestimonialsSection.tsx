@@ -1,8 +1,7 @@
-
 import type { Testimonial } from "@/types";
 import TestimonialsCarousel from "./TestimonialsCarousel";
 import placeholderImages from "@/lib/placeholder-images.json";
-import { getTestimonials } from "@/app/actions";
+import { getTestimonials } from "@/lib/data";
 
 const fallbackTestimonials: Omit<Testimonial, "_id" | "id">[] = [
   {

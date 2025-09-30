@@ -1,9 +1,8 @@
-
 'use client';
 
 import * as React from "react";
 import { CheckCircle, XCircle, FileText, Loader2, RefreshCw, ZoomIn } from "lucide-react";
-import { getLogs, getSystemStatuses, SystemStatus } from "@/app/actions";
+import { getLogs, getSystemStatuses, SystemStatus } from "@/lib/actions";
 import { type LogEntry } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";

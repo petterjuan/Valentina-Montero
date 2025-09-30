@@ -1,5 +1,4 @@
-
-import { getBlogPostBySlug } from "@/app/actions";
+import { getBlogPostBySlug } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, Download, Eye, Bot, Building } from "lucide-react";

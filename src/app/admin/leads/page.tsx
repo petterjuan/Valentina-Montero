@@ -1,5 +1,4 @@
-
-import { getLeadsForAdmin } from "@/app/actions";
+import { getLeadsForAdmin } from "@/lib/actions";
 import {
   Table,
   TableBody,
@@ -86,5 +85,3 @@ export default async function AdminLeadsPage() {
     </section>
   );
 }
-
-    
