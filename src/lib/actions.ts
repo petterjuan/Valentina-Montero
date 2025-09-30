@@ -160,10 +160,10 @@ export async function getBlogPosts(limit: number = 10): Promise<Post[]> {
         };
 
         try {
-            const postsFromDb: LeanDocument<IPost>[] = await PostModel.find({})
+            const postsFromDb = (await PostModel.find({})
                 .sort({ createdAt: -1 })
                 .limit(limit)
-                .lean();
+                .lean()) as unknown as IPost[];
 
             mongoPosts = postsFromDb.map(doc => ({
                 id: doc._id.toString(),
@@ -199,7 +199,7 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
     const db = await connectToDb();
     if (db) {
         try {
-            const mongoPost: LeanDocument<IPost> | null = await PostModel.findOne({ slug }).lean();
+            const mongoPost = (await PostModel.findOne({ slug }).lean()) as unknown as IPost;
             if (mongoPost) {
                 return {
                     id: mongoPost._id.toString(),
@@ -277,7 +277,7 @@ export async function getTestimonials(): Promise<Testimonial[]> {
     };
 
     try {
-        const testimonials: LeanDocument<ITestimonial>[] = await TestimonialModel.find({}).sort({ order: 1 }).lean();
+        const testimonials = (await TestimonialModel.find({}).sort({ order: 1 }).lean()) as unknown as ITestimonial[];
         return testimonials.map(doc => ({
             id: doc._id.toString(),
             _id: doc._id.toString(),
