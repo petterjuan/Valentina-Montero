@@ -1,6 +1,19 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  swcMinify: false, // Desactivar temporalmente la minificación para solucionar problemas de build en Vercel
+    images: {
+        remotePatterns: [
+            {
+                protocol: 'https',
+                hostname: 'cdn.shopify.com',
+                pathname: '**',
+            },
+            {
+                protocol: 'https',
+                hostname: 'picsum.photos',
+                pathname: '**',
+            }
+        ]
+    }
 };
 
 export default nextConfig;
