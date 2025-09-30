@@ -9,6 +9,7 @@ import { type Post, type Program, type Testimonial, type Lead, type LogEntry } f
 import { getFirestore } from "@/lib/firebase";
 
 export async function getPrograms(collectionHandle: string, maxProducts: number): Promise<Program[]> {
+    'use server';
     try {
         const { collection } = await shopifyStorefront.request(
             `query getCollectionByHandle($handle: String!, $first: Int!) {
@@ -79,6 +80,7 @@ export async function getPrograms(collectionHandle: string, maxProducts: number)
 }
 
 export async function getBlogPosts(limit: number = 10): Promise<Post[]> {
+    'use server';
     let shopifyPosts: Post[] = [];
     let mongoPosts: Post[] = [];
 
@@ -153,6 +155,7 @@ export async function getBlogPosts(limit: number = 10): Promise<Post[]> {
 
 
 export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
+    'use server';
     if (!slug) {
         return null;
     }
@@ -223,6 +226,7 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
 }
 
 export async function getTestimonials(): Promise<Testimonial[]> {
+    'use server';
     try {
         await connectToDb();
         const testimonials = await TestimonialModel.find({}).sort({ order: 1 }).lean();
@@ -238,6 +242,7 @@ export async function getTestimonials(): Promise<Testimonial[]> {
 }
 
 export async function getLeadsForAdmin(): Promise<Lead[]> {
+    'use server';
     const firestore = getFirestore();
     if (!firestore) {
         console.error("Firestore is not available.");
@@ -281,6 +286,7 @@ export interface SystemStatus {
 }
 
 export async function getSystemStatuses(): Promise<SystemStatus> {
+    'use server';
     const statuses: SystemStatus = {};
 
     // Check Firebase
@@ -323,6 +329,7 @@ export async function getSystemStatuses(): Promise<SystemStatus> {
 }
 
 export async function getLogs(limit: number = 15): Promise<LogEntry[]> {
+    'use server';
     const firestore = getFirestore();
     if (!firestore) {
         console.error("Firestore is not available for fetching logs.");
@@ -354,3 +361,5 @@ export async function getLogs(limit: number = 15): Promise<LogEntry[]> {
         return [];
     }
 }
+
+    
