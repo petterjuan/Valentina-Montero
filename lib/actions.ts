@@ -413,7 +413,7 @@ export async function getLeadsForAdmin(): Promise<Lead[]> {
                 email: data.email,
                 source: data.source || 'N/A',
                 status: data.status || 'N/A',
-                createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : new Date().toISOString(),
+                createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
             } as Lead;
         });
 

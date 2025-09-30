@@ -43,7 +43,7 @@ export interface Lead {
     email: string;
     source: string;
     status: string;
-    createdAt: string; // Changed to string to ensure serializability
+    createdAt: Date;
 }
 
 export interface LogEntry {
