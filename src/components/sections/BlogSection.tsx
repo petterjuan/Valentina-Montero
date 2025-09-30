@@ -1,4 +1,3 @@
-
 import { getBlogPosts } from "@/lib/actions";
 import { Button } from "@/components/ui/button";
 import {
@@ -72,5 +71,3 @@ export default async function BlogSection() {
     </section>
   );
 }
-
-    

@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from "react";
@@ -63,13 +62,19 @@ export default function TroubleshootPage() {
 
     const runChecks = React.useCallback(async () => {
       setIsLoading(true);
-      const [fetchedStatuses, fetchedLogs] = await Promise.all([
-          getSystemStatuses(),
-          getLogs(15),
-      ]);
-      setStatuses(fetchedStatuses);
-      setLogs(fetchedLogs);
-      setIsLoading(false);
+      try {
+          const [fetchedStatuses, fetchedLogs] = await Promise.all([
+              getSystemStatuses(),
+              getLogs(15),
+          ]);
+          setStatuses(fetchedStatuses);
+          setLogs(fetchedLogs);
+      } catch (error) {
+          console.error("Failed to run system checks:", error);
+          // Optionally set an error state to show in the UI
+      } finally {
+          setIsLoading(false);
+      }
     }, []);
 
     React.useEffect(() => {
@@ -196,5 +201,3 @@ export default function TroubleshootPage() {
         </div>
     );
 }
-
-    

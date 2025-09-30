@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useForm } from "react-hook-form";
@@ -184,5 +183,3 @@ export default function PlanSignupForm({ plan, onSubmitted }: PlanSignupFormProp
     </>
   );
 }
-
-    

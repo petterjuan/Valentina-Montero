@@ -1,4 +1,3 @@
-
 import { getBlogPostBySlug } from "@/lib/actions";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -141,5 +140,3 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
     </article>
   );
 }
-
-    

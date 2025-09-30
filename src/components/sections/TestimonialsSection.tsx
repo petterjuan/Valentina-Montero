@@ -1,4 +1,3 @@
-
 import type { Testimonial } from "@/types";
 import TestimonialsCarousel from "./TestimonialsCarousel";
 import placeholderImages from "@/lib/placeholder-images.json";
@@ -60,5 +59,3 @@ export default async function TestimonialsSection() {
     </section>
   );
 }
-
-    

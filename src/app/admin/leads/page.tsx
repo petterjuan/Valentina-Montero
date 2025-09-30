@@ -1,4 +1,3 @@
-
 import { getLeadsForAdmin } from "@/lib/actions";
 import {
   Table,
@@ -86,5 +85,3 @@ export default async function AdminLeadsPage() {
     </section>
   );
 }
-
-    
