@@ -2,21 +2,21 @@
 "use client";
 
 import { useForm } from "react-hook-form";
-import { Button } from "components/ui/button";
-import { type GeneratePersonalizedWorkoutOutput, generatePersonalizedWorkout, saveWorkoutLead } from "lib/actions";
+import { Button } from "@/components/ui/button";
+import { type GeneratePersonalizedWorkoutOutput, generatePersonalizedWorkout, saveWorkoutLead } from "@/lib/actions";
 import { useState, useTransition } from "react";
-import { useToast } from "hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Wand2, AlertTriangle, Dumbbell, Calendar, Brain, Utensils, Lock, Sparkles, Loader2, Target, Flame, Activity, Shield, CheckCircle } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "components/ui/card";
-import { Label } from "components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "components/ui/select";
-import { Slider } from "components/ui/slider";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Form, FormControl, FormField, FormItem, FormMessage } from "components/ui/form";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "components/ui/accordion";
-import { Separator } from "components/ui/separator";
-import { Input } from "components/ui/input";
+import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
 
 const aiGeneratorClientSchema = z.object({
   fitnessGoal: z.string().min(1, "El objetivo de fitness es requerido"),

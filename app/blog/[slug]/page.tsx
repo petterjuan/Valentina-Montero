@@ -1,13 +1,13 @@
-import { getBlogPostBySlug } from "lib/actions";
-import { Button } from "components/ui/button";
-import { Separator } from "components/ui/separator";
+import { getBlogPostBySlug } from "@/lib/actions";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, Download, Eye, Bot, Building } from "lucide-react";
 import { type Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "components/ui/card";
-import { Badge } from "components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 export const dynamic = 'force-dynamic';
 

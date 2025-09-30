@@ -1,5 +1,5 @@
 
-import { PostDocument } from 'types';
+import { PostDocument } from '@/types';
 import mongoose, { Schema, model, models } from 'mongoose';
 
 const PostSchema = new Schema<PostDocument>({

@@ -1,18 +1,18 @@
-import { Button } from "components/ui/button";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardFooter,
   CardHeader,
   CardTitle,
-} from "components/ui/card";
+} from "@/components/ui/card";
 import { Check, Clock } from "lucide-react";
-import PlanSignupDialog from "components/sections/PlanSignupDialog";
+import PlanSignupDialog from "@/components/sections/PlanSignupDialog";
 import Image from "next/image";
-import placeholderImages from "lib/placeholder-images.json";
+import placeholderImages from "@/lib/placeholder-images.json";
 import Link from "next/link";
-import type { Program } from "types";
-import { getPrograms } from "lib/actions";
+import type { Program } from "@/types";
+import { getPrograms } from "@/lib/actions";
 
 const fallbackPrograms: Program[] = [
     {

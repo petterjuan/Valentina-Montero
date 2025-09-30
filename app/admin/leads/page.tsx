@@ -1,4 +1,4 @@
-import { getLeadsForAdmin } from "lib/actions";
+import { getLeadsForAdmin } from "@/lib/actions";
 import {
   Table,
   TableBody,
@@ -6,11 +6,11 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "components/ui/table";
-import { Badge } from "components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "components/ui/card";
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Users } from "lucide-react";
-import { type Lead } from "types";
+import { type Lead } from "@/types";
 
 export const dynamic = 'force-dynamic';
 

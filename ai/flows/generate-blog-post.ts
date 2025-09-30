@@ -9,7 +9,7 @@
  * - GenerateBlogPostOutput - El tipo de retorno para la función.
  */
 
-import { ai } from 'ai/genkit';
+import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import slugify from 'slugify';
 

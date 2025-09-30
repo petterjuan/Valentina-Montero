@@ -1,5 +1,5 @@
 
-import { TestimonialDocument } from 'types';
+import { TestimonialDocument } from '@/types';
 import mongoose, { Schema, model, models } from 'mongoose';
 
 const TestimonialSchema = new Schema<TestimonialDocument>({

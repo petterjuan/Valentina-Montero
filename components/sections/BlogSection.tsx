@@ -1,5 +1,5 @@
-import { getBlogPosts } from "lib/actions";
-import { Button } from "components/ui/button";
+import { getBlogPosts } from "@/lib/actions";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -7,8 +7,8 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "components/ui/card";
-import { Post } from "types";
+} from "@/components/ui/card";
+import { Post } from "@/types";
 import Image from "next/image";
 import Link from "next/link";
 

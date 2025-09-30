@@ -3,12 +3,12 @@
 
 import * as React from "react";
 import { CheckCircle, XCircle, FileText, Loader2, RefreshCw, ZoomIn } from "lucide-react";
-import { getLogs, getSystemStatuses } from "lib/actions";
-import { type LogEntry, type SystemStatus } from "types";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "components/ui/table";
-import { Badge } from "components/ui/badge";
-import { Button } from "components/ui/button";
+import { getLogs, getSystemStatuses } from "@/lib/actions";
+import { type LogEntry, type SystemStatus } from "@/types";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -16,7 +16,7 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogDescription,
-} from "components/ui/dialog";
+} from "@/components/ui/dialog";
 
 const StatusCheck = ({
   title,

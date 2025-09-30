@@ -9,7 +9,7 @@
  * - GeneratePersonalizedWorkoutOutput - El tipo de retorno para la función.
  */
 import { z } from 'zod';
-import { ai } from 'ai/genkit';
+import { ai } from '@/ai/genkit';
 
 // Schemas
 const GeneratePersonalizedWorkoutInputSchema = z.object({

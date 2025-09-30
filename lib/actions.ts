@@ -2,14 +2,14 @@
 'use server';
 
 import { z } from 'zod';
-import { getFirestore } from "lib/firebase";
-import { logEvent } from 'lib/logger';
-import { type Lead, type LogEntry, type SystemStatus, type Post, type Program, type Testimonial } from "types";
-import { generateBlogPost as generateBlogPostFlow, type GenerateBlogPostOutput } from 'ai/flows/generate-blog-post';
-import { generatePersonalizedWorkout as generatePersonalizedWorkoutFlow, type GeneratePersonalizedWorkoutInput, type GeneratePersonalizedWorkoutOutput } from 'ai/flows/generate-personalized-workout';
-import { processPlanSignup as processPlanSignupFlow, type PlanSignupInput, type PlanSignupOutput } from 'ai/flows/plan-signup-flow';
-import PostModel from 'models/Post';
-import TestimonialModel from 'models/Testimonial';
+import { getFirestore } from "@/lib/firebase";
+import { logEvent } from '@/lib/logger';
+import { type Lead, type LogEntry, type SystemStatus, type Post, type Program, type Testimonial } from "@/types";
+import { generateBlogPost as generateBlogPostFlow, type GenerateBlogPostOutput } from '@/ai/flows/generate-blog-post';
+import { generatePersonalizedWorkout as generatePersonalizedWorkoutFlow, type GeneratePersonalizedWorkoutInput, type GeneratePersonalizedWorkoutOutput } from '@/ai/flows/generate-personalized-workout';
+import { processPlanSignup as processPlanSignupFlow, type PlanSignupInput, type PlanSignupOutput } from '@/ai/flows/plan-signup-flow';
+import PostModel from '@/models/Post';
+import TestimonialModel from '@/models/Testimonial';
 import connectToDb from './mongoose';
 import { shopifyStorefront } from './shopify';
 import { revalidatePath } from 'next/cache';

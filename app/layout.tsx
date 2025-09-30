@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { Poppins, Roboto_Mono } from "next/font/google";
-import { cn } from "lib/utils";
-import { Toaster } from "components/ui/toaster";
-import Header from "components/layout/Header";
-import Footer from "components/layout/Footer";
-import BackToTopButton from "components/layout/BackToTopButton";
+import { cn } from "@/lib/utils";
+import { Toaster } from "@/components/ui/toaster";
+import Header from "@/components/layout/Header";
+import Footer from "@/components/layout/Footer";
+import BackToTopButton from "@/components/layout/BackToTopButton";
 import "./globals.css";
 
 const poppins = Poppins({

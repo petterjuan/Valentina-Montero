@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import TestimonialModel from 'models/Testimonial';
+import TestimonialModel from '@/models/Testimonial';
 import placeholderImages from './placeholder-images.json';
 
 // It's recommended to load environment variables from your execution environment

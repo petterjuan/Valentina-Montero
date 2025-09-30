@@ -1,9 +1,9 @@
 
 "use client";
 
-import { Dialog, DialogContent, DialogTrigger } from "components/ui/dialog";
-import PlanSignupForm from "components/sections/PlanSignupForm";
-import type { Program } from "types";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import PlanSignupForm from "@/components/sections/PlanSignupForm";
+import type { Program } from "@/types";
 import { useState } from "react";
 
 interface PlanSignupDialogProps {

@@ -8,11 +8,11 @@
  * - PlanSignupOutput: El tipo de retorno para el flujo.
  */
 
-import { ai } from 'ai/genkit';
+import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { getFirestore } from 'lib/firebase';
-import { stripe } from 'lib/stripe';
-import { logEvent } from 'lib/logger';
+import { getFirestore } from '@/lib/firebase';
+import { stripe } from '@/lib/stripe';
+import { logEvent } from '@/lib/logger';
 
 const PlanSignupInputSchema = z.object({
   fullName: z.string().describe('Nombre completo del cliente.'),

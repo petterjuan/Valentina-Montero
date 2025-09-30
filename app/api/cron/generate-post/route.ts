@@ -1,7 +1,7 @@
 
 import { NextResponse } from 'next/server';
-import { logEvent } from 'lib/logger';
-import { generateNewBlogPost } from 'lib/actions';
+import { logEvent } from '@/lib/logger';
+import { generateNewBlogPost } from '@/lib/actions';
 
 export const revalidate = 0;
 

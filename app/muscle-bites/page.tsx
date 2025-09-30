@@ -3,11 +3,11 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { Button } from 'components/ui/button';
+import { Button } from '@/components/ui/button';
 import { Flame, Star, Zap, Clock, Shield } from 'lucide-react';
-import placeholderImages from 'lib/placeholder-images.json';
-import PlanSignupDialog from 'components/sections/PlanSignupDialog';
-import type { Program } from 'types';
+import placeholderImages from '@/lib/placeholder-images.json';
+import PlanSignupDialog from '@/components/sections/PlanSignupDialog';
+import type { Program } from '@/types';
 
 const productOffer: Program = {
   title: 'Guía PDF "Muscle Bites"',

@@ -1,8 +1,8 @@
-import { Button } from "components/ui/button";
+import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import Link from "next/link";
 import { Award, HeartPulse, Sparkles } from "lucide-react";
-import placeholderImages from "lib/placeholder-images.json";
+import placeholderImages from "@/lib/placeholder-images.json";
 
 const benefits = [
     {

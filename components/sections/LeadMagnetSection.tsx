@@ -4,21 +4,21 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Button } from "components/ui/button";
-import { Input } from "components/ui/input";
-import { useToast } from "hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
 import {
   Form,
   FormControl,
   FormField,
   FormItem,
   FormMessage,
-} from "components/ui/form";
+} from "@/components/ui/form";
 import { useState, useTransition } from "react";
 import { Gift, Loader2, Sparkles } from "lucide-react";
 import PlanSignupDialog from "./PlanSignupDialog";
-import type { Program } from "types";
-import { saveLead } from "lib/actions";
+import type { Program } from "@/types";
+import { saveLead } from "@/lib/actions";
 
 const FormSchema = z.object({
   email: z.string().email({ message: "Por favor, introduce un email válido." }),
