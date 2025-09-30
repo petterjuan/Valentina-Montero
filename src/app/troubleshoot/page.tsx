@@ -107,7 +107,7 @@ export default function TroubleshootPage() {
                         <div className="space-y-8">
                             <div className="space-y-4">
                                 <div className="flex justify-between items-center">
-                                    <p className="text-sm text-gray-500">Última comprobación: {new Date().toLocaleTimeString('es-ES')}</p>
+                                    <p className="text-sm text-gray-500">Última comprobación: {new Date().toLocaleString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</p>
                                     <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isRefreshing}>
                                         <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
                                         {isRefreshing ? 'Refrescando...' : 'Refrescar'}
@@ -201,5 +201,7 @@ export default function TroubleshootPage() {
         </div>
     );
 }
+
+    
 
     
