@@ -3,7 +3,8 @@
 
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import PlanSignupForm from "@/components/sections/PlanSignupForm";
-import type { Program } from "@/components/sections/CoachingProgramsSection";
+import type { Program } from "@/types";
+import { useState } from "react";
 
 interface PlanSignupDialogProps {
     program: Program;
@@ -11,13 +12,15 @@ interface PlanSignupDialogProps {
 }
 
 export default function PlanSignupDialog({ program, children }: PlanSignupDialogProps) {
+    const [open, setOpen] = useState(false);
+
     return (
-        <Dialog>
+        <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
                 {children}
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
-                <PlanSignupForm plan={program} onSubmitted={() => {}} />
+                <PlanSignupForm plan={program} onSubmitted={() => setOpen(false)} />
             </DialogContent>
         </Dialog>
     );

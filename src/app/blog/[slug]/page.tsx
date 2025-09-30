@@ -6,7 +6,6 @@ import { type Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import DOMPurify from 'isomorphic-dompurify';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
@@ -45,8 +44,6 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
   if (!post) {
     notFound();
   }
-
-  const sanitizedContent = DOMPurify.sanitize(post.content || "");
 
   const SourceIcon = post.source === 'MongoDB' ? Bot : Building;
   const sourceText = post.source === 'MongoDB' ? 'Contenido por IA' : 'Escrito por Valentina';
@@ -92,7 +89,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
           
           <div 
             className="prose prose-lg dark:prose-invert max-w-none mt-8"
-            dangerouslySetInnerHTML={{ __html: sanitizedContent }}
+            dangerouslySetInnerHTML={{ __html: post.content }}
           />
 
           <Separator className="my-12" />

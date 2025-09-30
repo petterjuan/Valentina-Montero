@@ -1,12 +1,118 @@
+
 'use server';
 
-import connectToDb from "@/lib/mongoose";
-import TestimonialModel from "@/models/Testimonial";
-import { shopifyStorefront } from "@/lib/shopify";
-import { type Lead, type LogEntry } from "@/types";
+import { z } from 'zod';
 import { getFirestore } from "@/lib/firebase";
+import { logEvent } from '@/lib/logger';
+import { stripe } from '@/lib/stripe';
+import { type Lead, type LogEntry, type SystemStatus } from "@/types";
+import { generateBlogPost as generateBlogPostFlow } from '@/ai/flows/generate-blog-post';
+import { generatePersonalizedWorkout as generatePersonalizedWorkoutFlow, type GeneratePersonalizedWorkoutInput, type GeneratePersonalizedWorkoutOutput } from '@/ai/flows/generate-personalized-workout';
+import { planSignupFlow, type PlanSignupInput, type PlanSignupOutput } from '@/ai/flows/plan-signup-flow';
+import { getBlogPosts as getBlogPostsData } from './data';
+import PostModel from '@/models/Post';
+import TestimonialModel from '@/models/Testimonial';
+import connectToDb from './mongoose';
+import { shopifyStorefront } from './shopify';
+
+
+const saveLeadSchema = z.object({
+  email: z.string().email(),
+  source: z.string(),
+});
+export async function saveLead(input: { email: string, source: string }) {
+  'use server';
+  const { email, source } = saveLeadSchema.parse(input);
+  const firestore = getFirestore();
+  if (!firestore) {
+    throw new Error("Firestore no está disponible.");
+  }
+  const leadRef = firestore.collection('leads').doc(email);
+  await leadRef.set({
+    email,
+    source,
+    status: 'subscribed',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  }, { merge: true });
+}
+
+const saveWorkoutLeadSchema = z.object({
+    email: z.string().email()
+});
+export async function saveWorkoutLead(input: { email: string }) {
+    'use server';
+    const { email } = saveWorkoutLeadSchema.parse(input);
+    const firestore = getFirestore();
+    if (!firestore) {
+        throw new Error("Firestore no está disponible.");
+    }
+    const leadRef = firestore.collection('leads').doc(email);
+    await leadRef.set({
+        email,
+        source: 'Generador IA',
+        status: 'subscribed',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+    }, { merge: true });
+}
+
+export async function generatePersonalizedWorkout(input: GeneratePersonalizedWorkoutInput): Promise<GeneratePersonalizedWorkoutOutput> {
+    'use server';
+    try {
+        const workoutData = await generatePersonalizedWorkoutFlow(input);
+        return workoutData;
+    } catch (error: any) {
+        const errorMessage = error.message || 'Ocurrió un error al generar tu plan.';
+        logEvent('AI Workout Generation Failed', { error: errorMessage }, 'error');
+        throw new Error(errorMessage);
+    }
+}
+
+
+export async function processPlanSignup(input: PlanSignupInput): Promise<PlanSignupOutput> {
+    'use server';
+    try {
+        const result = await planSignupFlow(input);
+        return result;
+    } catch (error: any) {
+        const errorMessage = error.message || "No se pudo procesar la solicitud.";
+        logEvent('Plan Signup Failed', { error: errorMessage }, 'error');
+        throw new Error(errorMessage);
+    }
+}
+
+export async function generateNewBlogPost(): Promise<{ success: boolean, title?: string, slug?: string, error?: string }> {
+    'use server';
+    try {
+        await connectToDb();
+        const recentPosts = await getBlogPostsData(10);
+        const existingTitles = recentPosts.map(p => p.title);
+        console.log(`Títulos existentes enviados a la IA: ${existingTitles.join(', ')}`);
+
+        const newPostData = await generateBlogPostFlow({ existingTitles });
+        console.log(`IA generó un nuevo artículo con título: "${newPostData.title}"`);
+
+        const newPost = new PostModel({
+            ...newPostData,
+            createdAt: new Date(),
+        });
+        await newPost.save();
+
+        console.log(`Tarea CRON completada: Nuevo artículo guardado en MongoDB con slug: ${newPost.slug}`);
+        logEvent('Cron Job Success: Blog Post Generated and Saved', { title: newPost.title, slug: newPost.slug });
+        
+        return { success: true, title: newPost.title, slug: newPost.slug };
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Un error desconocido ocurrió.';
+        console.error(`Error durante la generación del artículo:`, error);
+        logEvent('Generate Blog Post Action Failed', { error: errorMessage }, 'error');
+        return { success: false, error: errorMessage };
+    }
+}
 
 export async function getLeadsForAdmin(): Promise<Lead[]> {
+    'use server';
     const firestore = getFirestore();
     if (!firestore) {
         console.error("Firestore is not available.");
@@ -40,16 +146,8 @@ export async function getLeadsForAdmin(): Promise<Lead[]> {
     }
 }
 
-interface SystemCheck {
-  status: "success" | "error";
-  message: string;
-}
-
-export interface SystemStatus {
-  [key: string]: SystemCheck;
-}
-
 export async function getSystemStatuses(): Promise<SystemStatus> {
+    'use server';
     const statuses: SystemStatus = {};
 
     // Check Firebase
@@ -92,6 +190,7 @@ export async function getSystemStatuses(): Promise<SystemStatus> {
 }
 
 export async function getLogs(limit: number = 15): Promise<LogEntry[]> {
+    'use server';
     const firestore = getFirestore();
     if (!firestore) {
         console.error("Firestore is not available for fetching logs.");

@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useForm, type SubmitHandler } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -14,10 +14,11 @@ import {
   FormItem,
   FormMessage,
 } from "@/components/ui/form";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { Check, Gift, Loader2, Sparkles } from "lucide-react";
 import PlanSignupDialog from "./PlanSignupDialog";
 import type { Program } from "@/types";
+import { saveLead } from "@/lib/actions";
 
 const FormSchema = z.object({
   email: z.string().email({ message: "Por favor, introduce un email válido." }),
@@ -44,7 +45,8 @@ export default function LeadMagnetSection() {
   const { toast } = useToast();
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [status, setStatus] = useState<SubmissionStatus>('idle');
-  
+  const [isPending, startTransition] = useTransition();
+
   const form = useForm<FormData>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
@@ -61,44 +63,37 @@ export default function LeadMagnetSection() {
       document.body.removeChild(link);
   };
 
-  const onSubmit: SubmitHandler<FormData> = async (data) => {
-    setStatus('submitting');
-    try {
-        const response = await fetch('/api/leads', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: data.email, source: 'Guía Gratuita - 10k Pasos' }),
-        });
+  const onSubmit = (data: FormData) => {
+    startTransition(async () => {
+        setStatus('submitting');
+        try {
+            await saveLead({ email: data.email, source: 'Guía Gratuita - 10k Pasos' });
+            
+            const downloadUrl = "/Estrategias-para-lograr-10k-pasos-al-dia.pdf";
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Error al registrar el correo.');
-        }
-        
-        const downloadUrl = "/Estrategias-para-lograr-10k-pasos-al-dia.pdf";
+            setStatus('success');
+            toast({
+                title: "¡Guía en camino!",
+                description: "Tu descarga ha comenzado. ¡Revisa la oferta especial de agradecimiento!",
+            });
+            
+            triggerDownload(downloadUrl);
+            form.reset();
 
-        setStatus('success');
-        toast({
-            title: "¡Guía en camino!",
-            description: "Tu descarga ha comenzado. ¡Revisa la oferta especial de agradecimiento!",
-        });
-        
-        triggerDownload(downloadUrl);
-        form.reset();
-
-        setTimeout(() => {
-            setIsSubmitted(true);
+            setTimeout(() => {
+                setIsSubmitted(true);
+                setStatus('idle');
+            }, 1500);
+        } catch (error) {
             setStatus('idle');
-        }, 1500); // Wait 1.5 seconds to show success state before showing tripwire
-    } catch (error) {
-        setStatus('idle');
-        const message = error instanceof Error ? error.message : "No se pudo completar la solicitud.";
-        toast({
-            variant: "destructive",
-            title: "¡Uy! Algo salió mal.",
-            description: message,
-        });
-    }
+            const message = error instanceof Error ? error.message : "No se pudo completar la solicitud.";
+            toast({
+                variant: "destructive",
+                title: "¡Uy! Algo salió mal.",
+                description: message,
+            });
+        }
+    });
   };
 
   const getButtonContent = () => {
@@ -175,7 +170,7 @@ export default function LeadMagnetSection() {
                       </FormItem>
                     )}
                   />
-                  <Button type="submit" disabled={status !== 'idle'} className="w-full sm:w-auto">
+                  <Button type="submit" disabled={status !== 'idle' || isPending} className="w-full sm:w-auto">
                     {getButtonContent()}
                   </Button>
                 </form>
@@ -187,5 +182,3 @@ export default function LeadMagnetSection() {
     </section>
   );
 }
-
-    

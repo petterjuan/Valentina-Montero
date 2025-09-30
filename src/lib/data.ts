@@ -1,3 +1,4 @@
+import 'server-only';
 import connectToDb from "@/lib/mongoose";
 import PostModel from "@/models/Post";
 import TestimonialModel from "@/models/Testimonial";

@@ -1,10 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getBlogPosts } from '@/lib/data';
-import { generateBlogPost } from '@/ai/flows/generate-blog-post';
+import { NextResponse } from 'next/server';
 import { logEvent } from '@/lib/logger';
-import { Post } from '@/types';
-import PostModel from '@/models/Post';
-import connectToDb from '@/lib/mongoose';
+import { generateNewBlogPost } from '@/lib/actions';
 
 export const revalidate = 0;
 
@@ -15,7 +11,7 @@ async function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-export async function GET(req: NextRequest) {
+export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const secret = searchParams.get('secret');
   const cronSecret = process.env.CRON_SECRET;
@@ -36,26 +32,13 @@ export async function GET(req: NextRequest) {
       logEvent('Cron Job Started: Generate Blog Post', { attempt });
       console.log(`Iniciando tarea CRON (Intento ${attempt}/${MAX_RETRIES}): Generación de artículo de blog.`);
       
-      await connectToDb();
+      const result = await generateNewBlogPost();
 
-      const recentPosts: Post[] = await getBlogPosts(10);
-      const existingTitles = recentPosts.map(p => p.title);
-      console.log(`Títulos existentes enviados a la IA: ${existingTitles.join(', ')}`);
-
-      const newPostData = await generateBlogPost({ existingTitles });
-      console.log(`IA generó un nuevo artículo con título: "${newPostData.title}"`);
-
-      const newPost = new PostModel({
-        ...newPostData,
-        createdAt: new Date(),
-      });
-      
-      await newPost.save();
-
-      console.log(`Tarea CRON completada: Nuevo artículo guardado en MongoDB con slug: ${newPost.slug}`);
-      logEvent('Cron Job Success: Blog Post Generated and Saved', { title: newPost.title, slug: newPost.slug, attempts: attempt });
-      
-      return NextResponse.json({ success: true, title: newPost.title, slug: newPost.slug });
+      if (result.success) {
+        return NextResponse.json({ success: true, title: result.title, slug: result.slug });
+      } else {
+        throw new Error(result.error || 'La acción de generar post falló sin un error específico.');
+      }
       
     } catch (error) {
       console.error(`Error durante la ejecución de la tarea CRON (Intento ${attempt}/${MAX_RETRIES}):`, error);

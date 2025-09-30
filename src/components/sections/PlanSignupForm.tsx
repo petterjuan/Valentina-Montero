@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useForm, SubmitHandler } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -9,10 +9,11 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { DialogHeader, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import { CheckCircle, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import type { Program } from "@/types";
+import { processPlanSignup } from "@/lib/actions";
 
 const signupSchema = z.object({
   fullName: z.string().min(3, { message: "El nombre debe tener al menos 3 caracteres." }),
@@ -31,7 +32,7 @@ interface PlanSignupFormProps {
 export default function PlanSignupForm({ plan, onSubmitted }: PlanSignupFormProps) {
   const { toast } = useToast();
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   const form = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),
@@ -43,49 +44,32 @@ export default function PlanSignupForm({ plan, onSubmitted }: PlanSignupFormProp
     },
   });
 
-  const onSubmit: SubmitHandler<SignupFormData> = async (data) => {
-    setIsSubmitting(true);
-    try {
-      const planData = {
-        ...data,
-        planName: plan.title,
-        planPrice: plan.price,
-        isDigital: plan.isDigital,
-      };
+  const onSubmit = (data: SignupFormData) => {
+    startTransition(async () => {
+        try {
+            const planData = {
+                ...data,
+                planName: plan.title,
+                planPrice: plan.price,
+                isDigital: !!plan.isDigital,
+            };
 
-      const response = await fetch('/api/signups', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(planData)
-      });
+            const result = await processPlanSignup(planData);
 
-      const result = await response.json();
-
-      if (!response.ok) {
-          throw new Error(result.message || "No se pudo procesar la solicitud.");
-      }
-
-      if (plan.isDigital) {
-        if (result.stripeCheckoutUrl) {
-          window.location.href = result.stripeCheckoutUrl;
-        } else {
-          setIsSubmitting(false);
-          setIsSubmitted(true);
-          toast({ title: "¡Solicitud Recibida!", description: "Procesando tu compra." });
+            if (result.stripeCheckoutUrl) {
+                window.location.href = result.stripeCheckoutUrl;
+            } else {
+                setIsSubmitted(true);
+                toast({ title: "¡Solicitud Recibida!", description: result.confirmationMessage });
+            }
+        } catch(error: any) {
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: error.message || "No se pudo procesar la solicitud.",
+            });
         }
-      } else {
-        setIsSubmitting(false);
-        setIsSubmitted(true);
-        toast({ title: "¡Solicitud Recibida!", description: "Revisa tu correo para los siguientes pasos." });
-      }
-    } catch(error: any) {
-        setIsSubmitting(false);
-        toast({
-            variant: "destructive",
-            title: "Error",
-            description: error.message || "No se pudo procesar la solicitud.",
-        });
-    }
+    });
   };
   
   const dialogTitle = plan.isDigital 
@@ -192,13 +176,11 @@ export default function PlanSignupForm({ plan, onSubmitted }: PlanSignupFormProp
                 )}
             />
 
-            <Button type="submit" disabled={isSubmitting} className="w-full mt-2 font-bold">
-            {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Procesando...</> : buttonText}
+            <Button type="submit" disabled={isPending} className="w-full mt-2 font-bold">
+            {isPending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Procesando...</> : buttonText}
             </Button>
         </form>
       </Form>
     </>
   );
 }
-
-    

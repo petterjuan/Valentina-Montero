@@ -3,7 +3,7 @@
 
 import { useForm, Controller } from "react-hook-form";
 import { Button } from "@/components/ui/button";
-import { type GeneratePersonalizedWorkoutOutput } from "@/ai/flows/generate-personalized-workout";
+import { type GeneratePersonalizedWorkoutOutput, generatePersonalizedWorkout, saveWorkoutLead } from "@/lib/actions";
 import { useState, useTransition } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Wand2, AlertTriangle, Dumbbell, Calendar, Brain, Utensils, Lock, Sparkles, Loader2, Target, Flame, Activity, Shield, CheckCircle } from "lucide-react";
@@ -70,24 +70,11 @@ export default function AiGeneratorSection() {
         let workoutData = formResult.data;
 
         if (!workoutData || !isUnlocking) {
-            const response = await fetch('/api/generate-workout', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data),
-            });
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Error en el servidor');
-            }
-            workoutData = await response.json();
+            workoutData = await generatePersonalizedWorkout(data);
         }
         
         if (isUnlocking && data.email) {
-            await fetch('/api/leads', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: data.email, source: 'Generador IA' }),
-            });
+            await saveWorkoutLead({ email: data.email });
         }
 
         setFormResult({
@@ -505,5 +492,3 @@ export default function AiGeneratorSection() {
     </section>
   );
 }
-
-    
