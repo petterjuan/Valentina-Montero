@@ -5,7 +5,7 @@
 import { z } from 'zod';
 import { getFirestore } from "@/lib/firebase";
 import { logEvent } from '@/lib/logger';
-import { type Lead, type LogEntry, type SystemStatus, type Post, type Program, type Testimonial } from "@/types";
+import { type Lead, type LogEntry, type SystemStatus, type Post, type Program, type Testimonial, PostDocument, TestimonialDocument } from "@/types";
 import { generateBlogPost } from '@/ai/flows/generate-blog-post';
 import { generatePersonalizedWorkout as genkitGeneratePersonalizedWorkout } from '@/ai/flows/generate-personalized-workout';
 import { processPlanSignup as genkitProcessPlanSignup } from '@/ai/flows/plan-signup-flow';
@@ -156,7 +156,7 @@ export async function getBlogPosts(limit: number = 10): Promise<Post[]> {
     const fetchMongoPosts = async () => {
         try {
             await connectToDb();
-            const postsFromDb = await PostModel.find({})
+            const postsFromDb: PostDocument[] = await PostModel.find({})
                 .sort({ createdAt: -1 })
                 .limit(limit)
                 .lean();
@@ -195,7 +195,7 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
     // Try MongoDB first for AI-generated posts
     try {
         await connectToDb();
-        const mongoPost = await PostModel.findOne({ slug: slug }).lean().exec();
+        const mongoPost: PostDocument | null = await PostModel.findOne({ slug: slug }).lean().exec();
         if (mongoPost) {
             return {
                 id: mongoPost._id.toString(),
@@ -267,7 +267,7 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
 export async function getTestimonials(): Promise<Testimonial[]> {
     try {
         await connectToDb();
-        const testimonials = await TestimonialModel.find({}).sort({ order: 1 }).lean();
+        const testimonials: TestimonialDocument[] = await TestimonialModel.find({}).sort({ order: 1 }).lean();
         return testimonials.map(doc => ({
             ...doc,
             id: doc._id.toString(),
