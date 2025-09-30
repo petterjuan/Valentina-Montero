@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { type GeneratePersonalizedWorkoutOutput, generatePersonalizedWorkout, saveWorkoutLead } from "@/lib/actions";
 import { useState, useTransition } from "react";
@@ -95,7 +95,7 @@ export default function AiGeneratorSection() {
   const isLoading = isPending;
 
   return (
-    <section className="py-16 sm:py-24 bg-background">
+    <section id="ai-generator" className="py-16 sm:py-24 bg-background">
       <div className="container mx-auto px-4 md:px-6">
         <div className="mx-auto max-w-3xl text-center">
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl font-headline">
@@ -227,18 +227,12 @@ export default function AiGeneratorSection() {
                                   <span className="text-primary font-bold">{durationValue} min</span>
                               </Label>
                               <FormControl>
-                                <Controller
-                                  name="duration"
-                                  control={form.control}
-                                  render={({ field: controllerField }) => (
-                                    <Slider
-                                      value={[controllerField.value]}
-                                      onValueChange={(vals) => controllerField.onChange(vals[0])}
-                                      min={15}
-                                      max={90}
-                                      step={5}
-                                    />
-                                  )}
+                                <Slider
+                                  value={[field.value]}
+                                  onValueChange={(vals) => field.onChange(vals[0])}
+                                  min={15}
+                                  max={90}
+                                  step={5}
                                 />
                               </FormControl>
                               <FormMessage />
@@ -255,18 +249,12 @@ export default function AiGeneratorSection() {
                                   <span className="text-primary font-bold">{frequencyValue} veces</span>
                               </Label>
                               <FormControl>
-                                <Controller
-                                    name="frequency"
-                                    control={form.control}
-                                    render={({ field: controllerField }) => (
-                                      <Slider
-                                        value={[controllerField.value]}
-                                        onValueChange={(vals) => controllerField.onChange(vals[0])}
-                                        min={1}
-                                        max={7}
-                                        step={1}
-                                      />
-                                    )}
+                                <Slider
+                                    value={[field.value]}
+                                    onValueChange={(vals) => field.onChange(vals[0])}
+                                    min={1}
+                                    max={7}
+                                    step={1}
                                   />
                               </FormControl>
                               <FormMessage />
@@ -492,5 +480,3 @@ export default function AiGeneratorSection() {
     </section>
   );
 }
-
-    
