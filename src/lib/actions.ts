@@ -16,6 +16,7 @@ import TestimonialModel from '@/models/Testimonial';
 import connectToDb from '@/lib/mongoose';
 import { getShopifyStorefront } from '@/lib/shopify';
 import { revalidatePath } from 'next/cache';
+import type { LeanDocument } from 'mongoose';
 
 //========================================================================
 //  DATA FETCHING FUNCTIONS (Called from Server Components)
@@ -156,7 +157,7 @@ export async function getBlogPosts(limit: number = 10): Promise<Post[]> {
     const fetchMongoPosts = async () => {
         try {
             await connectToDb();
-            const postsFromDb: PostDocument[] = await PostModel.find({})
+            const postsFromDb: LeanDocument<PostDocument>[] = await PostModel.find({})
                 .sort({ createdAt: -1 })
                 .limit(limit)
                 .lean();
@@ -195,7 +196,7 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
     // Try MongoDB first for AI-generated posts
     try {
         await connectToDb();
-        const mongoPost: PostDocument | null = await PostModel.findOne({ slug: slug }).lean().exec();
+        const mongoPost: LeanDocument<PostDocument> | null = await PostModel.findOne({ slug: slug }).lean().exec();
         if (mongoPost) {
             return {
                 id: mongoPost._id.toString(),
@@ -267,7 +268,7 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
 export async function getTestimonials(): Promise<Testimonial[]> {
     try {
         await connectToDb();
-        const testimonials: TestimonialDocument[] = await TestimonialModel.find({}).sort({ order: 1 }).lean();
+        const testimonials: LeanDocument<TestimonialDocument>[] = await TestimonialModel.find({}).sort({ order: 1 }).lean();
         return testimonials.map(doc => ({
             ...doc,
             id: doc._id.toString(),
@@ -483,3 +484,5 @@ export async function getLogs(limit: number = 15): Promise<LogEntry[]> {
         return [];
     }
 }
+
+    
