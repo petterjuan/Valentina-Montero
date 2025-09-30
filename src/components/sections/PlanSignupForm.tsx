@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useForm } from "react-hook-form";
@@ -56,8 +57,10 @@ export default function PlanSignupForm({ plan, onSubmitted }: PlanSignupFormProp
             const result = await processPlanSignup(planData);
 
             if (result.stripeCheckoutUrl) {
+                // For digital products, redirect to Stripe
                 window.location.href = result.stripeCheckoutUrl;
             } else {
+                // For coaching plans, show success message
                 setIsSubmitted(true);
                 toast({ title: "¡Solicitud Recibida!", description: result.confirmationMessage });
             }
@@ -93,10 +96,7 @@ export default function PlanSignupForm({ plan, onSubmitted }: PlanSignupFormProp
             <CheckCircle className="w-16 h-16 text-green-500" />
             <h3 className="text-xl font-bold font-headline">¡Todo Listo!</h3>
             <p className="text-muted-foreground">
-                {plan.isDigital 
-                  ? `¡Gracias por tu interés! En breve, serás redirigido para completar el pago de forma segura.`
-                  : `Hemos recibido tus datos y te hemos enviado un correo de confirmación con el enlace para nuestra primera sesión. ¡Estoy muy emocionada de empezar a trabajar contigo!`
-                }
+                Hemos recibido tus datos y te hemos enviado un correo de confirmación con el enlace para nuestra primera sesión. ¡Estoy muy emocionada de empezar a trabajar contigo!
             </p>
             <DialogClose asChild>
                 <Button onClick={onSubmitted} className="mt-4">Cerrar</Button>
@@ -183,3 +183,5 @@ export default function PlanSignupForm({ plan, onSubmitted }: PlanSignupFormProp
     </>
   );
 }
+
+    

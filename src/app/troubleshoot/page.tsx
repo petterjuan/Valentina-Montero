@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from "react";
@@ -61,7 +62,6 @@ export default function TroubleshootPage() {
     const [isRefreshing, setIsRefreshing] = React.useState(false);
 
     const runChecks = React.useCallback(async () => {
-      setIsLoading(true);
       try {
           const [fetchedStatuses, fetchedLogs] = await Promise.all([
               getSystemStatuses(),
@@ -72,20 +72,19 @@ export default function TroubleshootPage() {
       } catch (error) {
           console.error("Failed to run system checks:", error);
           // Optionally set an error state to show in the UI
-      } finally {
-          setIsLoading(false);
       }
     }, []);
-
-    React.useEffect(() => {
-        runChecks();
-    }, [runChecks]);
 
     const handleRefresh = async () => {
         setIsRefreshing(true);
         await runChecks();
         setIsRefreshing(false);
     };
+
+    React.useEffect(() => {
+        setIsLoading(true);
+        runChecks().finally(() => setIsLoading(false));
+    }, [runChecks]);
 
     return (
         <div className="bg-gray-50 min-h-screen py-12">
@@ -107,10 +106,11 @@ export default function TroubleshootPage() {
                     ) : (
                         <div className="space-y-8">
                             <div className="space-y-4">
-                                <div className="flex justify-end">
+                                <div className="flex justify-between items-center">
+                                    <p className="text-sm text-gray-500">Última comprobación: {new Date().toLocaleTimeString('es-ES')}</p>
                                     <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isRefreshing}>
                                         <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-                                        Refrescar
+                                        {isRefreshing ? 'Refrescando...' : 'Refrescar'}
                                     </Button>
                                 </div>
                                 {statuses.firebase && <StatusCheck title="Conexión a Firebase (Firestore)" {...statuses.firebase} />}
@@ -145,7 +145,7 @@ export default function TroubleshootPage() {
                                                     <TableRow key={log.id}>
                                                         <TableCell className="font-medium">{log.message}</TableCell>
                                                         <TableCell>
-                                                            <Badge variant={log.level === 'error' ? 'destructive' : 'secondary'}>
+                                                            <Badge variant={log.level === 'error' ? 'destructive' : log.level === 'warn' ? 'secondary' : 'default'}>
                                                                 {log.level}
                                                             </Badge>
                                                         </TableCell>
@@ -201,3 +201,5 @@ export default function TroubleshootPage() {
         </div>
     );
 }
+
+    

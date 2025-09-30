@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useForm } from "react-hook-form";
@@ -66,21 +67,30 @@ export default function AiGeneratorSection() {
     startTransition(async () => {
       try {
         const isUnlocking = formResult.data && !formResult.isFullPlan && data.email;
-        let workoutData = formResult.data;
-
-        if (!workoutData || !isUnlocking) {
-            workoutData = await generatePersonalizedWorkout(data);
-        }
         
-        if (isUnlocking && data.email) {
-            await saveWorkoutLead({ email: data.email });
-        }
+        // Generate workout plan if it doesn't exist
+        if (!formResult.data || !isUnlocking) {
+            const workoutData = await generatePersonalizedWorkout(data);
+            setFormResult({
+                data: workoutData,
+                isFullPlan: !!data.email, // If email was provided initially
+                error: undefined
+            });
 
-        setFormResult({
-            data: workoutData,
-            isFullPlan: !!data.email || isUnlocking,
-            error: undefined
-        });
+            // If user provided email initially, also save the lead
+            if (data.email) {
+                 await saveWorkoutLead({ email: data.email });
+            }
+        } 
+        // Unlock full plan if preview exists and user provides email
+        else if (isUnlocking && data.email) {
+            const leadResult = await saveWorkoutLead({ email: data.email });
+            if (leadResult.success) {
+                setFormResult(prevState => ({ ...prevState, isFullPlan: true }));
+            } else {
+                throw new Error(leadResult.error || "No se pudo guardar tu correo.");
+            }
+        }
 
       } catch (error: any) {
         const errorMessage = error.message || 'Ocurrió un error al generar tu plan.';
@@ -479,3 +489,5 @@ export default function AiGeneratorSection() {
     </section>
   );
 }
+
+    

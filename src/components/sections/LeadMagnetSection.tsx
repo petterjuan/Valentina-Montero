@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useForm } from "react-hook-form";
@@ -38,12 +39,9 @@ const tripwireProduct: Program = {
   handle: "muscle-bites-pdf-guide"
 };
 
-type SubmissionStatus = 'idle' | 'submitting' | 'success';
-
 export default function LeadMagnetSection() {
   const { toast } = useToast();
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [status, setStatus] = useState<SubmissionStatus>('idle');
   const [isPending, startTransition] = useTransition();
 
   const form = useForm<FormData>({
@@ -64,13 +62,11 @@ export default function LeadMagnetSection() {
 
   const onSubmit = (data: FormData) => {
     startTransition(async () => {
-        setStatus('submitting');
         const result = await saveLead({ email: data.email, source: 'Guía Gratuita - 10k Pasos' });
         
         if (result.success) {
             const downloadUrl = "/Estrategias-para-lograr-10k-pasos-al-dia.pdf";
 
-            setStatus('success');
             toast({
                 title: "¡Guía en camino!",
                 description: "Tu descarga ha comenzado. ¡Revisa la oferta especial de agradecimiento!",
@@ -78,13 +74,8 @@ export default function LeadMagnetSection() {
             
             triggerDownload(downloadUrl);
             form.reset();
-
-            setTimeout(() => {
-                setIsSubmitted(true);
-                setStatus('idle');
-            }, 1500);
+            setIsSubmitted(true);
         } else {
-            setStatus('idle');
             toast({
                 variant: "destructive",
                 title: "¡Uy! Algo salió mal.",
@@ -95,14 +86,10 @@ export default function LeadMagnetSection() {
   };
 
   const getButtonContent = () => {
-    switch (status) {
-        case 'submitting':
-            return <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Enviando...</>;
-        case 'success':
-            return <><Check className="mr-2 h-4 w-4" /> ¡Descargando!</>;
-        default:
-            return '¡La Quiero!';
+    if (isPending) {
+        return <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Enviando...</>;
     }
+    return '¡La Quiero!';
   };
 
   return (
@@ -161,14 +148,14 @@ export default function LeadMagnetSection() {
                             placeholder="tu.correo@ejemplo.com"
                             {...field}
                             className="text-center sm:text-left"
-                            disabled={status !== 'idle'}
+                            disabled={isPending}
                           />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  <Button type="submit" disabled={status !== 'idle' || isPending} className="w-full sm:w-auto">
+                  <Button type="submit" disabled={isPending} className="w-full sm:w-auto">
                     {getButtonContent()}
                   </Button>
                 </form>
@@ -180,3 +167,5 @@ export default function LeadMagnetSection() {
     </section>
   );
 }
+
+    

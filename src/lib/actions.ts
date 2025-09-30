@@ -1,3 +1,4 @@
+
 'use server';
 
 import { z } from 'zod';
@@ -5,9 +6,9 @@ import { getFirestore } from "@/lib/firebase";
 import { logEvent } from '@/lib/logger';
 import { stripe } from '@/lib/stripe';
 import { type Lead, type LogEntry, type SystemStatus, type Post, type Program, type Testimonial } from "@/types";
-import { generateBlogPost as generateBlogPostFlow } from '@/ai/flows/generate-blog-post';
+import { generateBlogPost as generateBlogPostFlow, type GenerateBlogPostInput, type GenerateBlogPostOutput } from '@/ai/flows/generate-blog-post';
 import { generatePersonalizedWorkout as generatePersonalizedWorkoutFlow, type GeneratePersonalizedWorkoutInput, type GeneratePersonalizedWorkoutOutput } from '@/ai/flows/generate-personalized-workout';
-import { planSignupFlow, type PlanSignupInput, type PlanSignupOutput } from '@/ai/flows/plan-signup-flow';
+import { processPlanSignup as processPlanSignupFlow, type PlanSignupInput, type PlanSignupOutput } from '@/ai/flows/plan-signup-flow';
 import PostModel from '@/models/Post';
 import TestimonialModel from '@/models/Testimonial';
 import connectToDb from './mongoose';
@@ -15,7 +16,7 @@ import { shopifyStorefront } from './shopify';
 import { revalidatePath } from 'next/cache';
 
 //========================================================================
-//  DATA FETCHING ACTIONS (Called from Server Components)
+//  DATA FETCHING FUNCTIONS (Called from Server Components)
 //========================================================================
 
 export async function getPrograms(collectionHandle: string, maxProducts: number): Promise<Program[]> {
@@ -245,20 +246,27 @@ export async function getTestimonials(): Promise<Testimonial[]> {
     }
 }
 
+
 //========================================================================
 //  SERVER ACTIONS (Called from Client Components)
 //========================================================================
 
-const saveLeadSchema = z.object({
-  email: z.string().email(),
-  source: z.string(),
-});
 export async function saveLead(input: { email: string, source: string }) {
   'use server';
-  const { email, source } = saveLeadSchema.parse(input);
+  const saveLeadSchema = z.object({
+    email: z.string().email(),
+    source: z.string(),
+  });
+  
+  const validated = saveLeadSchema.safeParse(input);
+  if (!validated.success) {
+      return { success: false, error: 'Invalid input.' };
+  }
+  
+  const { email, source } = validated.data;
   const firestore = getFirestore();
   if (!firestore) {
-    throw new Error("Firestore no está disponible.");
+    return { success: false, error: "Firestore no está disponible." };
   }
   try {
     const leadRef = firestore.collection('leads').doc(email);
@@ -280,15 +288,20 @@ export async function saveLead(input: { email: string, source: string }) {
   }
 }
 
-const saveWorkoutLeadSchema = z.object({
-    email: z.string().email()
-});
 export async function saveWorkoutLead(input: { email: string }) {
     'use server';
-    const { email } = saveWorkoutLeadSchema.parse(input);
+    const saveWorkoutLeadSchema = z.object({
+        email: z.string().email()
+    });
+
+    const validated = saveWorkoutLeadSchema.safeParse(input);
+    if (!validated.success) {
+        return { success: false, error: 'Invalid input.' };
+    }
+    const { email } = validated.data;
     const firestore = getFirestore();
     if (!firestore) {
-        throw new Error("Firestore no está disponible.");
+        return { success: false, error: "Firestore no está disponible." };
     }
     try {
         const leadRef = firestore.collection('leads').doc(email);
@@ -325,14 +338,12 @@ export async function generatePersonalizedWorkout(input: GeneratePersonalizedWor
 export async function processPlanSignup(input: PlanSignupInput): Promise<PlanSignupOutput> {
     'use server';
     try {
-        const result = await planSignupFlow(input);
+        const result = await processPlanSignupFlow(input);
         
-        // Revalidate admin paths if a signup or lead was created
         if (result.stripeCheckoutUrl) {
-            revalidatePath('/admin/leads'); // A lead is created for digital products
+            revalidatePath('/admin/leads');
         } else {
-            revalidatePath('/admin/leads'); // Future-proofing if coaching signups also become leads
-            // If you had an admin page for signups, you'd revalidate it here too
+            revalidatePath('/admin/leads');
         }
 
         return result;
@@ -347,21 +358,19 @@ export async function generateNewBlogPost(): Promise<{ success: boolean, title?:
     'use server';
     try {
         await connectToDb();
+        // Fetching both post types to get a comprehensive list of existing titles.
         const recentPosts = await getBlogPosts(10);
         const existingTitles = recentPosts.map(p => p.title);
-        console.log(`Títulos existentes enviados a la IA: ${existingTitles.join(', ')}`);
-
+        
         const newPostData = await generateBlogPostFlow({ existingTitles });
-        console.log(`IA generó un nuevo artículo con título: "${newPostData.title}"`);
-
+        
         const newPost = new PostModel({
             ...newPostData,
             createdAt: new Date(),
         });
         await newPost.save();
 
-        console.log(`Tarea CRON completada: Nuevo artículo guardado en MongoDB con slug: ${newPost.slug}`);
-        logEvent('Cron Job Success: Blog Post Generated and Saved', { title: newPost.title, slug: newPost.slug });
+        logEvent('Cron Job Success: Blog Post Generated', { title: newPost.title, slug: newPost.slug });
         
         revalidatePath('/blog');
         revalidatePath(`/blog/${newPost.slug}`);
@@ -369,11 +378,11 @@ export async function generateNewBlogPost(): Promise<{ success: boolean, title?:
         return { success: true, title: newPost.title, slug: newPost.slug };
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Un error desconocido ocurrió.';
-        console.error(`Error durante la generación del artículo:`, error);
         logEvent('Generate Blog Post Action Failed', { error: errorMessage }, 'error');
         return { success: false, error: errorMessage };
     }
 }
+
 
 export async function getLeadsForAdmin(): Promise<Lead[]> {
     'use server';
@@ -486,3 +495,5 @@ export async function getLogs(limit: number = 15): Promise<LogEntry[]> {
         return [];
     }
 }
+
+    

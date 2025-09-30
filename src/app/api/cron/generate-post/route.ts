@@ -36,14 +36,15 @@ export async function GET(req: Request) {
       const result = await generateNewBlogPost();
 
       if (result.success) {
+        logEvent('Cron Job Succeeded', { title: result.title, slug: result.slug });
         return NextResponse.json({ success: true, title: result.title, slug: result.slug });
       } else {
         throw new Error(result.error || 'La acción de generar post falló sin un error específico.');
       }
       
     } catch (error) {
-      console.error(`Error durante la ejecución de la tarea CRON (Intento ${attempt}/${MAX_RETRIES}):`, error);
       const errorMessage = error instanceof Error ? error.message : 'Un error desconocido ocurrió.';
+      console.error(`Error durante la ejecución de la tarea CRON (Intento ${attempt}/${MAX_RETRIES}):`, errorMessage);
       logEvent('Cron Job Attempt Failed', { error: errorMessage, attempt }, 'warn');
 
       if (attempt === MAX_RETRIES) {
@@ -58,7 +59,5 @@ export async function GET(req: Request) {
   // This part should ideally not be reached, but it's a fallback.
   return NextResponse.json({ message: 'La tarea CRON falló inesperadamente.' }, { status: 500 });
 }
-
-    
 
     
