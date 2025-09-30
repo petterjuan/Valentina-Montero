@@ -334,10 +334,14 @@ export async function saveWorkoutLead(
 }
 
 
-export { generatePersonalizedWorkout };
+export async function generatePersonalizedWorkoutAction(input: GeneratePersonalizedWorkoutInput): Promise<GeneratePersonalizedWorkoutOutput> {
+    return generatePersonalizedWorkout(input);
+}
 
 
-export { processPlanSignup };
+export async function processPlanSignupAction(input: PlanSignupInput): Promise<PlanSignupOutput> {
+    return processPlanSignup(input);
+}
 
 export async function generateNewBlogPost(): Promise<{ success: boolean, title?: string, slug?: string, error?: string }> {
     try {
@@ -485,5 +489,3 @@ export async function getLogs(limit: number = 15): Promise<LogEntry[]> {
         return [];
     }
 }
-
-    

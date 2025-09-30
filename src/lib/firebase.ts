@@ -1,3 +1,4 @@
+
 import * as admin from 'firebase-admin';
 
 // This is a robust singleton pattern to ensure Firebase is initialized only once.
@@ -49,5 +50,3 @@ initializeFirebase();
 export const getFirestore = (): admin.firestore.Firestore | null => {
     return firestoreInstance;
 };
-
-    

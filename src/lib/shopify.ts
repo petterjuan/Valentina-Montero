@@ -43,5 +43,3 @@ if (process.env.SHOPIFY_STORE_DOMAIN && process.env.SHOPIFY_STOREFRONT_ACCESS_TO
 
 // Export a function that returns the instance, or null if not configured
 export const getShopifyStorefront = () => shopifyStorefront;
-
-    

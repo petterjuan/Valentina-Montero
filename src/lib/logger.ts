@@ -28,5 +28,3 @@ export async function logEvent(message: string, metadata: Record<string, any> = 
         console.error(`[${level.toUpperCase()}] (Firestore-Fallback) ${message}`, metadata);
     }
 }
-
-    

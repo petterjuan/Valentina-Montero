@@ -1,10 +1,7 @@
 {
   "compilerOptions": {
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "target": "es5",
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -21,19 +18,14 @@
         "name": "next"
       }
     ],
+    "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "./src/*"
-      ]
+      "@/*": ["src/*"],
+      "hooks/*": ["src/hooks/*"],
+      "lib/*": ["src/lib/*"],
+      "components/*": ["src/components/*"]
     }
   },
-  "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts"
-  ],
-  "exclude": [
-    "node_modules"
-  ]
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "ai/flows/generate-blog-post.ts", "ai/flows/generate-personalized-workout.ts", "ai/flows/plan-signup-flow.ts", "ai/genkit.ts", "lib/actions.ts", "lib/firebase.ts", "lib/logger.ts", "lib/mongoose.ts", "lib/seed.ts", "lib/shopify.ts", "lib/stripe-client.ts", "lib/stripe.ts", "lib/utils.ts", "lib/vertexAI.ts"],
+  "exclude": ["node_modules"]
 }

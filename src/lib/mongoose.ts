@@ -50,5 +50,3 @@ async function connectToDb() {
 }
 
 export default connectToDb;
-
-    
