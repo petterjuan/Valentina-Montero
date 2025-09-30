@@ -8,7 +8,7 @@
  * - PlanSignupOutput: El tipo de retorno para el flujo.
  */
 
-import { defineFlow, run } from 'genkit';
+import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { getFirestore } from '@/lib/firebase';
 import { stripe } from '@/lib/stripe';
@@ -34,10 +34,10 @@ const PlanSignupOutputSchema = z.object({
 export type PlanSignupOutput = z.infer<typeof PlanSignupOutputSchema>;
 
 export async function processPlanSignup(input: PlanSignupInput): Promise<PlanSignupOutput> {
-  return await run(planSignupFlow, input);
+  return await planSignupFlow(input);
 }
 
-const planSignupFlow = defineFlow(
+const planSignupFlow = ai.defineFlow(
   {
     name: 'planSignupFlow',
     inputSchema: PlanSignupInputSchema,
@@ -51,14 +51,15 @@ const planSignupFlow = defineFlow(
       const firestore = getFirestore();
       if(firestore) {
           try {
-            const leadRef = firestore.collection('leads').doc();
+            const leadRef = firestore.collection('leads').doc(input.email);
             await leadRef.set({
               email: input.email,
               fullName: input.fullName,
               productName: input.planName,
               status: 'initiated',
               createdAt: registrationDate,
-            });
+              updatedAt: registrationDate
+            }, { merge: true });
           } catch (e) {
             logEvent('Firestore Write Error', { message: 'Failed to create lead during digital purchase', error: e instanceof Error ? e.message : String(e) }, 'warn');
           }

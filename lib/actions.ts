@@ -5,9 +5,11 @@ import { z } from 'zod';
 import { getFirestore } from "@/lib/firebase";
 import { logEvent } from '@/lib/logger';
 import { type Lead, type LogEntry, type SystemStatus, type Post, type Program, type Testimonial } from "@/types";
-import { generateBlogPost as generateBlogPostFlow, type GenerateBlogPostOutput } from '@/ai/flows/generate-blog-post';
-import { generatePersonalizedWorkout as generatePersonalizedWorkoutFlow, type GeneratePersonalizedWorkoutInput, type GeneratePersonalizedWorkoutOutput } from '@/ai/flows/generate-personalized-workout';
-import { processPlanSignup as processPlanSignupFlow, type PlanSignupInput, type PlanSignupOutput } from '@/ai/flows/plan-signup-flow';
+import { generateBlogPost } from '@/ai/flows/generate-blog-post';
+import { generatePersonalizedWorkout } from '@/ai/flows/generate-personalized-workout';
+import { processPlanSignup } from '@/ai/flows/plan-signup-flow';
+import type { GeneratePersonalizedWorkoutInput, GeneratePersonalizedWorkoutOutput } from '@/ai/flows/generate-personalized-workout';
+import type { PlanSignupInput, PlanSignupOutput } from '@/ai/flows/plan-signup-flow';
 import PostModel from '@/models/Post';
 import TestimonialModel from '@/models/Testimonial';
 import connectToDb from './mongoose';
@@ -333,7 +335,7 @@ export async function saveWorkoutLead(
 
 export async function generatePersonalizedWorkout(input: GeneratePersonalizedWorkoutInput): Promise<GeneratePersonalizedWorkoutOutput> {
     try {
-        const workoutData = await generatePersonalizedWorkoutFlow(input);
+        const workoutData = await generatePersonalizedWorkout(input);
         return workoutData;
     } catch (error: any) {
         const errorMessage = error.message || 'Ocurrió un error al generar tu plan.';
@@ -360,7 +362,7 @@ export async function processPlanSignup(input: PlanSignupInput): Promise<PlanSig
     }
     
     try {
-        const result = await processPlanSignupFlow(validated.data);
+        const result = await processPlanSignup(validated.data);
         
         if (validated.data.isDigital) {
             revalidatePath('/admin/leads');
@@ -382,7 +384,7 @@ export async function generateNewBlogPost(): Promise<{ success: boolean, title?:
         const recentPosts = await getBlogPosts(10);
         const existingTitles = recentPosts.map(p => p.title);
         
-        const newPostData = await generateBlogPostFlow({ existingTitles });
+        const newPostData = await generateBlogPost({ existingTitles });
         
         await connectToDb();
         const newPost = new PostModel({
