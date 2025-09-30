@@ -11,7 +11,7 @@ import { processPlanSignup as processPlanSignupFlow, type PlanSignupInput, type 
 import PostModel from '@/models/Post';
 import TestimonialModel from '@/models/Testimonial';
 import connectToDb from './mongoose';
-import { shopifyStorefront } from './shopify';
+import { getShopifyStorefront } from './shopify';
 import { revalidatePath } from 'next/cache';
 
 //========================================================================
@@ -19,8 +19,14 @@ import { revalidatePath } from 'next/cache';
 //========================================================================
 
 export async function getPrograms(collectionHandle: string, maxProducts: number): Promise<Program[]> {
+    const shopify = getShopifyStorefront();
+    if (!shopify) {
+        logEvent('Shopify API Skipped', { message: `Skipping program fetch because Shopify is not configured.`, level: 'info' });
+        return [];
+    }
+
     try {
-        const { collection } = await shopifyStorefront.request(
+        const { collection } = await shopify.request(
             `query getCollectionByHandle($handle: String!, $first: Int!) {
                 collection(handle: $handle) {
                     products(first: $first) {
@@ -85,6 +91,7 @@ export async function getPrograms(collectionHandle: string, maxProducts: number)
     } catch (error) {
         console.error(`Error fetching Shopify programs for collection "${collectionHandle}":`, error);
         logEvent('Shopify API Error', { message: `Failed to fetch collection: ${collectionHandle}`, error: error instanceof Error ? error.message : String(error) }, 'error');
+        // Return empty array to allow fallback to work gracefully
         return [];
     }
 }
@@ -93,10 +100,15 @@ export async function getBlogPosts(limit: number = 10): Promise<Post[]> {
     let shopifyPosts: Post[] = [];
     let mongoPosts: Post[] = [];
     let allPosts: Post[] = [];
+    const shopify = getShopifyStorefront();
 
     const fetchShopifyPosts = async () => {
+        if (!shopify) {
+            logEvent('Shopify API Skipped', { message: `Skipping blog post fetch because Shopify is not configured.`, level: 'info' });
+            return;
+        }
         try {
-            const { articles } = await shopifyStorefront.request(
+            const { articles } = await shopify.request(
                 `query getBlogArticles($first: Int!) {
                     articles(first: $first, sortKey: PUBLISHED_AT, reverse: true) {
                         edges {
@@ -199,9 +211,13 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
         logEvent('MongoDB Error', { message: `Failed to fetch post by slug: ${slug}`, error: error instanceof Error ? error.message : String(error) }, 'error');
     }
 
+    const shopify = getShopifyStorefront();
+    if (!shopify) {
+        return null;
+    }
     // Fallback to Shopify for manual posts
     try {
-        const { blog } = await shopifyStorefront.request(
+        const { blog } = await shopify.request(
             `query getArticleByHandle($handle: String!) {
                 blog(handle: "news") { 
                     articleByHandle(handle: $handle) {
@@ -457,11 +473,16 @@ export async function getSystemStatuses(): Promise<SystemStatus> {
     }
 
     // Check Shopify
-    try {
-        await shopifyStorefront.request(`query { shop { name } }`);
-        statuses.shopify = { status: 'success', message: 'Conectado a la API de Shopify Storefront.' };
-    } catch (error) {
-        statuses.shopify = { status: 'error', message: `Falló la conexión a Shopify: ${error instanceof Error ? error.message : String(error)}. Verifica el dominio y el token de acceso.` };
+    const shopify = getShopifyStorefront();
+    if (shopify) {
+        try {
+            await shopify.request(`query { shop { name } }`);
+            statuses.shopify = { status: 'success', message: 'Conectado a la API de Shopify Storefront.' };
+        } catch (error) {
+            statuses.shopify = { status: 'error', message: `Falló la conexión a Shopify: ${error instanceof Error ? error.message : String(error)}. Verifica el dominio y el token de acceso.` };
+        }
+    } else {
+        statuses.shopify = { status: 'success', message: 'Shopify no está configurado. La app está en modo demo.' };
     }
 
     return statuses;
@@ -501,3 +522,5 @@ export async function getLogs(limit: number = 15): Promise<LogEntry[]> {
         return [];
     }
 }
+
+    

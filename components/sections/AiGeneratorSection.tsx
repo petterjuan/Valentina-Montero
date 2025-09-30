@@ -3,7 +3,8 @@
 
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
-import { type GeneratePersonalizedWorkoutOutput, generatePersonalizedWorkout, saveWorkoutLead } from "@/lib/actions";
+import { generatePersonalizedWorkout, saveWorkoutLead } from "@/lib/actions";
+import { type GeneratePersonalizedWorkoutOutput } from "@/ai/flows/generate-personalized-workout";
 import { useState, useTransition } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Wand2, AlertTriangle, Dumbbell, Calendar, Brain, Utensils, Lock, Sparkles, Loader2, Target, Flame, Activity, Shield, CheckCircle } from "lucide-react";
@@ -488,3 +489,5 @@ export default function AiGeneratorSection() {
     </section>
   );
 }
+
+    
