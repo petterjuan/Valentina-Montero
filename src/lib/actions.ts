@@ -1,17 +1,20 @@
 
+
 'use server';
 
 import { z } from 'zod';
 import { getFirestore } from "@/lib/firebase";
 import { logEvent } from '@/lib/logger';
 import { type Lead, type LogEntry, type SystemStatus, type Post, type Program, type Testimonial } from "@/types";
-import { generateBlogPost as generateBlogPostFlow, type GenerateBlogPostOutput } from '@/ai/flows/generate-blog-post';
-import { generatePersonalizedWorkout as generatePersonalizedWorkoutFlow, type GeneratePersonalizedWorkoutInput, type GeneratePersonalizedWorkoutOutput } from '@/ai/flows/generate-personalized-workout';
-import { processPlanSignup as processPlanSignupFlow, type PlanSignupInput, type PlanSignupOutput } from '@/ai/flows/plan-signup-flow';
+import { generateBlogPost } from '@/ai/flows/generate-blog-post';
+import { generatePersonalizedWorkout } from '@/ai/flows/generate-personalized-workout';
+import { processPlanSignup } from '@/ai/flows/plan-signup-flow';
+import type { GeneratePersonalizedWorkoutInput, GeneratePersonalizedWorkoutOutput } from '@/ai/flows/generate-personalized-workout';
+import type { PlanSignupInput, PlanSignupOutput } from '@/ai/flows/plan-signup-flow';
 import PostModel from '@/models/Post';
 import TestimonialModel from '@/models/Testimonial';
 import connectToDb from './mongoose';
-import { getShopifyStorefront } from './shopify';
+import { getShopifyStorefront } from '@/lib/shopify';
 import { revalidatePath } from 'next/cache';
 
 //========================================================================
@@ -331,50 +334,10 @@ export async function saveWorkoutLead(
 }
 
 
-export async function generatePersonalizedWorkout(input: GeneratePersonalizedWorkoutInput): Promise<GeneratePersonalizedWorkoutOutput> {
-    try {
-        const workoutData = await generatePersonalizedWorkoutFlow(input);
-        return workoutData;
-    } catch (error: any) {
-        const errorMessage = error.message || 'Ocurrió un error al generar tu plan.';
-        logEvent('AI Workout Generation Failed', { error: errorMessage, input: input }, 'error');
-        throw new Error(errorMessage);
-    }
-}
+export { generatePersonalizedWorkout };
 
-const planSignupServerSchema = z.object({
-  fullName: z.string().min(3, { message: "El nombre debe tener al menos 3 caracteres." }),
-  email: z.string().email({ message: "Por favor, introduce un email válido." }),
-  phone: z.string().optional(),
-  planName: z.string(),
-  planPrice: z.coerce.number(),
-  isDigital: z.coerce.boolean(),
-});
 
-export async function processPlanSignup(input: PlanSignupInput): Promise<PlanSignupOutput> {
-    const validated = planSignupServerSchema.safeParse(input);
-
-    if (!validated.success) {
-        const error = validated.error.errors[0];
-        throw new Error(error.message);
-    }
-    
-    try {
-        const result = await processPlanSignupFlow(validated.data);
-        
-        if (validated.data.isDigital) {
-            revalidatePath('/admin/leads');
-        } else {
-            revalidatePath('/admin/signups');
-        }
-
-        return result;
-    } catch (error: any) {
-        const errorMessage = "No se pudo procesar la solicitud. Inténtalo de nuevo más tarde.";
-        logEvent('Plan Signup Failed', { error: error.message, input }, 'error');
-        throw new Error(errorMessage);
-    }
-}
+export { processPlanSignup };
 
 export async function generateNewBlogPost(): Promise<{ success: boolean, title?: string, slug?: string, error?: string }> {
     try {
@@ -382,7 +345,7 @@ export async function generateNewBlogPost(): Promise<{ success: boolean, title?:
         const recentPosts = await getBlogPosts(10);
         const existingTitles = recentPosts.map(p => p.title);
         
-        const newPostData = await generateBlogPostFlow({ existingTitles });
+        const newPostData = await generateBlogPost({ existingTitles });
         
         await connectToDb();
         const newPost = new PostModel({

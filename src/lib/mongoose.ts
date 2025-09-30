@@ -1,4 +1,5 @@
 
+
 import mongoose from 'mongoose';
 
 /**
@@ -50,4 +51,5 @@ async function connectToDb() {
 }
 
 export default connectToDb;
+
     

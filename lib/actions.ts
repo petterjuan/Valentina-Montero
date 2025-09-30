@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { z } from 'zod';
@@ -13,7 +14,7 @@ import type { PlanSignupInput, PlanSignupOutput } from '@/ai/flows/plan-signup-f
 import PostModel from '@/models/Post';
 import TestimonialModel from '@/models/Testimonial';
 import connectToDb from './mongoose';
-import { getShopifyStorefront } from './shopify';
+import { getShopifyStorefront } from '@/lib/shopify';
 import { revalidatePath } from 'next/cache';
 
 //========================================================================
@@ -333,50 +334,10 @@ export async function saveWorkoutLead(
 }
 
 
-export async function generatePersonalizedWorkoutAction(input: GeneratePersonalizedWorkoutInput): Promise<GeneratePersonalizedWorkoutOutput> {
-    try {
-        const workoutData = await generatePersonalizedWorkout(input);
-        return workoutData;
-    } catch (error: any) {
-        const errorMessage = error.message || 'Ocurrió un error al generar tu plan.';
-        logEvent('AI Workout Generation Failed', { error: errorMessage, input: input }, 'error');
-        throw new Error(errorMessage);
-    }
-}
+export { generatePersonalizedWorkout };
 
-const planSignupServerSchema = z.object({
-  fullName: z.string().min(3, { message: "El nombre debe tener al menos 3 caracteres." }),
-  email: z.string().email({ message: "Por favor, introduce un email válido." }),
-  phone: z.string().optional(),
-  planName: z.string(),
-  planPrice: z.coerce.number(),
-  isDigital: z.coerce.boolean(),
-});
 
-export async function processPlanSignupAction(input: PlanSignupInput): Promise<PlanSignupOutput> {
-    const validated = planSignupServerSchema.safeParse(input);
-
-    if (!validated.success) {
-        const error = validated.error.errors[0];
-        throw new Error(error.message);
-    }
-    
-    try {
-        const result = await processPlanSignup(validated.data);
-        
-        if (validated.data.isDigital) {
-            revalidatePath('/admin/leads');
-        } else {
-            revalidatePath('/admin/signups');
-        }
-
-        return result;
-    } catch (error: any) {
-        const errorMessage = "No se pudo procesar la solicitud. Inténtalo de nuevo más tarde.";
-        logEvent('Plan Signup Failed', { error: error.message, input }, 'error');
-        throw new Error(errorMessage);
-    }
-}
+export { processPlanSignup };
 
 export async function generateNewBlogPost(): Promise<{ success: boolean, title?: string, slug?: string, error?: string }> {
     try {
@@ -524,3 +485,5 @@ export async function getLogs(limit: number = 15): Promise<LogEntry[]> {
         return [];
     }
 }
+
+    
