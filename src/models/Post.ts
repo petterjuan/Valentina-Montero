@@ -1,6 +1,6 @@
 
 import { PostDocument } from '@/types';
-import mongoose, { Schema, model, models } from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 
 const PostSchema = new Schema<PostDocument>({
   title: { type: String, required: true },
@@ -13,6 +13,6 @@ const PostSchema = new Schema<PostDocument>({
 });
 
 // To prevent re-registering the model on hot reloads
-const PostModel = models.Post || model<PostDocument>('Post', PostSchema);
+const PostModel = mongoose.models.Post || mongoose.model<PostDocument>('Post', PostSchema);
 
 export default PostModel;
