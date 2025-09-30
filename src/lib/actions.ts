@@ -246,10 +246,10 @@ export async function getTestimonials(): Promise<Testimonial[]> {
     }
 }
 
-
 //========================================================================
 //  SERVER ACTIONS (Called from Client Components)
 //========================================================================
+
 const saveLeadSchema = z.object({
   email: z.string().email(),
   source: z.string(),
@@ -322,7 +322,6 @@ export async function generatePersonalizedWorkout(input: GeneratePersonalizedWor
         throw new Error(errorMessage);
     }
 }
-
 
 export async function processPlanSignup(input: PlanSignupInput): Promise<PlanSignupOutput> {
     'use server';
@@ -488,3 +487,5 @@ export async function getLogs(limit: number = 15): Promise<LogEntry[]> {
         return [];
     }
 }
+
+    
