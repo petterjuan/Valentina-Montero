@@ -3,8 +3,10 @@ import TestimonialsCarousel from "./TestimonialsCarousel";
 import placeholderImages from "@/lib/placeholder-images.json";
 import { getTestimonials } from "@/lib/actions";
 
-const fallbackTestimonials: Omit<Testimonial, "_id" | "id">[] = [
+const fallbackTestimonials: Testimonial[] = [
   {
+    _id: "fallback1",
+    id: "fallback1",
     name: "Clienta Satisfecha",
     story: "Este programa superó mis expectativas. ¡Me siento más fuerte y con más energía que nunca!",
     image: placeholderImages.testimonials.fallback1.src,
@@ -12,6 +14,8 @@ const fallbackTestimonials: Omit<Testimonial, "_id" | "id">[] = [
     rating: 5,
   },
   {
+    _id: "fallback2",
+    id: "fallback2",
     name: "Participante Feliz",
     story: "La guía y el apoyo de Valentina fueron clave para mi transformación. ¡Totalmente recomendado!",
     image: placeholderImages.testimonials.fallback2.src,
@@ -19,6 +23,8 @@ const fallbackTestimonials: Omit<Testimonial, "_id" | "id">[] = [
     rating: 5,
   },
   {
+    _id: "fallback3",
+    id: "fallback3",
     name: "Testimonio de Éxito",
     story: "Un enfoque muy profesional y personalizado. Los resultados hablan por sí solos.",
     image: placeholderImages.testimonials.fallback3.src,
@@ -28,7 +34,7 @@ const fallbackTestimonials: Omit<Testimonial, "_id" | "id">[] = [
 ];
 
 export default async function TestimonialsSection() {
-    let testimonials: (Testimonial | Omit<Testimonial, "id" | "_id">)[] = [];
+    let testimonials: Testimonial[] = [];
 
     try {
         const fetchedTestimonials = await getTestimonials();

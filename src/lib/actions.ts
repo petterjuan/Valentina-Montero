@@ -154,7 +154,10 @@ export async function getBlogPosts(limit: number = 10): Promise<Post[]> {
 
     const fetchMongoPosts = async () => {
         const db = await connectToDb();
-        if (!db) return;
+        if (!db) {
+            logEvent('MongoDB Skipped', { message: 'Skipping MongoDB post fetch because connection is not available.' }, 'info');
+            return;
+        };
 
         try {
             const postsFromDb: LeanDocument<IPost>[] = await PostModel.find({})
@@ -268,7 +271,10 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
 
 export async function getTestimonials(): Promise<Testimonial[]> {
     const db = await connectToDb();
-    if (!db) return [];
+    if (!db) {
+        logEvent('MongoDB Skipped', { message: 'Skipping testimonial fetch because connection is not available.' }, 'info');
+        return [];
+    };
 
     try {
         const testimonials: LeanDocument<ITestimonial>[] = await TestimonialModel.find({}).sort({ order: 1 }).lean();
@@ -440,8 +446,8 @@ export async function getSystemStatuses(): Promise<SystemStatus> {
                  statuses.mongoData = { status: 'error', message: `Conectado a MongoDB, pero falló la lectura de datos: ${e instanceof Error ? e.message : String(e)}` };
             }
         } else {
-            statuses.mongo = { status: 'error', message: `MONGODB_URI no está configurado. La conexión a MongoDB está deshabilitada.` };
-            statuses.mongoData = { status: 'error', message: 'No se pudo intentar leer datos de MongoDB porque la conexión está deshabilitada.' };
+            statuses.mongo = { status: 'success', message: `MONGODB_URI no está configurado. La conexión a MongoDB está deshabilitada.` };
+            statuses.mongoData = { status: 'success', message: 'La lectura de datos de MongoDB está deshabilitada.' };
         }
     } catch (error) {
         statuses.mongo = { status: 'error', message: `Falló la conexión a MongoDB: ${error instanceof Error ? error.message : String(error)}` };
@@ -496,5 +502,3 @@ export async function getLogs(limit: number = 15): Promise<LogEntry[]> {
         return [];
     }
 }
-
-    

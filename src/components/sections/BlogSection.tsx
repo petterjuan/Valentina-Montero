@@ -30,7 +30,7 @@ export default async function BlogSection() {
         <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
           {displayPosts.length > 0 ? (
             displayPosts.map((post) => (
-              <Card key={post.slug} className="flex flex-col overflow-hidden">
+              <Card key={post.id} className="flex flex-col overflow-hidden">
                 <Link href={`/blog/${post.slug}`} className="aspect-video relative block">
                   <Image
                     src={post.imageUrl || "https://picsum.photos/seed/blog-fallback/600/400"}

@@ -21,6 +21,8 @@ export async function connectToDb() {
   }
 
   if (!MONGODB_URI) {
+    // Return null instead of throwing an error if the URI is not set.
+    // This allows the app to run in a "demo" mode without a DB connection.
     return null;
   }
 
@@ -28,7 +30,13 @@ export async function connectToDb() {
     cached.promise = mongoose.connect(MONGODB_URI).then(mongoose => mongoose);
   }
 
-  cached.conn = await cached.promise;
+  try {
+    cached.conn = await cached.promise;
+  } catch (e) {
+    cached.promise = null;
+    throw e;
+  }
+  
   return cached.conn;
 }
 
