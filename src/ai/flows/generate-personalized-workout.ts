@@ -8,8 +8,10 @@
  * - GeneratePersonalizedWorkoutInput - El tipo de entrada para la función.
  * - GeneratePersonalizedWorkoutOutput - El tipo de retorno para la función.
  */
+import { generate } from 'genkit/generate';
+import { defineFlow, run } from 'genkit/flow';
+import { geminiPro } from '@genkit-ai/googleai';
 import { z } from 'zod';
-import { ai } from '@/ai/genkit';
 
 // Schemas
 const GeneratePersonalizedWorkoutInputSchema = z.object({
@@ -48,38 +50,38 @@ export type GeneratePersonalizedWorkoutOutput = z.infer<typeof GeneratePersonali
 export async function generatePersonalizedWorkout(
   input: GeneratePersonalizedWorkoutInput
 ): Promise<GeneratePersonalizedWorkoutOutput> {
-  return generatePersonalizedWorkoutFlow(input);
+  return await run(generatePersonalizedWorkoutFlow, input);
 }
 
-const generateWorkoutPrompt = ai.definePrompt({
-    name: 'generateWorkoutPrompt',
-    input: { schema: GeneratePersonalizedWorkoutInputSchema },
-    output: { schema: GeneratePersonalizedWorkoutOutputSchema },
-    model: 'gemini-1.5-flash', 
-    system: "Actúa como una entrenadora personal experta llamada Valentina Montero. Tu tono es motivador, cercano y profesional. Tu única respuesta debe ser un objeto JSON válido que se ajuste al schema proporcionado. No incluyas ningún texto, explicación o formato markdown adicional, solo el JSON. TODO el texto de tu respuesta DEBE estar en español.",
-    prompt: `Crea un plan de entrenamiento detallado y estructurado en español basado en las siguientes especificaciones:
-    - **Objetivo de Fitness:** {{{fitnessGoal}}}
-    - **Nivel de Experiencia:** {{{experienceLevel}}}
-    - **Equipo Disponible:** {{{equipment}}}
-    - **Enfoque Principal:** {{{workoutFocus}}}
-    - **Duración por Sesión:** {{{duration}}} minutos
-    - **Frecuencia Semanal:** {{{frequency}}} veces por semana}`
-});
-
-
-const generatePersonalizedWorkoutFlow = ai.defineFlow(
+const generatePersonalizedWorkoutFlow = defineFlow(
   {
     name: 'generatePersonalizedWorkoutFlow',
     inputSchema: GeneratePersonalizedWorkoutInputSchema,
     outputSchema: GeneratePersonalizedWorkoutOutputSchema,
   },
   async (input) => {
-    const { output } = await generateWorkoutPrompt(input);
+    const prompt = `Crea un plan de entrenamiento detallado y estructurado en español basado en las siguientes especificaciones:
+    - **Objetivo de Fitness:** ${input.fitnessGoal}
+    - **Nivel de Experiencia:** ${input.experienceLevel}
+    - **Equipo Disponible:** ${input.equipment}
+    - **Enfoque Principal:** ${input.workoutFocus}
+    - **Duración por Sesión:** ${input.duration} minutos
+    - **Frecuencia Semanal:** ${input.frequency} veces por semana}`;
+
+    const llmResponse = await generate({
+        prompt: prompt,
+        model: geminiPro,
+        system: "Actúa como una entrenadora personal experta llamada Valentina Montero. Tu tono es motivador, cercano y profesional. Tu única respuesta debe ser un objeto JSON válido que se ajuste al schema proporcionado. No incluyas ningún texto, explicación o formato markdown adicional, solo el JSON. TODO el texto de tu respuesta DEBE estar en español.",
+        output: {
+            schema: GeneratePersonalizedWorkoutOutputSchema,
+            format: 'json',
+        },
+    });
+
+    const output = llmResponse.output();
     if (!output) {
         throw new Error("La IA no devolvió contenido.");
     }
     return output;
   }
 );
-
-    
