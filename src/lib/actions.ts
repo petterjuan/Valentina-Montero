@@ -4,9 +4,8 @@
 import { z } from 'zod';
 import { getFirestore } from "@/lib/firebase";
 import { logEvent } from '@/lib/logger';
-import { stripe } from '@/lib/stripe';
 import { type Lead, type LogEntry, type SystemStatus, type Post, type Program, type Testimonial } from "@/types";
-import { generateBlogPost as generateBlogPostFlow, type GenerateBlogPostInput, type GenerateBlogPostOutput } from '@/ai/flows/generate-blog-post';
+import { generateBlogPost as generateBlogPostFlow, type GenerateBlogPostOutput } from '@/ai/flows/generate-blog-post';
 import { generatePersonalizedWorkout as generatePersonalizedWorkoutFlow, type GeneratePersonalizedWorkoutInput, type GeneratePersonalizedWorkoutOutput } from '@/ai/flows/generate-personalized-workout';
 import { processPlanSignup as processPlanSignupFlow, type PlanSignupInput, type PlanSignupOutput } from '@/ai/flows/plan-signup-flow';
 import PostModel from '@/models/Post';
@@ -262,58 +261,61 @@ export async function getTestimonials(): Promise<Testimonial[]> {
     }
 }
 
-
 //========================================================================
 //  SERVER ACTIONS (Called from Client Components)
 //========================================================================
 
-export async function saveLead(prevState: any, formData: FormData): Promise<{ success: boolean, error?: string, message?: string }> {
-  'use server';
-  const saveLeadSchema = z.object({
+const saveLeadSchema = z.object({
     email: z.string().email({ message: "Por favor, introduce un email válido." }),
-    source: z.string(),
-  });
+    source: z.string().optional(),
+});
+
+export async function saveLead(
+    { email, source }: { email: string, source?: string }
+): Promise<{ success: boolean; error?: string }> {
+    const validated = saveLeadSchema.safeParse({ email, source });
+
+    if (!validated.success) {
+        return { success: false, error: validated.error.errors[0].message };
+    }
   
-  const validated = saveLeadSchema.safeParse({
-      email: formData.get('email'),
-      source: formData.get('source'),
-  });
+    const { email: validEmail, source: validSource } = validated.data;
+    const firestore = getFirestore();
 
-  if (!validated.success) {
-      return { success: false, error: validated.error.errors[0].message };
-  }
-  
-  const { email, source } = validated.data;
-  const firestore = getFirestore();
+    if (!firestore) {
+        const errorMsg = "El servicio de registro no está disponible en este momento.";
+        logEvent('Firestore Error', { message: 'saveLead failed because Firestore is not initialized' }, 'error');
+        return { success: false, error: errorMsg };
+    }
 
-  if (!firestore) {
-    const errorMsg = "El servicio de registro no está disponible en este momento.";
-    logEvent('Firestore Error', { message: 'saveLead failed because Firestore is not initialized' }, 'error');
-    return { success: false, error: errorMsg };
-  }
-
-  try {
-    const leadRef = firestore.collection('leads').doc(email);
-    await leadRef.set({
-      email,
-      source,
-      status: 'subscribed',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    }, { merge: true });
-    
-    revalidatePath('/admin/leads');
-    
-    return { success: true, message: "¡Gracias por suscribirte!" };
-  } catch (error) {
-    const message = "No se pudo completar el registro. Inténtalo de nuevo más tarde.";
-    logEvent('Firestore Write Error', { error: error instanceof Error ? error.message : "Unknown error saving lead", email, source }, 'error');
-    return { success: false, error: message };
-  }
+    try {
+        const leadRef = firestore.collection('leads').doc(validEmail);
+        await leadRef.set({
+            email: validEmail,
+            source: validSource || 'Unknown',
+            status: 'subscribed',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        }, { merge: true });
+        
+        revalidatePath('/admin/leads');
+        
+        return { success: true };
+    } catch (error) {
+        const message = "No se pudo completar el registro. Inténtalo de nuevo más tarde.";
+        logEvent('Firestore Write Error', { error: error instanceof Error ? error.message : "Unknown error saving lead", email: validEmail, source: validSource }, 'error');
+        return { success: false, error: message };
+    }
 }
 
+export async function saveWorkoutLead(
+    { email }: { email: string }
+): Promise<{ success: boolean; error?: string }> {
+   return saveLead({ email, source: 'Generador IA'});
+}
+
+
 export async function generatePersonalizedWorkout(input: GeneratePersonalizedWorkoutInput): Promise<GeneratePersonalizedWorkoutOutput> {
-    'use server';
     try {
         const workoutData = await generatePersonalizedWorkoutFlow(input);
         return workoutData;
@@ -324,62 +326,41 @@ export async function generatePersonalizedWorkout(input: GeneratePersonalizedWor
     }
 }
 
-export async function processPlanSignup(prevState: any, formData: FormData): Promise<PlanSignupOutput> {
-    'use server';
+const planSignupServerSchema = z.object({
+  fullName: z.string().min(3, { message: "El nombre debe tener al menos 3 caracteres." }),
+  email: z.string().email({ message: "Por favor, introduce un email válido." }),
+  phone: z.string().optional(),
+  planName: z.string(),
+  planPrice: z.coerce.number(),
+  isDigital: z.coerce.boolean(),
+});
 
-    const PlanSignupFormSchema = z.object({
-        fullName: z.string().min(3, "El nombre debe tener al menos 3 caracteres."),
-        email: z.string().email("Por favor, introduce un email válido."),
-        phone: z.string().optional(),
-        planName: z.string(),
-        planPrice: z.coerce.number(),
-        isDigital: z.coerce.boolean(),
-    });
-
-    const validated = PlanSignupFormSchema.safeParse({
-        fullName: formData.get('fullName'),
-        email: formData.get('email'),
-        phone: formData.get('phone'),
-        planName: formData.get('planName'),
-        planPrice: formData.get('planPrice'),
-        isDigital: formData.get('isDigital'),
-    });
+export async function processPlanSignup(input: PlanSignupInput): Promise<PlanSignupOutput> {
+    const validated = planSignupServerSchema.safeParse(input);
 
     if (!validated.success) {
-        return {
-            confirmationMessage: 'Datos inválidos.',
-            clientEmail: '',
-            planName: '',
-            error: validated.error.flatten().fieldErrors,
-        };
+        const error = validated.error.errors[0];
+        throw new Error(error.message);
     }
     
-    const input = validated.data;
-
     try {
-        const result = await processPlanSignupFlow(input);
+        const result = await processPlanSignupFlow(validated.data);
         
-        if (input.isDigital) {
+        if (validated.data.isDigital) {
             revalidatePath('/admin/leads');
         } else {
-            revalidatePath('/admin/signups'); // Assuming there's an admin page for signups
+            revalidatePath('/admin/signups');
         }
 
         return result;
     } catch (error: any) {
         const errorMessage = "No se pudo procesar la solicitud. Inténtalo de nuevo más tarde.";
         logEvent('Plan Signup Failed', { error: error.message, input }, 'error');
-        return {
-            confirmationMessage: 'Error',
-            clientEmail: input.email,
-            planName: input.planName,
-            error: { _form: [errorMessage] },
-        };
+        throw new Error(errorMessage);
     }
 }
 
 export async function generateNewBlogPost(): Promise<{ success: boolean, title?: string, slug?: string, error?: string }> {
-    'use server';
     try {
         // We get existing titles from both Shopify and MongoDB to avoid duplicates
         const recentPosts = await getBlogPosts(10);
@@ -409,7 +390,6 @@ export async function generateNewBlogPost(): Promise<{ success: boolean, title?:
 
 
 export async function getLeadsForAdmin(): Promise<Lead[]> {
-    'use server';
     const firestore = getFirestore();
     if (!firestore) {
         console.error("Firestore is not available.");
@@ -446,7 +426,6 @@ export async function getLeadsForAdmin(): Promise<Lead[]> {
 }
 
 export async function getSystemStatuses(): Promise<SystemStatus> {
-    'use server';
     const statuses: SystemStatus = {};
 
     // Check Firebase
@@ -489,7 +468,6 @@ export async function getSystemStatuses(): Promise<SystemStatus> {
 }
 
 export async function getLogs(limit: number = 15): Promise<LogEntry[]> {
-    'use server';
     const firestore = getFirestore();
     if (!firestore) {
         console.error("Firestore is not available for fetching logs.");
@@ -523,3 +501,5 @@ export async function getLogs(limit: number = 15): Promise<LogEntry[]> {
         return [];
     }
 }
+
+    

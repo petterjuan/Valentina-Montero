@@ -14,8 +14,8 @@ import {
   FormItem,
   FormMessage,
 } from "@/components/ui/form";
-import { useState, useTransition, useEffect } from "react";
-import { Check, Gift, Loader2, Sparkles } from "lucide-react";
+import { useState, useTransition } from "react";
+import { Gift, Loader2, Sparkles } from "lucide-react";
 import PlanSignupDialog from "./PlanSignupDialog";
 import type { Program } from "@/types";
 import { saveLead } from "@/lib/actions";
@@ -167,3 +167,5 @@ export default function LeadMagnetSection() {
     </section>
   );
 }
+
+    

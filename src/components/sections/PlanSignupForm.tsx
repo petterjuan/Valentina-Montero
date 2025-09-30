@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { DialogHeader, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import { CheckCircle, Loader2 } from "lucide-react";
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import type { Program } from "@/types";
@@ -184,3 +184,5 @@ export default function PlanSignupForm({ plan, onSubmitted }: PlanSignupFormProp
     </>
   );
 }
+
+    
