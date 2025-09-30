@@ -81,10 +81,15 @@ export default function AiGeneratorSection() {
 
     // Case 2: Unlocking the full plan with an email
     if (workoutData && !isFullPlan && data.email) {
+      const emailToSave = data.email;
+      if (typeof emailToSave !== 'string' || emailToSave === '') {
+        return;
+      }
+      
       startUnlockingTransition(async () => {
         setError(null);
         try {
-          const leadResult = await saveWorkoutLead({ email: data.email });
+          const leadResult = await saveWorkoutLead({ email: emailToSave });
           if (leadResult.success) {
             setIsFullPlan(true);
             toast({ title: "¡Plan Desbloqueado!", description: "Gracias por suscribirte. Ahora tienes acceso al plan completo." });
@@ -490,4 +495,3 @@ export default function AiGeneratorSection() {
   );
 }
 
-    
