@@ -8,8 +8,8 @@
  * - GeneratePersonalizedWorkoutInput - El tipo de entrada para la función.
  * - GeneratePersonalizedWorkoutOutput - El tipo de retorno para la función.
  */
-import { generate } from 'genkit/generate';
-import { defineFlow, run } from 'genkit/flow';
+import { generate } from 'genkit';
+import { defineFlow, run } from 'genkit';
 import { geminiPro } from '@genkit-ai/googleai';
 import { z } from 'zod';
 

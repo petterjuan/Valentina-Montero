@@ -8,7 +8,7 @@
  * - PlanSignupOutput: El tipo de retorno para el flujo.
  */
 
-import { defineFlow, run } from 'genkit/flow';
+import { defineFlow, run } from 'genkit';
 import { z } from 'zod';
 import { getFirestore } from '@/lib/firebase';
 import { stripe } from '@/lib/stripe';

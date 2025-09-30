@@ -9,8 +9,10 @@
  * - GenerateBlogPostOutput - El tipo de retorno para la función.
  */
 
-import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import { generate } from 'genkit';
+import { defineFlow,run } from 'genkit';
+import { geminiPro, googleAI } from '@genkit-ai/googleai';
+import { z } from 'zod';
 import slugify from 'slugify';
 
 const GenerateBlogPostInputSchema = z.object({
@@ -30,34 +32,11 @@ export type GenerateBlogPostOutput = z.infer<typeof GenerateBlogPostOutputSchema
 
 
 export async function generateBlogPost(input: GenerateBlogPostInput): Promise<GenerateBlogPostOutput> {
-  return generateBlogPostFlow(input);
+  return await run(generateBlogPostFlow, input);
 }
 
 
-const generateBlogPostPrompt = ai.definePrompt({
-    name: 'generateBlogPostPrompt',
-    input: { schema: GenerateBlogPostInputSchema },
-    output: { schema: GenerateBlogPostOutputSchema },
-    model: 'gemini-1.5-flash',
-    system: "Responde únicamente con el objeto JSON solicitado, sin texto adicional, explicaciones o formato markdown.",
-    prompt: `
-        Actúa como Valentina Montero, una experta en fitness, nutrición y coach personal con un tono cercano, motivador y profesional. Tu tarea es escribir un artículo de blog completo para su sitio web.
-
-        **Instrucciones Clave:**
-        1.  **Originalidad:** Elige un tema NUEVO y relevante sobre fitness, nutrición, mentalidad o bienestar para mujeres que NO esté en esta lista de títulos existentes: {{{existingTitles}}}.
-        2.  **Longitud y Estructura:** Escribe un artículo de entre 800 y 1200 palabras. Debe tener una estructura clara:
-            *   Una introducción que enganche al lector.
-            *   Al menos 3-4 secciones con subtítulos (usando etiquetas <h2>).
-            *   Contenido práctico y basado en evidencia. Usa listas con viñetas (<ul>, <li>) para dar consejos claros.
-            *   Una conclusión que resuma las ideas clave y motive al lector a tomar acción.
-        3.  **Formato HTML:** El campo 'content' DEBE estar en formato HTML válido.
-        4.  **Tono y Voz:** Mantén siempre la voz de Valentina: empoderadora, conocedora pero accesible.
-        5.  **Imagen:** Genera una URL de imagen de picsum.photos (ej. https://picsum.photos/seed/algun-seed/1200/800) y dos palabras clave en inglés para el 'aiHint'.
-        6.  **Resumen Corto:** El 'excerpt' debe ser muy breve y directo (2-3 frases) para generar curiosidad.
-    `,
-});
-
-const generateBlogPostFlow = ai.defineFlow(
+const generateBlogPostFlow = defineFlow(
   {
     name: 'generateBlogPostFlow',
     inputSchema: GenerateBlogPostInputSchema,
@@ -71,7 +50,36 @@ const generateBlogPostFlow = ai.defineFlow(
     }),
   },
   async (input) => {
-    const { output } = await generateBlogPostPrompt(input);
+    const prompt = `
+        Actúa como Valentina Montero, una experta en fitness, nutrición y coach personal con un tono cercano, motivador y profesional. Tu tarea es escribir un artículo de blog completo para su sitio web.
+
+        **Instrucciones Clave:**
+        1.  **Originalidad:** Elige un tema NUEVO y relevante sobre fitness, nutrición, mentalidad o bienestar para mujeres que NO esté en esta lista de títulos existentes: ${JSON.stringify(input.existingTitles)}.
+        2.  **Longitud y Estructura:** Escribe un artículo de entre 800 y 1200 palabras. Debe tener una estructura clara:
+            *   Una introducción que enganche al lector.
+            *   Al menos 3-4 secciones con subtítulos (usando etiquetas <h2>).
+            *   Contenido práctico y basado en evidencia. Usa listas con viñetas (<ul>, <li>) para dar consejos claros.
+            *   Una conclusión que resuma las ideas clave y motive al lector a tomar acción.
+        3.  **Formato HTML:** El campo 'content' DEBE estar en formato HTML válido.
+        4.  **Tono y Voz:** Mantén siempre la voz de Valentina: empoderadora, conocedora pero accesible.
+        5.  **Imagen:** Genera una URL de imagen de picsum.photos (ej. https://picsum.photos/seed/algun-seed/1200/800) y dos palabras clave en inglés para el 'aiHint'.
+        6.  **Resumen Corto:** El 'excerpt' debe ser muy breve y directo (2-3 frases) para generar curiosidad.
+    `;
+    
+    const llmResponse = await generate({
+      prompt: prompt,
+      model: geminiPro,
+      config: {
+          temperature: 0.8,
+      },
+      output: {
+        schema: GenerateBlogPostOutputSchema,
+        format: 'json'
+      }
+    });
+
+    const output = llmResponse.output();
+
     if (!output) {
       throw new Error('La respuesta de la IA no tuvo contenido.');
     }

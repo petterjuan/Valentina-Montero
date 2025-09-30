@@ -1,5 +1,5 @@
 
-import { configureGenkit } from 'genkit/flow';
+import { configureGenkit } from 'genkit';
 import { googleAI } from '@genkit-ai/googleai';
 
 configureGenkit({

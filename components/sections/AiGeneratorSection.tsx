@@ -80,9 +80,10 @@ export default function AiGeneratorSection() {
     }
 
     // Case 2: Unlocking the full plan with an email
-    if (workoutData && !isFullPlan && data.email) {
+    if (workoutData && !isFullPlan) {
       const emailToSave = data.email;
       if (typeof emailToSave !== 'string' || emailToSave === '') {
+        form.setError("email", { type: "manual", message: "Se requiere un correo para desbloquear el plan."})
         return;
       }
       
@@ -494,4 +495,3 @@ export default function AiGeneratorSection() {
     </section>
   );
 }
-

@@ -8,7 +8,7 @@
  * - PlanSignupOutput: El tipo de retorno para el flujo.
  */
 
-import { ai } from '@/ai/genkit';
+import { defineFlow, run } from 'genkit';
 import { z } from 'zod';
 import { getFirestore } from '@/lib/firebase';
 import { stripe } from '@/lib/stripe';
@@ -34,10 +34,10 @@ const PlanSignupOutputSchema = z.object({
 export type PlanSignupOutput = z.infer<typeof PlanSignupOutputSchema>;
 
 export async function processPlanSignup(input: PlanSignupInput): Promise<PlanSignupOutput> {
-  return planSignupFlow(input);
+  return await run(planSignupFlow, input);
 }
 
-const planSignupFlow = ai.defineFlow(
+const planSignupFlow = defineFlow(
   {
     name: 'planSignupFlow',
     inputSchema: PlanSignupInputSchema,
