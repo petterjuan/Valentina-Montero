@@ -30,22 +30,14 @@ const aiGeneratorClientSchema = z.object({
 
 type AiGeneratorFormData = z.infer<typeof aiGeneratorClientSchema>;
 
-interface AiGeneratorFormState {
-    data?: GeneratePersonalizedWorkoutOutput;
-    error?: string;
-    isFullPlan: boolean;
-}
-
-const initialState: AiGeneratorFormState = {
-    data: undefined,
-    error: undefined,
-    isFullPlan: false,
-};
-
 export default function AiGeneratorSection() {
   const { toast } = useToast();
-  const [isPending, startTransition] = useTransition();
-  const [formResult, setFormResult] = useState<AiGeneratorFormState>(initialState);
+  const [isGenerating, startGeneratingTransition] = useTransition();
+  const [isUnlocking, startUnlockingTransition] = useTransition();
+  
+  const [workoutData, setWorkoutData] = useState<GeneratePersonalizedWorkoutOutput | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isFullPlan, setIsFullPlan] = useState(false);
 
   const form = useForm<AiGeneratorFormData>({
     resolver: zodResolver(aiGeneratorClientSchema),
@@ -64,44 +56,51 @@ export default function AiGeneratorSection() {
   const frequencyValue = form.watch("frequency");
 
   const handleFormSubmit = (data: AiGeneratorFormData) => {
-    startTransition(async () => {
-      try {
-        const isUnlocking = formResult.data && !formResult.isFullPlan && data.email;
-        
-        // Generate workout plan if it doesn't exist
-        if (!formResult.data || !isUnlocking) {
-            const workoutData = await generatePersonalizedWorkout(data);
-            setFormResult({
-                data: workoutData,
-                isFullPlan: !!data.email, // If email was provided initially
-                error: undefined
-            });
+    // Case 1: Generating the initial workout preview
+    if (!workoutData) {
+      startGeneratingTransition(async () => {
+        setError(null);
+        try {
+          const newWorkout = await generatePersonalizedWorkout(data);
+          setWorkoutData(newWorkout);
+          
+          if (data.email) {
+            await saveWorkoutLead({ email: data.email });
+            setIsFullPlan(true); // Unlock directly if email was provided initially
+          }
 
-            // If user provided email initially, also save the lead
-            if (data.email) {
-                 await saveWorkoutLead({ email: data.email });
-            }
-        } 
-        // Unlock full plan if preview exists and user provides email
-        else if (isUnlocking && data.email) {
-            const leadResult = await saveWorkoutLead({ email: data.email });
-            if (leadResult.success) {
-                setFormResult(prevState => ({ ...prevState, isFullPlan: true }));
-            } else {
-                throw new Error(leadResult.error || "No se pudo guardar tu correo.");
-            }
+        } catch (e: any) {
+          const errorMessage = e.message || 'Ocurrió un error al generar tu plan.';
+          toast({ variant: "destructive", title: "Error", description: errorMessage });
+          setError(errorMessage);
         }
+      });
+      return;
+    }
 
-      } catch (error: any) {
-        const errorMessage = error.message || 'Ocurrió un error al generar tu plan.';
-        toast({ variant: "destructive", title: "Error", description: errorMessage });
-        setFormResult({ ...initialState, error: errorMessage });
-      }
-    });
+    // Case 2: Unlocking the full plan with an email
+    if (workoutData && !isFullPlan && data.email) {
+      startUnlockingTransition(async () => {
+        setError(null);
+        try {
+          const leadResult = await saveWorkoutLead({ email: data.email });
+          if (leadResult.success) {
+            setIsFullPlan(true);
+            toast({ title: "¡Plan Desbloqueado!", description: "Gracias por suscribirte. Ahora tienes acceso al plan completo." });
+          } else {
+            throw new Error(leadResult.error || "No se pudo guardar tu correo.");
+          }
+        } catch (e: any) {
+            const errorMessage = e.message || "Ocurrió un error al desbloquear tu plan.";
+            toast({ variant: "destructive", title: "Error", description: errorMessage });
+            setError(errorMessage);
+        }
+      });
+    }
   };
   
-  const firstDay = formResult.data?.fullWeekWorkout[0];
-  const isLoading = isPending;
+  const firstDay = workoutData?.fullWeekWorkout[0];
+  const isLoading = isGenerating || isUnlocking;
 
   return (
     <section id="ai-generator" className="py-16 sm:py-24 bg-background">
@@ -272,10 +271,10 @@ export default function AiGeneratorSection() {
                       />
                   </div>
                   
-                  {!formResult.data && (
-                    <Button type="submit" disabled={isLoading} className="w-full font-bold">
+                  {!workoutData && (
+                    <Button type="submit" disabled={isGenerating} className="w-full font-bold">
                       <Wand2 className="mr-2 h-4 w-4" />
-                      {isLoading ? "Generando Vista Previa..." : "Generar Mi Plan (Vista Previa)"}
+                      {isGenerating ? "Generando Vista Previa..." : "Generar Mi Plan (Vista Previa)"}
                     </Button>
                   )}
                 </form>
@@ -283,7 +282,7 @@ export default function AiGeneratorSection() {
             </CardContent>
           </Card>
 
-          {isLoading && !formResult.data && (
+          {isGenerating && !workoutData && (
              <Card className="mt-8">
                 <CardContent className="p-6 text-center">
                     <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
@@ -292,18 +291,18 @@ export default function AiGeneratorSection() {
             </Card>
           )}
 
-          {formResult.error && !isLoading && (
+          {error && !isLoading && (
             <Card className="mt-8 border-destructive bg-destructive/10">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
                   <AlertTriangle className="h-5 w-5 text-destructive" />
-                  <p className="text-sm text-destructive">{formResult.error}</p>
+                  <p className="text-sm text-destructive">{error}</p>
                 </div>
               </CardContent>
             </Card>
           )}
 
-          {formResult.data && !formResult.isFullPlan && !isLoading && (
+          {workoutData && !isFullPlan && !isLoading && (
             <div className="mt-8 space-y-8">
                 <Card>
                     <CardHeader>
@@ -311,7 +310,7 @@ export default function AiGeneratorSection() {
                             <Target className="h-6 w-6 text-primary" />
                             Vista Previa: Tu Primer Día
                         </CardTitle>
-                        <CardDescription>{formResult.data.overview}</CardDescription>
+                        <CardDescription>{workoutData.overview}</CardDescription>
                     </CardHeader>
                     {firstDay && (
                         <CardContent>
@@ -364,7 +363,7 @@ export default function AiGeneratorSection() {
                         <ul className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center mb-6">
                             <li className="flex flex-col items-center gap-2 p-3 bg-background/50 rounded-lg">
                                 <Calendar className="h-6 w-6 text-primary"/>
-                                <span className="font-semibold">{formResult.data.fullWeekWorkout.length - 1} Días Adicionales</span>
+                                <span className="font-semibold">{workoutData.fullWeekWorkout.length - 1} Días Adicionales</span>
                             </li>
                             <li className="flex flex-col items-center gap-2 p-3 bg-background/50 rounded-lg">
                                 <Utensils className="h-6 w-6 text-primary"/>
@@ -389,8 +388,8 @@ export default function AiGeneratorSection() {
                                     </FormItem>
                                     )}
                                 />
-                                <Button type="submit" disabled={isLoading} className="font-bold w-full sm:w-auto flex-shrink-0">
-                                    {isLoading 
+                                <Button type="submit" disabled={isUnlocking} className="font-bold w-full sm:w-auto flex-shrink-0">
+                                    {isUnlocking 
                                         ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Desbloqueando...</>
                                         : <><Sparkles className="mr-2 h-4 w-4" />Desbloquear Plan</>
                                     }
@@ -403,18 +402,18 @@ export default function AiGeneratorSection() {
           )}
 
 
-          {formResult.data && formResult.isFullPlan && !isLoading && (
+          {workoutData && isFullPlan && !isLoading && (
             <Card className="mt-8">
               <CardHeader>
                 <CardTitle className="flex items-center gap-3 font-headline">
                   <Target className="h-6 w-6 text-primary" />
                   Tu Plan de Entrenamiento Completo
                 </CardTitle>
-                <CardDescription>{formResult.data.overview}</CardDescription>
+                <CardDescription>{workoutData.overview}</CardDescription>
               </CardHeader>
               <CardContent>
-                <Accordion type="multiple" defaultValue={[formResult.data.fullWeekWorkout[0]?.day]} className="w-full">
-                  {formResult.data.fullWeekWorkout?.map((day, index) => (
+                <Accordion type="multiple" defaultValue={[workoutData.fullWeekWorkout[0]?.day]} className="w-full">
+                  {workoutData.fullWeekWorkout?.map((day, index) => (
                     <AccordionItem value={day.day} key={index}>
                       <AccordionTrigger className="font-bold text-lg hover:no-underline">
                         <div className="flex items-center gap-3">
@@ -458,7 +457,7 @@ export default function AiGeneratorSection() {
                             Consejos de Nutrición
                         </h3>
                         <ul className="space-y-2">
-                            {formResult.data.nutritionTips?.map((rec, i) => (
+                            {workoutData.nutritionTips?.map((rec, i) => (
                                 <li key={i} className="flex items-start gap-2 text-sm">
                                     <CheckCircle className="h-4 w-4 mt-0.5 shrink-0 text-primary" />
                                     <span className="text-muted-foreground">{rec}</span>
@@ -472,7 +471,7 @@ export default function AiGeneratorSection() {
                             Consejos de Mentalidad
                         </h3>
                         <ul className="space-y-2">
-                            {formResult.data.mindsetTips?.map((rec, i) => (
+                            {workoutData.mindsetTips?.map((rec, i) => (
                                 <li key={i} className="flex items-start gap-2 text-sm">
                                     <CheckCircle className="h-4 w-4 mt-0.5 shrink-0 text-primary" />
                                     <span className="text-muted-foreground">{rec}</span>
