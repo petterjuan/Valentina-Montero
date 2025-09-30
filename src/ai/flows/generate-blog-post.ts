@@ -11,7 +11,6 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { Post } from '@/types';
 import slugify from 'slugify';
 
 const GenerateBlogPostInputSchema = z.object({
@@ -21,13 +20,13 @@ export type GenerateBlogPostInput = z.infer<typeof GenerateBlogPostInputSchema>;
 
 const GenerateBlogPostOutputSchema = z.object({
   title: z.string().describe('El título del artículo, optimizado para SEO y atractivo.'),
-  slug: z.string().describe('La versión del título para la URL, en minúsculas y separada por guiones.'),
   excerpt: z.string().describe('Un resumen muy corto y atractivo (2-3 frases) del artículo para previsualizaciones, que incite a hacer clic.'),
   content: z.string().describe('El contenido completo del artículo, en formato HTML (usando etiquetas <p>, <h2>, <ul>, <li>, etc.).'),
   imageUrl: z.string().url().describe('La URL de una imagen de stock relevante para el artículo.'),
   aiHint: z.string().describe('Dos palabras clave en inglés para la imagen (ej. "fitness woman").'),
 });
-export type GenerateBlogPostOutput = z.infer<typeof GenerateBlogPostOutputSchema>;
+// We don't export the direct Zod schema output type because we add the slug manually.
+export type GenerateBlogPostOutput = z.infer<typeof GenerateBlogPostOutputSchema> & { slug: string };
 
 
 export async function generateBlogPost(input: GenerateBlogPostInput): Promise<GenerateBlogPostOutput> {
@@ -62,7 +61,14 @@ const generateBlogPostFlow = ai.defineFlow(
   {
     name: 'generateBlogPostFlow',
     inputSchema: GenerateBlogPostInputSchema,
-    outputSchema: GenerateBlogPostOutputSchema,
+    outputSchema: z.object({
+        title: z.string(),
+        slug: z.string(),
+        excerpt: z.string(),
+        content: z.string(),
+        imageUrl: z.string().url(),
+        aiHint: z.string(),
+    }),
   },
   async (input) => {
     const { output } = await generateBlogPostPrompt(input);
@@ -70,14 +76,11 @@ const generateBlogPostFlow = ai.defineFlow(
       throw new Error('La respuesta de la IA no tuvo contenido.');
     }
     
-    // Asegurar que el slug se genera correctamente si la IA no lo hace
-    const finalSlug = output.slug || slugify(output.title, { lower: true, strict: true });
+    const slug = slugify(output.title, { lower: true, strict: true });
 
-    const finalOutput: GenerateBlogPostOutput = {
+    return {
         ...output,
-        slug: finalSlug
+        slug,
     };
-    
-    return GenerateBlogPostOutputSchema.parse(finalOutput);
   }
 );

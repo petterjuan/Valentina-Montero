@@ -340,7 +340,6 @@ export async function processPlanSignup(input: PlanSignupInput): Promise<PlanSig
     try {
         const result = await processPlanSignupFlow(input);
         
-        // Revalidate the leads page since a new lead might have been created
         revalidatePath('/admin/leads');
 
         return result;
@@ -355,7 +354,6 @@ export async function generateNewBlogPost(): Promise<{ success: boolean, title?:
     'use server';
     try {
         await connectToDb();
-        // Fetching both post types to get a comprehensive list of existing titles.
         const recentPosts = await getBlogPosts(10);
         const existingTitles = recentPosts.map(p => p.title);
         

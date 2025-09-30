@@ -55,7 +55,6 @@ const generateWorkoutPrompt = ai.definePrompt({
     name: 'generateWorkoutPrompt',
     input: { schema: GeneratePersonalizedWorkoutInputSchema },
     output: { schema: GeneratePersonalizedWorkoutOutputSchema },
-    // El modelo se especifica here. Genkit lo buscará en el proyecto de Vertex AI configurado.
     model: 'gemini-1.5-flash', 
     system: "Actúa como una entrenadora personal experta llamada Valentina Montero. Tu tono es motivador, cercano y profesional. Tu única respuesta debe ser un objeto JSON válido que se ajuste al schema proporcionado. No incluyas ningún texto, explicación o formato markdown adicional, solo el JSON. TODO el texto de tu respuesta DEBE estar en español.",
     prompt: `Crea un plan de entrenamiento detallado y estructurado en español basado en las siguientes especificaciones:
@@ -75,8 +74,6 @@ const generatePersonalizedWorkoutFlow = ai.defineFlow(
     outputSchema: GeneratePersonalizedWorkoutOutputSchema,
   },
   async (input) => {
-    // Error handling is now delegated to the API route that calls this flow.
-    // This makes the flow more reusable and separates concerns.
     const { output } = await generateWorkoutPrompt(input);
     if (!output) {
         throw new Error("La IA no devolvió contenido.");

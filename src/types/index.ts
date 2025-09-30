@@ -54,6 +54,14 @@ export interface LogEntry {
     metadata?: Record<string, any>;
 }
 
+export interface SystemStatus {
+  firebase?: { status: 'success' | 'error'; message: string };
+  mongo?: { status: 'success' | 'error'; message: string };
+  mongoData?: { status: 'success' | 'error'; message: string };
+  shopify?: { status: 'success' | 'error'; message: string };
+}
+
+
 // Mongoose document interfaces
 export interface PostDocument extends Omit<Post, 'id' | 'source' | 'createdAt'>, Document {
     createdAt: Date;

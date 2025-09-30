@@ -1,3 +1,4 @@
+
 {
   "name": "vm-fitness-hub",
   "version": "0.1.0",
@@ -7,10 +8,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "seed": "node src/lib/seed.js"
+    "seed": "node -r dotenv/config src/lib/seed.js"
   },
   "dependencies": {
-    "@genkit-ai/googleai": "^1.0.3",
+    "@genkit-ai/googleai": "^1.0.0",
     "@hookform/resolvers": "^3.9.0",
     "@radix-ui/react-accordion": "^1.2.0",
     "@radix-ui/react-alert-dialog": "^1.1.1",
@@ -35,36 +36,37 @@
     "@radix-ui/react-tooltip": "^1.1.2",
     "@stripe/stripe-js": "^4.1.0",
     "@tailwindcss/typography": "^0.5.13",
+    "@types/mongoose": "^5.11.97",
     "axios": "^1.7.2",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
+    "dotenv": "^16.4.5",
     "embla-carousel-autoplay": "^8.1.7",
     "embla-carousel-react": "^8.1.7",
     "firebase-admin": "^12.2.0",
     "genkit": "^1.0.0",
-    "lucide-react": "^0.417.0",
-    "mongodb": "^6.8.0",
+    "lucide-react": "^0.412.0",
     "mongoose": "^8.5.1",
-    "next": "14.2.5",
+    "next": "14.2.4",
     "react": "^18.3.1",
     "react-day-picker": "^8.10.1",
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.52.1",
     "recharts": "^2.12.7",
     "slugify": "^1.6.6",
-    "stripe": "^16.5.0",
+    "stripe": "^16.2.0",
     "tailwind-merge": "^2.4.0",
     "tailwindcss-animate": "^1.0.7",
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@types/node": "^20.14.11",
+    "@types/node": "^20.14.10",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "eslint": "^8.57.0",
-    "eslint-config-next": "14.2.5",
+    "eslint-config-next": "14.2.4",
     "postcss": "^8.4.39",
-    "tailwindcss": "^3.4.6",
+    "tailwindcss": "^3.4.4",
     "typescript": "^5.5.3"
   }
 }
