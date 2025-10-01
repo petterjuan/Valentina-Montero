@@ -92,3 +92,5 @@ export interface SystemStatus {
   mongoData?: { status: 'success' | 'error'; message: string };
   shopify?: { status: 'success' | 'error'; message: string };
 }
+
+    
