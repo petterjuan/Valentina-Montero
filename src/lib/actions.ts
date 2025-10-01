@@ -15,7 +15,7 @@ import TestimonialModel from '@/models/Testimonial';
 import connectToDb from '@/lib/mongoose';
 import { getShopifyStorefront } from '@/lib/shopify';
 import { revalidatePath } from 'next/cache';
-import type { LeanDocument } from 'mongoose';
+import { LeanDocument } from 'mongoose';
 
 //========================================================================
 //  DATA FETCHING FUNCTIONS (Called from Server Components)
