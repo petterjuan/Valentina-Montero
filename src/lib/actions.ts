@@ -4,7 +4,7 @@
 import { z } from 'zod';
 import { getFirestore } from "@/lib/firebase";
 import { logEvent } from '@/lib/logger';
-import { type Lead, type LogEntry, type SystemStatus, type Post, type Program, type Testimonial } from "@/types";
+import { type Lead, type LogEntry, type SystemStatus, type Post, type Program, type Testimonial, IPostLean, ITestimonialLean } from "@/types";
 import { generateBlogPost } from '@/ai/flows/generate-blog-post';
 import { generatePersonalizedWorkout as genkitGeneratePersonalizedWorkout } from '@/ai/flows/generate-personalized-workout';
 import { processPlanSignup as genkitProcessPlanSignup } from '@/ai/flows/plan-signup-flow';
@@ -15,7 +15,6 @@ import TestimonialModel from '@/models/Testimonial';
 import connectToDb from '@/lib/mongoose';
 import { getShopifyStorefront } from '@/lib/shopify';
 import { revalidatePath } from 'next/cache';
-import type { IPost, ITestimonial } from '@/types';
 
 //========================================================================
 //  DATA FETCHING FUNCTIONS (Called from Server Components)
@@ -159,10 +158,10 @@ export async function getBlogPosts(limit: number = 10): Promise<Post[]> {
         };
 
         try {
-            const postsFromDb = (await PostModel.find({})
+            const postsFromDb = await PostModel.find({})
                 .sort({ createdAt: -1 })
                 .limit(limit)
-                .lean()) as unknown as IPost[];
+                .lean<IPostLean[]>();
 
             mongoPosts = postsFromDb.map(doc => ({
                 id: doc._id.toString(),
@@ -198,7 +197,7 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
     const db = await connectToDb();
     if (db) {
         try {
-            const mongoPost = (await PostModel.findOne({ slug }).lean()) as unknown as IPost;
+            const mongoPost = await PostModel.findOne({ slug }).lean<IPostLean>();
             if (mongoPost) {
                 return {
                     id: mongoPost._id.toString(),
@@ -276,7 +275,7 @@ export async function getTestimonials(): Promise<Testimonial[]> {
     };
 
     try {
-        const testimonials = (await TestimonialModel.find({}).sort({ order: 1 }).lean()) as unknown as ITestimonial[];
+        const testimonials = await TestimonialModel.find({}).sort({ order: 1 }).lean<ITestimonialLean[]>();
         return testimonials.map(doc => ({
             id: doc._id.toString(),
             _id: doc._id.toString(),
