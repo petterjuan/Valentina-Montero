@@ -1,6 +1,6 @@
 
 
-"use client";
+'use client';
 
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -40,6 +40,7 @@ export default function AiGeneratorSection() {
   const [workoutData, setWorkoutData] = useState<GeneratePersonalizedWorkoutOutput | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isFullPlan, setIsFullPlan] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
 
   const form = useForm<AiGeneratorFormData>({
     resolver: zodResolver(aiGeneratorClientSchema),
@@ -62,9 +63,12 @@ export default function AiGeneratorSection() {
     if (!workoutData) {
       startGeneratingTransition(async () => {
         setError(null);
+        setWorkoutData(null);
+        setShowPreview(false);
         try {
           const newWorkout = await generatePersonalizedWorkout(data);
           setWorkoutData(newWorkout);
+          setShowPreview(true); // Show preview right away
           
           if (data.email) {
             await saveLead({ email: data.email, source: 'Generador IA' });
@@ -109,6 +113,8 @@ export default function AiGeneratorSection() {
   
   const firstDay = workoutData?.fullWeekWorkout[0];
   const isLoading = isGenerating || isUnlocking;
+  
+  const displayWorkout = showPreview || isFullPlan;
 
   return (
     <section id="ai-generator" className="py-16 sm:py-24 bg-background">
@@ -290,7 +296,7 @@ export default function AiGeneratorSection() {
             </CardContent>
           </Card>
 
-          {isGenerating && !workoutData && (
+          {isGenerating && (
              <Card className="mt-8">
                 <CardContent className="p-6 text-center">
                     <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
@@ -310,7 +316,7 @@ export default function AiGeneratorSection() {
             </Card>
           )}
 
-          {workoutData && !isFullPlan && !isLoading && (
+          {displayWorkout && workoutData && !isFullPlan && !isLoading && (
             <div className="mt-8 space-y-8">
                 <Card>
                     <CardHeader>
@@ -410,7 +416,7 @@ export default function AiGeneratorSection() {
           )}
 
 
-          {workoutData && isFullPlan && !isLoading && (
+          {displayWorkout && workoutData && isFullPlan && !isLoading && (
             <Card className="mt-8">
               <CardHeader>
                 <CardTitle className="flex items-center gap-3 font-headline">

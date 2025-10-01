@@ -16,15 +16,15 @@ Welcome to the GitHub repository for the VM Fitness Hub, a modern, feature-rich 
     - **AI-Generated Posts**: A fully autonomous system uses a **Vercel Cron Job** to trigger an AI agent once a week. The agent writes a new, SEO-friendly blog post and saves it to a **MongoDB** database.
     - **Unified Frontend**: The Next.js frontend fetches posts from both Shopify and MongoDB and displays them in a single, cohesive blog, prioritizing manual posts.
 - **AI-Powered Workout Generator**: Creates custom workout plans based on user input and optionally captures their email as a lead.
-- **Multi-Database Strategy**:
+- **Resilient Multi-Database Strategy**:
     - **Shopify**: The single source of truth for **products/programs** and **manually-written blog posts**.
-    - **MongoDB**: The storage for **AI-generated blog posts** and **client testimonials**.
+    - **MongoDB**: The storage for **AI-generated blog posts** and **client testimonials**. If the connection fails, the site gracefully falls back to sample data.
     - **Firebase Firestore**: Acts as a real-time CRM to capture **leads**, **coaching plan signups**, and **application logs** for diagnostics.
 - **Modern UX**:
     - Fully responsive design built with Tailwind CSS and ShadCN UI.
     - Smooth scrolling, a "back-to-top" button, and instant visual feedback on forms.
 - **Admin Tools**:
-    - **/troubleshoot**: A system status page to quickly diagnose connection issues with external services (Firebase, MongoDB, Shopify).
+    - **/troubleshoot**: A system status page to quickly diagnose connection issues with all external services (Firebase, MongoDB, Shopify).
     - **/admin/leads**: An admin-only page to view captured leads directly from the website.
 
 ---
@@ -68,21 +68,24 @@ npm install
 
 ### 3. Set Up Environment Variables
 
-Create a file named `.env` in the root of your project and add the following variables. These should also be configured in your hosting provider (e.g., Vercel).
+Create a file named `.env` in the root of your project and add the variables listed below. These should also be configured in your hosting provider (e.g., Vercel).
 
-**Important:** The AI features (Workout Generator, AI Blog Posts) require access to Google's AI APIs via Vertex AI. To use these, you must **enable billing** on the associated Google Cloud project (`vm-fitness-hub`). While usage will likely fall within the free tier, this is a platform requirement for API access.
+**Running in Demo Mode:**
+The application is designed to be resilient. If you do not provide `MONGODB_URI` or the Shopify variables, the relevant sections of the site will automatically use sample fallback data, allowing you to run and test the application without connecting to all external services.
+
+**Important: Enabling AI Features**
+The AI features (Workout Generator, AI Blog Posts) require access to Google's AI APIs. For these to work, you must **enable billing** on the associated Google Cloud project (`vm-fitness-hub`) and provide a `GEMINI_API_KEY`. While usage will likely fall within the free tier, billing is a platform requirement for API access.
 
 ```env
 # MongoDB Connection (for AI posts & testimonials)
 # Example: mongodb+srv://<user>:<password>@<cluster-url>/<db-name>?retryWrites=true&w=majority
 MONGODB_URI=
-MONGODB_DB_NAME=
 
 # Firebase (for Firestore leads & logs)
 # The complete JSON content of your Firebase service account key, as a single-line string.
 FIREBASE_SERVICE_ACCOUNT_KEY=
 
-# Google AI (Genkit & Vertex AI)
+# Google AI (Genkit)
 # This key is required for Genkit to authenticate with Google's AI services.
 GEMINI_API_KEY=
 
@@ -103,14 +106,14 @@ CRON_SECRET=
 NEXT_PUBLIC_APP_URL=http://localhost:9002
 ```
 
-### 4. Seed the Database
+### 4. Seed the Database (Optional)
 
-To populate your MongoDB database with initial sample data for testimonials, run the seed script.
+If you have connected a MongoDB database, you can populate it with initial sample data for testimonials.
 
 ```bash
 npm run seed
 ```
-This will connect to your database, clear the `testimonials` collection, and insert the sample data from `seed.js`. AI blog posts will be generated automatically by the cron job.
+This will connect to your database, clear the `testimonials` collection, and insert the sample data from `seed.js`.
 
 ### 5. Run the Development Server
 
@@ -140,7 +143,7 @@ This application is optimized for deployment on **Vercel**.
 2.  Configure the environment variables as listed in the `.env` section in the Vercel project settings.
 3.  Vercel will automatically build and deploy the application on every push to the `main` branch.
 
-### **Important: Enabling Automatic Blog Posts**
+### **Enabling Automatic Blog Posts**
 To enable the weekly automatic blog post generation, you must create a file named `vercel.json` in the root of your project with the following content:
 
 ```json
