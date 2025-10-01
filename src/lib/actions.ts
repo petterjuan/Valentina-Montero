@@ -4,7 +4,7 @@
 import { z } from 'zod';
 import { getFirestore } from "@/lib/firebase";
 import { logEvent } from '@/lib/logger';
-import { type Lead, type LogEntry, type SystemStatus, type Post, type Program, type Testimonial, IPostLean, ITestimonialLean } from "@/types";
+import { type Lead, type LogEntry, type SystemStatus, type Post, type Program, type Testimonial, PostDocument, TestimonialDocument } from "@/types";
 import { generateBlogPost } from '@/ai/flows/generate-blog-post';
 import { generatePersonalizedWorkout as genkitGeneratePersonalizedWorkout } from '@/ai/flows/generate-personalized-workout';
 import { processPlanSignup as genkitProcessPlanSignup } from '@/ai/flows/plan-signup-flow';
@@ -15,6 +15,7 @@ import TestimonialModel from '@/models/Testimonial';
 import connectToDb from '@/lib/mongoose';
 import { getShopifyStorefront } from '@/lib/shopify';
 import { revalidatePath } from 'next/cache';
+import type { LeanDocument } from 'mongoose';
 
 //========================================================================
 //  DATA FETCHING FUNCTIONS (Called from Server Components)
@@ -93,6 +94,7 @@ export async function getPrograms(collectionHandle: string, maxProducts: number)
     } catch (error) {
         console.error(`Error fetching Shopify programs for collection "${collectionHandle}":`, error);
         logEvent('Shopify API Error', { message: `Failed to fetch collection: ${collectionHandle}`, error: error instanceof Error ? error.message : String(error) }, 'error');
+        // Return empty array to allow fallback to work gracefully
         return [];
     }
 }
@@ -100,6 +102,7 @@ export async function getPrograms(collectionHandle: string, maxProducts: number)
 export async function getBlogPosts(limit: number = 10): Promise<Post[]> {
     let shopifyPosts: Post[] = [];
     let mongoPosts: Post[] = [];
+    let allPosts: Post[] = [];
     const shopify = getShopifyStorefront();
 
     const fetchShopifyPosts = async () => {
@@ -151,17 +154,12 @@ export async function getBlogPosts(limit: number = 10): Promise<Post[]> {
     };
 
     const fetchMongoPosts = async () => {
-        const db = await connectToDb();
-        if (!db) {
-            logEvent('MongoDB Skipped', { message: 'Skipping MongoDB post fetch because connection is not available.' }, 'info');
-            return;
-        };
-
         try {
-            const postsFromDb = await PostModel.find({})
+            await connectToDb();
+            const postsFromDb: LeanDocument<PostDocument>[] = await PostModel.find({})
                 .sort({ createdAt: -1 })
                 .limit(limit)
-                .lean<IPostLean[]>();
+                .lean();
 
             mongoPosts = postsFromDb.map(doc => ({
                 id: doc._id.toString(),
@@ -182,7 +180,7 @@ export async function getBlogPosts(limit: number = 10): Promise<Post[]> {
     
     await Promise.all([fetchShopifyPosts(), fetchMongoPosts()]);
 
-    const allPosts: Post[] = [...shopifyPosts, ...mongoPosts];
+    allPosts = [...shopifyPosts, ...mongoPosts];
     allPosts.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
     return allPosts.slice(0, limit);
@@ -194,34 +192,33 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
         return null;
     }
 
-    const db = await connectToDb();
-    if (db) {
-        try {
-            const mongoPost = await PostModel.findOne({ slug }).lean<IPostLean>();
-            if (mongoPost) {
-                return {
-                    id: mongoPost._id.toString(),
-                    source: 'MongoDB',
-                    title: mongoPost.title,
-                    slug: mongoPost.slug,
-                    excerpt: mongoPost.excerpt,
-                    content: mongoPost.content,
-                    imageUrl: mongoPost.imageUrl,
-                    aiHint: mongoPost.aiHint,
-                    createdAt: new Date(mongoPost.createdAt),
-                };
-            }
-        } catch (error) {
-            console.error(`Error fetching post by slug "${slug}" from MongoDB:`, error);
-            logEvent('MongoDB Error', { message: `Failed to fetch post by slug: ${slug}`, error: error instanceof Error ? error.message : String(error) }, 'error');
+    // Try MongoDB first for AI-generated posts
+    try {
+        await connectToDb();
+        const mongoPost: LeanDocument<PostDocument> | null = await PostModel.findOne({ slug: slug }).lean().exec();
+        if (mongoPost) {
+            return {
+                id: mongoPost._id.toString(),
+                source: 'MongoDB',
+                title: mongoPost.title,
+                slug: mongoPost.slug,
+                excerpt: mongoPost.excerpt,
+                content: mongoPost.content,
+                imageUrl: mongoPost.imageUrl,
+                aiHint: mongoPost.aiHint,
+                createdAt: new Date(mongoPost.createdAt),
+            };
         }
+    } catch (error) {
+        console.error(`Error fetching post by slug "${slug}" from MongoDB:`, error);
+        logEvent('MongoDB Error', { message: `Failed to fetch post by slug: ${slug}`, error: error instanceof Error ? error.message : String(error) }, 'error');
     }
 
     const shopify = getShopifyStorefront();
     if (!shopify) {
         return null;
     }
-    
+    // Fallback to Shopify for manual posts
     try {
         const { blog } = await shopify.request(
             `query getArticleByHandle($handle: String!) {
@@ -268,23 +265,13 @@ export async function getBlogPostBySlug(slug: string): Promise<Post | null> {
 }
 
 export async function getTestimonials(): Promise<Testimonial[]> {
-    const db = await connectToDb();
-    if (!db) {
-        logEvent('MongoDB Skipped', { message: 'Skipping testimonial fetch because connection is not available.' }, 'info');
-        return [];
-    };
-
     try {
-        const testimonials = await TestimonialModel.find({}).sort({ order: 1 }).lean<ITestimonialLean[]>();
+        await connectToDb();
+        const testimonials: LeanDocument<TestimonialDocument>[] = await TestimonialModel.find({}).sort({ order: 1 }).lean();
         return testimonials.map(doc => ({
+            ...doc,
             id: doc._id.toString(),
             _id: doc._id.toString(),
-            name: doc.name,
-            story: doc.story,
-            image: doc.image,
-            aiHint: doc.aiHint,
-            order: doc.order,
-            rating: doc.rating,
         }));
     } catch (error) {
         console.error("Error fetching testimonials:", error);
@@ -351,17 +338,14 @@ export async function processPlanSignup(input: PlanSignupInput): Promise<PlanSig
 
 
 export async function generateNewBlogPost(): Promise<{ success: boolean, title?: string, slug?: string, error?: string }> {
-    const db = await connectToDb();
-    if (!db) {
-        return { success: false, error: "La conexión con la base de datos no está disponible." };
-    }
-
     try {
+        // We get existing titles from both Shopify and MongoDB to avoid duplicates
         const recentPosts = await getBlogPosts(10);
         const existingTitles = recentPosts.map(p => p.title);
         
         const newPostData = await generateBlogPost({ existingTitles });
         
+        await connectToDb();
         const newPost = new PostModel({
             ...newPostData,
             createdAt: new Date(),
@@ -421,6 +405,7 @@ export async function getLeadsForAdmin(): Promise<Lead[]> {
 export async function getSystemStatuses(): Promise<SystemStatus> {
     const statuses: SystemStatus = {};
 
+    // Check Firebase
     try {
         const firestore = getFirestore();
         if (firestore) {
@@ -433,25 +418,22 @@ export async function getSystemStatuses(): Promise<SystemStatus> {
         statuses.firebase = { status: 'error', message: `Falló la conexión a Firestore: ${error instanceof Error ? error.message : String(error)}` };
     }
 
+    // Check MongoDB
     try {
-        const db = await connectToDb();
-        if (db) {
-            statuses.mongo = { status: 'success', message: 'Conectado a MongoDB a través de Mongoose.' };
-            try {
-                await TestimonialModel.findOne();
-                statuses.mongoData = { status: 'success', message: 'Se pudo leer la colección de testimonios en MongoDB.' };
-            } catch(e) {
-                 statuses.mongoData = { status: 'error', message: `Conectado a MongoDB, pero falló la lectura de datos: ${e instanceof Error ? e.message : String(e)}` };
-            }
-        } else {
-            statuses.mongo = { status: 'success', message: `MONGODB_URI no está configurado. La conexión a MongoDB está deshabilitada.` };
-            statuses.mongoData = { status: 'success', message: 'La lectura de datos de MongoDB está deshabilitada.' };
+        await connectToDb();
+        statuses.mongo = { status: 'success', message: 'Conectado a MongoDB a través de Mongoose.' };
+        try {
+            await TestimonialModel.findOne();
+            statuses.mongoData = { status: 'success', message: 'Se pudo leer la colección de testimonios en MongoDB.' };
+        } catch(e) {
+             statuses.mongoData = { status: 'error', message: `Conectado a MongoDB, pero falló la lectura de datos: ${e instanceof Error ? e.message : String(e)}` };
         }
     } catch (error) {
         statuses.mongo = { status: 'error', message: `Falló la conexión a MongoDB: ${error instanceof Error ? error.message : String(error)}` };
         statuses.mongoData = { status: 'error', message: 'No se pudo intentar leer datos de MongoDB porque la conexión falló.' };
     }
 
+    // Check Shopify
     const shopify = getShopifyStorefront();
     if (shopify) {
         try {
@@ -471,6 +453,7 @@ export async function getLogs(limit: number = 15): Promise<LogEntry[]> {
     const firestore = getFirestore();
     if (!firestore) {
         console.error("Firestore is not available for fetching logs.");
+        logEvent('Admin Area Error', { message: 'getLogs failed, Firestore not initialized' }, 'error');
         return [];
     }
 
@@ -500,5 +483,3 @@ export async function getLogs(limit: number = 15): Promise<LogEntry[]> {
         return [];
     }
 }
-
-    

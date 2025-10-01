@@ -1,5 +1,5 @@
 
-import { type Document, type Types } from 'mongoose';
+import { Document } from 'mongoose';
 
 // Represents a blog post, now fetched from Shopify or MongoDB
 export interface Post {
@@ -13,38 +13,6 @@ export interface Post {
     aiHint?: string; // Often from image alt text
     createdAt: Date;
 }
-
-// Interface for raw data from DB, before mapping to Post
-export interface IPost {
-  title: string;
-  content: string;
-  excerpt: string;
-  slug: string;
-  imageUrl?: string;
-  aiHint?: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-// Interface for lean post objects from Mongoose
-export interface IPostLean extends Omit<IPost, '_id'> {
-  _id: Types.ObjectId;
-}
-
-export interface ITestimonial {
-  name: string;
-  story: string;
-  image: string;
-  aiHint?: string;
-  order?: number;
-  rating?: number;
-  createdAt: Date;
-}
-
-export interface ITestimonialLean extends Omit<ITestimonial, '_id'> {
-    _id: Types.ObjectId;
-}
-
 
 export interface Testimonial {
     _id: string;
@@ -75,7 +43,7 @@ export interface Lead {
     email: string;
     source: string;
     status: string;
-    createdAt: Date; 
+    createdAt: Date;
 }
 
 export interface LogEntry {
@@ -93,4 +61,9 @@ export interface SystemStatus {
   shopify?: { status: 'success' | 'error'; message: string };
 }
 
-    
+
+// Mongoose document interfaces
+export interface PostDocument extends Omit<Post, 'id' | 'source' | 'createdAt'>, Document {
+    createdAt: Date;
+}
+export interface TestimonialDocument extends Omit<Testimonial, '_id' | 'id'>, Document {}
